@@ -51,6 +51,7 @@ export type SchedulePdf = {
   id: string;
   section: "shifts" | "weekly";
   fileName: string;
+  mimeType: string;
   localUri: string;
   uploadedBy: string;
   uploadedAt: string;
@@ -115,6 +116,12 @@ export type PatientMessage = {
   text: string;
   senderName: string;
   sentAt: string;
+  attachment?: {
+    fileName: string;
+    mimeType: string;
+    localUri: string;
+    kind: "video" | "file";
+  };
 };
 
 export type Consultation = {
@@ -216,7 +223,7 @@ export const createInitialDepartmentData = (): DepartmentData => ({
     { id: "w5", day: "الخميس", clinician: "د. نورة الحربي", role: "استشاري مناوب", team: "فريق أورام الجهاز العصبي", period: "صباحي", location: "الدور الرابع" },
   ],
   scheduleDocuments: [
-    { id: "pdf-1", section: "weekly", fileName: "weekly_allocation_august.pdf", localUri: "", uploadedBy: "د. عبدالله السالم", uploadedAt: "اليوم، 07:30" },
+    { id: "pdf-1", section: "weekly", fileName: "weekly_allocation_august.pdf", mimeType: "application/pdf", localUri: "", uploadedBy: "د. عبدالله السالم", uploadedAt: "اليوم، 07:30" },
   ],
   surgeries: [
     { id: "o1", time: "08:00", patientCode: "NS-2048", procedure: "استئصال ورم سحائي", surgeon: "د. نورة الحربي", room: "غرفة عمليات 3", status: "مؤكد" },

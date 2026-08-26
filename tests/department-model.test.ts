@@ -20,6 +20,7 @@ describe("نموذج بيانات قسم جراحة المخ والأعصاب", 
     expect(data.weeklyAssignments).toHaveLength(5);
     expect(data.weeklyAssignments[0].day).toBe("الأحد");
     expect(data.scheduleDocuments[0].section).toBe("weekly");
+    expect(data.scheduleDocuments[0].mimeType).toBe("application/pdf");
     expect(data.teams.every((team) => Array.isArray(team.dischargedCases))).toBe(true);
     expect(data.teams.flatMap((team) => team.dischargedCases)).toHaveLength(0);
   });
@@ -39,5 +40,14 @@ describe("نموذج بيانات قسم جراحة المخ والأعصاب", 
     expect(notification.teamId).toBe(team.id);
     expect(notification.message).not.toContain(team.cases[0].diagnosis);
     expect(notification.readByUserIds).toEqual([]);
+  });
+
+  it("يدعم رسالة مريض ذات مرفق ملف أو فيديو دون فرض نص مرافق", () => {
+    const attachment = { fileName: "operative-note.pdf", mimeType: "application/pdf", localUri: "file://operative-note.pdf", kind: "file" as const };
+    const message = { id: "m-attach", text: "", senderName: "د. أحمد", sentAt: "الآن", attachment };
+
+    expect(message.text).toBe("");
+    expect(message.attachment.kind).toBe("file");
+    expect(message.attachment.fileName).toContain("operative-note");
   });
 });
