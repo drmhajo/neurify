@@ -5,6 +5,9 @@ import {
   createTeamNotification,
   type DepartmentData,
   type DepartmentUser,
+  type DiagnosticImaging,
+  type PatientCase,
+  type PatientMessage,
   type ReportPriority,
   type UserRole,
 } from "@/lib/department-model";
@@ -31,6 +34,9 @@ type DepartmentStore = {
   changeUserRole: (userId: string, role: UserRole) => void;
   addShift: (input: { clinician: string; period: "صباحي" | "مسائي" | "ليلي"; team: string }) => void;
   addSurgery: (input: { patientCode: string; procedure: string; surgeon: string }) => void;
+  updateMedicalFile: (teamId: string, caseId: string, input: Pick<PatientCase, "fullName" | "age" | "medicalHistory" | "clinicalTests" | "diagnosis">) => void;
+  addDiagnosticImaging: (teamId: string, caseId: string, input: Omit<DiagnosticImaging, "id" | "addedBy">) => void;
+  addPatientMessage: (teamId: string, caseId: string, text: string) => void;
   markNotificationRead: (notificationId: string) => void;
   markAllNotificationsRead: () => void;
 };
@@ -50,7 +56,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
         const [storedData, storedSession] = await Promise.all([AsyncStorage.getItem(DATA_KEY), AsyncStorage.getItem(SESSION_KEY)]);
         if (storedData) {
           const parsedData = JSON.parse(storedData) as DepartmentData;
-          setData({ ...parsedData, notifications: parsedData.notifications ?? [] });
+          setData({ ...parsedData, notifications: parsedData.notifications ?? [], teams: parsedData.teams.map((team) => ({ ...team, cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
         }
         if (storedSession) setSession(JSON.parse(storedSession) as Session);
       } finally {
@@ -135,7 +141,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       ...current,
       teams: current.teams.map((team) => team.id === teamId ? {
         ...team,
-        cases: [{ id: `c-${now}`, code: input.code.trim(), diagnosis: input.diagnosis.trim(), admittedSince: "الآن", status: "منوّم" }, ...team.cases],
+        cases: [{ id: `c-${now}`, code: input.code.trim(), fileNumber: input.code.trim(), fullName: "حالة جديدة", age: null, medicalHistory: "غير موثّق بعد", clinicalTests: "غير موثّق بعد", diagnosis: input.diagnosis.trim(), admittedSince: "الآن", status: "منوّم", imaging: [], messages: [] }, ...team.cases],
       } : team),
       notifications: [createTeamNotification({ id: `n-${now}`, type: "admitted_case", team: targetTeam }), ...(current.notifications ?? [])],
     }));
@@ -167,6 +173,24 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     surgeries: [{ id: `o-${Date.now()}`, time: "يُحدد", patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: "يُحدد", status: "بانتظار مراجعة" }, ...current.surgeries],
   })), [updateData]);
 
+  const updateMedicalFile = useCallback((teamId: string, caseId: string, input: Pick<PatientCase, "fullName" | "age" | "medicalHistory" | "clinicalTests" | "diagnosis">) => updateData((current) => ({
+    ...current,
+    teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, ...input } : patientCase) } : team),
+  })), [updateData]);
+
+  const addDiagnosticImaging = useCallback((teamId: string, caseId: string, input: Omit<DiagnosticImaging, "id" | "addedBy">) => updateData((current) => ({
+    ...current,
+    teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, imaging: [{ ...input, id: `i-${Date.now()}`, addedBy: session?.name ?? "عضو الفريق" }, ...patientCase.imaging] } : patientCase) } : team),
+  })), [session?.name, updateData]);
+
+  const addPatientMessage = useCallback((teamId: string, caseId: string, text: string) => {
+    const message: PatientMessage = { id: `m-${Date.now()}`, text: text.trim(), senderName: session?.name ?? "عضو الفريق", sentAt: "الآن" };
+    updateData((current) => ({
+      ...current,
+      teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, messages: [...patientCase.messages, message] } : patientCase) } : team),
+    }));
+  }, [session?.name, updateData]);
+
   const markNotificationRead = useCallback((notificationId: string) => {
     const currentUserId = session?.userId;
     if (!currentUserId) return;
@@ -189,7 +213,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     }));
   }, [session?.userId, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, addUser, changeUserRole, addShift, addSurgery, markNotificationRead, markAllNotificationsRead }), [addCase, addConsultation, addReport, addShift, addSurgery, addUser, advanceReport, changeUserRole, data, hydrated, markAllNotificationsRead, markNotificationRead, session, signIn, signInWithGoogleDemo, signOut]);
+  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, addUser, changeUserRole, addShift, addSurgery, updateMedicalFile, addDiagnosticImaging, addPatientMessage, markNotificationRead, markAllNotificationsRead }), [addCase, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addShift, addSurgery, addUser, advanceReport, changeUserRole, data, hydrated, markAllNotificationsRead, markNotificationRead, session, signIn, signInWithGoogleDemo, signOut, updateMedicalFile]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }

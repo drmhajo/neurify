@@ -44,9 +44,34 @@ export type Surgery = {
 export type PatientCase = {
   id: string;
   code: string;
+  fileNumber: string;
+  fullName: string;
+  age: number | null;
+  medicalHistory: string;
+  clinicalTests: string;
   diagnosis: string;
   admittedSince: string;
   status: "منوّم" | "متابعة" | "جاهز للخروج";
+  imaging: DiagnosticImaging[];
+  messages: PatientMessage[];
+};
+
+export type DiagnosticImaging = {
+  id: string;
+  studyName: string;
+  modality: string;
+  date: string;
+  fileName: string;
+  mimeType: string;
+  localUri: string;
+  addedBy: string;
+};
+
+export type PatientMessage = {
+  id: string;
+  text: string;
+  senderName: string;
+  sentAt: string;
 };
 
 export type Consultation = {
@@ -123,8 +148,8 @@ export const createInitialDepartmentData = (): DepartmentData => ({
     {
       id: "t1", name: "فريق أورام الجهاز العصبي", shortName: "أورام", color: "#075985", lead: "د. نورة الحربي", memberIds: ["u-admin", "u-1", "u-2"],
       cases: [
-        { id: "c1", code: "NS-2048", diagnosis: "ورم سحائي أمامي", admittedSince: "منذ 3 أيام", status: "منوّم" },
-        { id: "c2", code: "NS-1973", diagnosis: "ورم دبقي عالي الدرجة", admittedSince: "منذ 6 أيام", status: "متابعة" },
+        { id: "c1", code: "NS-2048", fileNumber: "KSMC-007584", fullName: "مريض تجريبي (أ)", age: 53, medicalHistory: "صداع تدريجي خلال أربعة أشهر مع نوبات دوار متقطعة.", clinicalTests: "الفحص العصبي: قوة الأطراف محفوظة؛ لا يوجد عجز بؤري ظاهر.", diagnosis: "ورم سحائي أمامي", admittedSince: "منذ 3 أيام", status: "منوّم", imaging: [{ id: "i1", studyName: "رنين مغناطيسي للدماغ مع صبغة", modality: "MRI", date: "24 أغسطس 2026", fileName: "brain_mri_2408.pdf", mimeType: "application/pdf", localUri: "", addedBy: "د. نورة الحربي" }], messages: [{ id: "m1", text: "تمت مراجعة صور الرنين مع الفريق قبل العملية.", senderName: "د. نورة الحربي", sentAt: "اليوم، 08:10" }] },
+        { id: "c2", code: "NS-1973", fileNumber: "KSMC-006973", fullName: "مريض تجريبي (ب)", age: 41, medicalHistory: "نوبات صداع مستمرة مع أعراض بصرية متقطعة.", clinicalTests: "الفحص السريري: يقظة تامة؛ فحص الحقول البصرية بحاجة إلى متابعة.", diagnosis: "ورم دبقي عالي الدرجة", admittedSince: "منذ 6 أيام", status: "متابعة", imaging: [], messages: [] },
       ],
       consultations: [
         { id: "q1", title: "تقييم قبل العملية", subject: "مراجعة خطة الجراحة والصور", createdBy: "د. نورة الحربي", time: "اليوم، 07:45" },
@@ -133,7 +158,7 @@ export const createInitialDepartmentData = (): DepartmentData => ({
     {
       id: "t2", name: "فريق العمود الفقري", shortName: "عمود", color: "#0F766E", lead: "د. عبدالله السالم", memberIds: ["u-admin", "u-2", "u-3"],
       cases: [
-        { id: "c3", code: "NS-1985", diagnosis: "تضيّق قطني متعدد المستويات", admittedSince: "منذ يومين", status: "منوّم" },
+        { id: "c3", code: "NS-1985", fileNumber: "KSMC-007112", fullName: "مريض تجريبي (ج)", age: 62, medicalHistory: "ألم قطني مزمن ممتد إلى الطرف السفلي الأيسر منذ عام.", clinicalTests: "اختبار رفع الساق إيجابي يساراً؛ القوة الحركية 4/5 في عضلات القدم اليسرى.", diagnosis: "تضيّق قطني متعدد المستويات", admittedSince: "منذ يومين", status: "منوّم", imaging: [{ id: "i2", studyName: "رنين مغناطيسي للعمود القطني", modality: "MRI", date: "25 أغسطس 2026", fileName: "lumbar_mri_2508.pdf", mimeType: "application/pdf", localUri: "", addedBy: "د. عبدالله السالم" }], messages: [{ id: "m2", text: "تم اعتماد خطة التثبيت الجراحي بعد اجتماع الفريق.", senderName: "د. عبدالله السالم", sentAt: "أمس، 16:30" }] },
       ],
       consultations: [
         { id: "q2", title: "استشارة علاج طبيعي", subject: "برنامج التأهيل بعد التثبيت", createdBy: "د. سارة العتيبي", time: "أمس، 15:10" },
@@ -142,7 +167,7 @@ export const createInitialDepartmentData = (): DepartmentData => ({
     {
       id: "t3", name: "فريق الأعصاب الوعائية", shortName: "وعائي", color: "#B45309", lead: "د. عبدالله السالم", memberIds: ["u-admin"],
       cases: [
-        { id: "c4", code: "NS-2011", diagnosis: "استسقاء دماغي", admittedSince: "منذ يوم", status: "منوّم" },
+        { id: "c4", code: "NS-2011", fileNumber: "KSMC-008019", fullName: "مريض تجريبي (د)", age: 35, medicalHistory: "صداع حديث مع غثيان وقيء متكرر خلال أسبوعين.", clinicalTests: "الفحص السريري: استجابة بصرية وحركية مناسبة؛ يلزم رصد العلامات الحيوية.", diagnosis: "استسقاء دماغي", admittedSince: "منذ يوم", status: "منوّم", imaging: [], messages: [] },
       ],
       consultations: [],
     },

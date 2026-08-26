@@ -11,6 +11,10 @@ describe("نموذج بيانات قسم جراحة المخ والأعصاب", 
     expect(summary.surgeriesToday).toBe(3);
     expect(summary.admittedCases).toBe(3);
     expect(data.notifications).toEqual([]);
+    expect(data.teams[0].cases[0].fileNumber).toBe("KSMC-007584");
+    expect(data.teams[0].cases[0].imaging).toHaveLength(1);
+    expect(data.teams[0].cases[0].clinicalTests).toContain("الفحص العصبي");
+    expect(data.teams[0].cases[0].messages).toHaveLength(1);
   });
 
   it("يتدرج طلب التقرير من جديد إلى قيد الإعداد ثم مكتمل", () => {
