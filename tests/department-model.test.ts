@@ -17,6 +17,9 @@ describe("نموذج بيانات قسم جراحة المخ والأعصاب", 
     expect(data.teams[0].cases[0].messages).toHaveLength(1);
     expect(data.users[0].permissions).toEqual(rolePermissionDefaults.admin);
     expect(data.users[1].jobTitle).toContain("استشاري");
+    expect(data.weeklyAssignments).toHaveLength(5);
+    expect(data.weeklyAssignments[0].day).toBe("الأحد");
+    expect(data.scheduleDocuments[0].section).toBe("weekly");
   });
 
   it("يتدرج طلب التقرير من جديد إلى قيد الإعداد ثم مكتمل", () => {

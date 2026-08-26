@@ -10,7 +10,9 @@ import {
   type PatientMessage,
   type PermissionKey,
   type ReportPriority,
+  type SchedulePdf,
   type UserRole,
+  type CareTeam,
   rolePermissionDefaults,
 } from "@/lib/department-model";
 import { dispatchTeamPush } from "@/lib/push-notifications";
@@ -37,6 +39,9 @@ type DepartmentStore = {
   updateUserAccess: (userId: string, input: { active: boolean; permissions: PermissionKey[]; teamIds: string[] }) => void;
   addShift: (input: { clinician: string; period: "صباحي" | "مسائي" | "ليلي"; team: string }) => void;
   addSurgery: (input: { patientCode: string; procedure: string; surgeon: string }) => void;
+  addSchedulePdf: (input: Omit<SchedulePdf, "id" | "uploadedBy" | "uploadedAt">) => void;
+  addCareTeam: (input: Pick<CareTeam, "name" | "shortName" | "color" | "lead">) => void;
+  updateCareTeam: (teamId: string, input: Pick<CareTeam, "name" | "shortName" | "color" | "lead">) => void;
   updateMedicalFile: (teamId: string, caseId: string, input: Pick<PatientCase, "fullName" | "age" | "medicalHistory" | "clinicalTests" | "diagnosis">) => void;
   addDiagnosticImaging: (teamId: string, caseId: string, input: Omit<DiagnosticImaging, "id" | "addedBy">) => void;
   addPatientMessage: (teamId: string, caseId: string, text: string) => void;
@@ -59,7 +64,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
         const [storedData, storedSession] = await Promise.all([AsyncStorage.getItem(DATA_KEY), AsyncStorage.getItem(SESSION_KEY)]);
         if (storedData) {
           const parsedData = JSON.parse(storedData) as DepartmentData;
-          setData({ ...parsedData, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], teams: parsedData.teams.map((team) => ({ ...team, cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
+          setData({ ...parsedData, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], weeklyAssignments: parsedData.weeklyAssignments ?? [], scheduleDocuments: parsedData.scheduleDocuments ?? [], teams: parsedData.teams.map((team) => ({ ...team, cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
         }
         if (storedSession) setSession(JSON.parse(storedSession) as Session);
       } finally {
@@ -191,6 +196,21 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     surgeries: [{ id: `o-${Date.now()}`, time: "يُحدد", patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: "يُحدد", status: "بانتظار مراجعة" }, ...current.surgeries],
   })), [updateData]);
 
+  const addSchedulePdf = useCallback((input: Omit<SchedulePdf, "id" | "uploadedBy" | "uploadedAt">) => updateData((current) => ({
+    ...current,
+    scheduleDocuments: [{ ...input, id: `pdf-${Date.now()}`, uploadedBy: session?.name ?? "مستخدم مخول", uploadedAt: "الآن" }, ...current.scheduleDocuments],
+  })), [session?.name, updateData]);
+
+  const addCareTeam = useCallback((input: Pick<CareTeam, "name" | "shortName" | "color" | "lead">) => updateData((current) => ({
+    ...current,
+    teams: [...current.teams, { id: `t-${Date.now()}`, ...input, memberIds: session?.userId ? [session.userId] : [], cases: [], consultations: [] }],
+  })), [session?.userId, updateData]);
+
+  const updateCareTeam = useCallback((teamId: string, input: Pick<CareTeam, "name" | "shortName" | "color" | "lead">) => updateData((current) => ({
+    ...current,
+    teams: current.teams.map((team) => team.id === teamId ? { ...team, ...input } : team),
+  })), [updateData]);
+
   const updateMedicalFile = useCallback((teamId: string, caseId: string, input: Pick<PatientCase, "fullName" | "age" | "medicalHistory" | "clinicalTests" | "diagnosis">) => updateData((current) => ({
     ...current,
     teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, ...input } : patientCase) } : team),
@@ -231,7 +251,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     }));
   }, [session?.userId, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, addUser, changeUserRole, updateUserAccess, addShift, addSurgery, updateMedicalFile, addDiagnosticImaging, addPatientMessage, markNotificationRead, markAllNotificationsRead }), [addCase, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addShift, addSurgery, addUser, advanceReport, changeUserRole, data, hydrated, markAllNotificationsRead, markNotificationRead, session, signIn, signInWithGoogleDemo, signOut, updateMedicalFile, updateUserAccess]);
+  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, addUser, changeUserRole, updateUserAccess, addShift, addSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, markNotificationRead, markAllNotificationsRead }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeUserRole, data, hydrated, markAllNotificationsRead, markNotificationRead, session, signIn, signInWithGoogleDemo, signOut, updateCareTeam, updateMedicalFile, updateUserAccess]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }

@@ -34,6 +34,25 @@ export type Shift = {
   location: string;
 };
 
+export type WeeklyAssignment = {
+  id: string;
+  day: string;
+  clinician: string;
+  role: string;
+  team: string;
+  period: "صباحي" | "مسائي" | "ليلي";
+  location: string;
+};
+
+export type SchedulePdf = {
+  id: string;
+  section: "shifts" | "weekly";
+  fileName: string;
+  localUri: string;
+  uploadedBy: string;
+  uploadedAt: string;
+};
+
 export type Surgery = {
   id: string;
   time: string;
@@ -113,6 +132,8 @@ export type DepartmentData = {
   reports: MedicalReport[];
   shifts: Shift[];
   surgeries: Surgery[];
+  weeklyAssignments: WeeklyAssignment[];
+  scheduleDocuments: SchedulePdf[];
   teams: CareTeam[];
   notifications: TeamNotification[];
 };
@@ -161,6 +182,16 @@ export const createInitialDepartmentData = (): DepartmentData => ({
     { id: "s2", date: "اليوم", period: "مسائي", clinician: "د. سارة العتيبي", role: "طبيب مقيم", team: "فريق العمود الفقري", location: "الطوارئ" },
     { id: "s3", date: "اليوم", period: "ليلي", clinician: "د. عبدالله السالم", role: "استشاري مناوب", team: "فريق الأعصاب الوعائية", location: "التنويم" },
     { id: "s4", date: "غداً", period: "صباحي", clinician: "د. نورة الحربي", role: "استشاري مناوب", team: "فريق الأورام", location: "الدور الرابع" },
+  ],
+  weeklyAssignments: [
+    { id: "w1", day: "الأحد", clinician: "د. نورة الحربي", role: "استشاري مناوب", team: "فريق أورام الجهاز العصبي", period: "صباحي", location: "الدور الرابع" },
+    { id: "w2", day: "الاثنين", clinician: "د. سارة العتيبي", role: "طبيب مقيم", team: "فريق العمود الفقري", period: "صباحي", location: "العيادات" },
+    { id: "w3", day: "الثلاثاء", clinician: "أ. فهد القحطاني", role: "منسق طبي", team: "فريق أورام الجهاز العصبي", period: "مسائي", location: "التنويم" },
+    { id: "w4", day: "الأربعاء", clinician: "د. عبدالله السالم", role: "استشاري مناوب", team: "فريق الأعصاب الوعائية", period: "ليلي", location: "الطوارئ" },
+    { id: "w5", day: "الخميس", clinician: "د. نورة الحربي", role: "استشاري مناوب", team: "فريق أورام الجهاز العصبي", period: "صباحي", location: "الدور الرابع" },
+  ],
+  scheduleDocuments: [
+    { id: "pdf-1", section: "weekly", fileName: "weekly_allocation_august.pdf", localUri: "", uploadedBy: "د. عبدالله السالم", uploadedAt: "اليوم، 07:30" },
   ],
   surgeries: [
     { id: "o1", time: "08:00", patientCode: "NS-2048", procedure: "استئصال ورم سحائي", surgeon: "د. نورة الحربي", room: "غرفة عمليات 3", status: "مؤكد" },
