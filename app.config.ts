@@ -31,7 +31,7 @@ const env = {
   appName: "جراحة المخ والأعصاب",
   appSlug: "ksmc-neurosurgery",
   // The department-provided logo is bundled in assets/images/icon.png.
-  logoUrl: "",
+  logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/GExbOreWJhrVWQvl.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
