@@ -8,7 +8,7 @@ import { useAppLanguage } from "@/lib/language";
 
 export default function LoginScreen() {
   const { signIn, signInWithGoogleDemo } = useDepartment();
-  const { language, setLanguage, isRTL, t } = useAppLanguage();
+  const { language, setLanguage, isRTL, t, localize } = useAppLanguage();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -18,7 +18,7 @@ export default function LoginScreen() {
     const result = await signIn(username, password);
     setSubmitting(false);
     if (!result.ok) {
-      Alert.alert(t("accessDenied"), result.message ?? t("checkCredentials"));
+      Alert.alert(t("accessDenied"), result.message ? localize(result.message) : t("checkCredentials"));
       return;
     }
     router.replace("/(tabs)");

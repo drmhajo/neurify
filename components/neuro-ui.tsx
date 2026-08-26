@@ -24,7 +24,7 @@ export function AppCard({ children, style }: { children: ReactNode; style?: obje
 export function PrimaryButton({ label, onPress, icon = "add", tone = "navy", disabled = false }: { label: string; onPress: () => void; icon?: React.ComponentProps<typeof MaterialIcons>["name"]; tone?: "navy" | "teal" | "light"; disabled?: boolean }) {
   const { localize, isRTL } = useAppLanguage();
   const dark = tone !== "light";
-  return <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.primaryButton, tone === "teal" && styles.tealButton, tone === "light" && styles.lightButton, disabled && styles.disabledButton, pressed && !disabled && styles.pressed]}>
+  return <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.primaryButton, { flexDirection: isRTL ? "row-reverse" : "row" }, tone === "teal" && styles.tealButton, tone === "light" && styles.lightButton, disabled && styles.disabledButton, pressed && !disabled && styles.pressed]}>
     <MaterialIcons name={icon} size={18} color={dark ? "#FFFFFF" : palette.navy} />
     <Text style={[styles.primaryText, !dark && styles.lightButtonText, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(label)}</Text>
   </Pressable>;
