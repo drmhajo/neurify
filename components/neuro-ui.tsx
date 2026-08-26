@@ -1,0 +1,81 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { ReactNode } from "react";
+
+export const palette = {
+  navy: "#075985",
+  teal: "#0F766E",
+  canvas: "#F6FAFC",
+  card: "#FFFFFF",
+  ink: "#102A43",
+  muted: "#627D98",
+  line: "#D9E2EC",
+  urgent: "#B91C1C",
+  gold: "#B45309",
+  paleBlue: "#E6F4FB",
+  paleTeal: "#E8F5F2",
+};
+
+export function AppCard({ children, style }: { children: ReactNode; style?: object }) {
+  return <View style={[styles.card, style]}>{children}</View>;
+}
+
+export function PrimaryButton({ label, onPress, icon = "add", tone = "navy", disabled = false }: { label: string; onPress: () => void; icon?: React.ComponentProps<typeof MaterialIcons>["name"]; tone?: "navy" | "teal" | "light"; disabled?: boolean }) {
+  const dark = tone !== "light";
+  return <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.primaryButton, tone === "teal" && styles.tealButton, tone === "light" && styles.lightButton, disabled && styles.disabledButton, pressed && !disabled && styles.pressed]}>
+    <MaterialIcons name={icon} size={18} color={dark ? "#FFFFFF" : palette.navy} />
+    <Text style={[styles.primaryText, !dark && styles.lightButtonText]}>{label}</Text>
+  </Pressable>;
+}
+
+export function IconAction({ icon, onPress, label }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; onPress: () => void; label?: string }) {
+  return <Pressable onPress={onPress} accessibilityLabel={label} style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}><MaterialIcons name={icon} size={22} color={palette.navy} /></Pressable>;
+}
+
+export function SectionTitle({ title, action, onPress }: { title: string; action?: string; onPress?: () => void }) {
+  return <View style={styles.sectionTitle}><Text style={styles.sectionHeading}>{title}</Text>{action && onPress ? <Pressable onPress={onPress}><Text style={styles.sectionAction}>{action}</Text></Pressable> : null}</View>;
+}
+
+export function StatusPill({ label, tone = "blue" }: { label: string; tone?: "blue" | "teal" | "red" | "gold" | "grey" }) {
+  const toneStyle = tone === "teal" ? styles.pillTeal : tone === "red" ? styles.pillRed : tone === "gold" ? styles.pillGold : tone === "grey" ? styles.pillGrey : styles.pillBlue;
+  const textStyle = tone === "teal" ? styles.pillTealText : tone === "red" ? styles.pillRedText : tone === "gold" ? styles.pillGoldText : tone === "grey" ? styles.pillGreyText : styles.pillBlueText;
+  return <View style={[styles.pill, toneStyle]}><Text style={[styles.pillText, textStyle]}>{label}</Text></View>;
+}
+
+export function MetricCard({ icon, value, label, tone = "blue" }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; value: number | string; label: string; tone?: "blue" | "teal" | "gold" | "red" }) {
+  const background = tone === "teal" ? palette.paleTeal : tone === "gold" ? "#FEF3C7" : tone === "red" ? "#FEE2E2" : palette.paleBlue;
+  const color = tone === "teal" ? palette.teal : tone === "gold" ? palette.gold : tone === "red" ? palette.urgent : palette.navy;
+  return <View style={[styles.metricCard, { backgroundColor: background }]}><View style={[styles.metricIcon, { backgroundColor: "#FFFFFFAA" }]}><MaterialIcons name={icon} size={20} color={color} /></View><View><Text style={[styles.metricValue, { color }]}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></View></View>;
+}
+
+export function EmptyState({ icon, text }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; text: string }) {
+  return <View style={styles.empty}><MaterialIcons name={icon} size={28} color={palette.muted} /><Text style={styles.emptyText}>{text}</Text></View>;
+}
+
+const styles = StyleSheet.create({
+  card: { backgroundColor: palette.card, borderWidth: 1, borderColor: palette.line, borderRadius: 20, padding: 16, shadowColor: "#486581", shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 1 },
+  primaryButton: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: palette.navy, minHeight: 46, paddingHorizontal: 16, borderRadius: 14 },
+  tealButton: { backgroundColor: palette.teal },
+  lightButton: { backgroundColor: palette.paleBlue, borderWidth: 1, borderColor: "#BFDBFE" },
+  disabledButton: { opacity: 0.5 },
+  pressed: { opacity: 0.84, transform: [{ scale: 0.98 }] },
+  primaryText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800", writingDirection: "rtl" },
+  lightButtonText: { color: palette.navy },
+  iconAction: { height: 40, width: 40, borderRadius: 20, backgroundColor: "#FFFFFF", borderColor: palette.line, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  sectionTitle: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "space-between", marginTop: 24, marginBottom: 12 },
+  sectionHeading: { color: palette.ink, fontSize: 18, fontWeight: "800", writingDirection: "rtl" },
+  sectionAction: { color: palette.navy, fontSize: 13, fontWeight: "700", writingDirection: "rtl" },
+  pill: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+  pillText: { fontSize: 11, fontWeight: "800", writingDirection: "rtl" },
+  pillBlue: { backgroundColor: palette.paleBlue }, pillBlueText: { color: palette.navy },
+  pillTeal: { backgroundColor: palette.paleTeal }, pillTealText: { color: palette.teal },
+  pillRed: { backgroundColor: "#FEE2E2" }, pillRedText: { color: palette.urgent },
+  pillGold: { backgroundColor: "#FEF3C7" }, pillGoldText: { color: palette.gold },
+  pillGrey: { backgroundColor: "#E9EFF5" }, pillGreyText: { color: palette.muted },
+  metricCard: { flexDirection: "row-reverse", gap: 10, alignItems: "center", flex: 1, borderRadius: 18, padding: 12, minHeight: 82 },
+  metricIcon: { height: 36, width: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  metricValue: { fontSize: 22, fontWeight: "900", textAlign: "right" },
+  metricLabel: { color: palette.muted, fontSize: 11, fontWeight: "600", writingDirection: "rtl", marginTop: 1 },
+  empty: { alignItems: "center", paddingVertical: 28, gap: 8 },
+  emptyText: { color: palette.muted, fontSize: 13, writingDirection: "rtl", textAlign: "center" },
+});

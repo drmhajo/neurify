@@ -1,0 +1,18 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import { AppCard, palette, StatusPill } from "@/components/neuro-ui";
+import { useDepartment } from "@/lib/department-store";
+import type { CareTeam } from "@/lib/department-model";
+
+export default function TeamsScreen() {
+  const { data, session } = useDepartment();
+  const renderItem = ({ item }: { item: CareTeam }) => {
+    const hasAccess = session?.role === "admin" || item.memberIds.includes(session?.userId ?? "");
+    const admitted = item.cases.filter((medicalCase) => medicalCase.status === "منوّم").length;
+    return <Pressable onPress={() => router.push({ pathname: "/team/[id]", params: { id: item.id } })} style={({ pressed }) => pressed && { opacity: 0.82 }}><AppCard style={styles.card}><View style={styles.cardHead}><View style={styles.ident}><View style={[styles.teamMark, { backgroundColor: item.color }]}><Text style={styles.teamMarkText}>{item.shortName}</Text></View><View><Text style={styles.teamName}>{item.name}</Text><Text style={styles.teamLead}>قائد الفريق: {item.lead}</Text></View></View><MaterialIcons name="chevron-left" size={24} color={palette.muted} /></View><View style={styles.stats}><View style={styles.stat}><MaterialIcons name="hotel" size={16} color={palette.teal} /><Text style={styles.statText}>{admitted} حالات منوّمة</Text></View><View style={styles.stat}><MaterialIcons name="forum" size={16} color={palette.navy} /><Text style={styles.statText}>{item.consultations.length} استشارات</Text></View></View><View style={styles.access}><StatusPill label={hasAccess ? "يمكنك المتابعة" : "عرض فقط"} tone={hasAccess ? "teal" : "grey"} /><Text style={styles.memberCount}>{item.memberIds.length} أعضاء</Text></View></AppCard></Pressable>;
+  };
+  return <View style={styles.page}><View style={styles.header}><Text style={styles.title}>الفرق العلاجية</Text><Text style={styles.subtitle}>غرف متابعة الحالات والاستشارات لكل فريق</Text></View><FlatList data={data.teams} renderItem={renderItem} keyExtractor={(item) => item.id} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false} /></View>;
+}
+
+const styles = StyleSheet.create({ page: { flex: 1, backgroundColor: palette.canvas, paddingHorizontal: 18 }, header: { paddingTop: 24, paddingBottom: 16 }, title: { color: palette.ink, fontSize: 24, fontWeight: "900", textAlign: "right", writingDirection: "rtl" }, subtitle: { color: palette.muted, fontSize: 13, marginTop: 5, textAlign: "right", writingDirection: "rtl" }, list: { gap: 11, paddingBottom: 25 }, card: { padding: 15 }, cardHead: { flexDirection: "row-reverse", justifyContent: "space-between", alignItems: "center" }, ident: { flexDirection: "row-reverse", gap: 11, alignItems: "center", flex: 1 }, teamMark: { height: 46, width: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" }, teamMarkText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900", writingDirection: "rtl" }, teamName: { color: palette.ink, fontSize: 15, fontWeight: "900", writingDirection: "rtl", textAlign: "right" }, teamLead: { color: palette.muted, fontSize: 11, marginTop: 4, writingDirection: "rtl", textAlign: "right" }, stats: { flexDirection: "row-reverse", gap: 16, borderTopWidth: 1, borderTopColor: palette.line, marginTop: 14, paddingTop: 12 }, stat: { flexDirection: "row-reverse", alignItems: "center", gap: 5 }, statText: { color: palette.muted, fontSize: 11, writingDirection: "rtl" }, access: { marginTop: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, memberCount: { color: palette.muted, fontSize: 11, writingDirection: "rtl" } });

@@ -1,0 +1,41 @@
+Config loaded for non-project session.
+Config file: /home/ubuntu/.manus/config/config.json
+Baseline file: /home/ubuntu/.manus/config/baseline/config.json
+
+Search results for "google" in config.json:
+900:    {
+901:      "uid": "ec8a5b76-3b03-41a8-b8ad-fc34feb707ef",
+902:      "name": "Google Ads",
+903:      "brief": "Query and analyze your Google Ads accounts, campaigns, and performance metrics",
+904:      "enabled": false,
+905:      "tokenReplacementEnabled": true
+906:    }
+907:    {
+908:      "uid": "dd5abf31-7ad3-4c0b-9b9a-f0a576645baf",
+909:      "name": "Google Calendar",
+910:      "brief": "Understand your schedule, manage events, and optimize your time effectively",
+911:      "enabled": false,
+912:      "tokenReplacementEnabled": true
+913:    }
+914:    {
+915:      "uid": "4157dedf-1326-4be8-9295-51416c7dba62",
+916:      "name": "Google Gemini",
+917:      "brief": "Process multimodal content including text, images, and code seamlessly",
+918:      "enabled": false,
+919:      "tokenReplacementEnabled": true
+920:    }
+921:    {
+922:      "uid": "f0fe31ba-4280-4df6-84cc-5cd2a6012e25",
+923:      "name": "Google Maps",
+924:      "brief": "Ground AI applications with trusted geospatial data from Google Maps",
+925:      "enabled": false,
+926:      "tokenReplacementEnabled": true
+927:    }
+928:    {
+929:      "uid": "f8900a57-4bd7-46cc-83a3-5ebd2420a817",
+930:      "name": "Google Workspace",
+931:      "brief": "Access your files, search instantly, and let Manus help you manage documents intelligently",
+932:      "enabled": false,
+933:      "tokenReplacementEnabled": true
+934:    }
+Next step: edit config.json and run `manus-config config save`
