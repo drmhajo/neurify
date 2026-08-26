@@ -72,7 +72,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
         const [storedData, storedSession] = await Promise.all([AsyncStorage.getItem(DATA_KEY), AsyncStorage.getItem(SESSION_KEY)]);
         if (storedData) {
           const parsedData = JSON.parse(storedData) as DepartmentData;
-          setData({ ...parsedData, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], weeklyAssignments: parsedData.weeklyAssignments ?? [], scheduleDocuments: (parsedData.scheduleDocuments ?? []).map((document) => ({ ...document, mimeType: document.mimeType ?? (document.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/*") })), surgeries: parsedData.surgeries.map((surgery) => ({ ...surgery, date: surgery.date ?? "اليوم", notes: surgery.notes ?? "" })), teams: parsedData.teams.map((team) => ({ ...team, dischargedCases: team.dischargedCases ?? [], cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
+          setData({ ...parsedData, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], weeklyAssignments: parsedData.weeklyAssignments ?? [], scheduleDocuments: (parsedData.scheduleDocuments ?? []).map((document) => ({ ...document, mimeType: document.mimeType ?? (document.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/*") })), surgeries: parsedData.surgeries.map((surgery) => ({ ...surgery, date: surgery.date ?? "اليوم", notes: surgery.notes ?? "", patientLink: surgery.patientLink ?? parsedData.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.code === surgery.patientCode ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined })), teams: parsedData.teams.map((team) => ({ ...team, dischargedCases: team.dischargedCases ?? [], cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
         }
         if (storedSession) setSession(JSON.parse(storedSession) as Session);
       } finally {
@@ -212,15 +212,15 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     shifts: [{ id: `s-${Date.now()}`, date: "اليوم", period: input.period, clinician: input.clinician.trim(), role: "مناوب", team: input.team.trim(), location: "يُحدد لاحقاً" }, ...current.shifts],
   })), [updateData]);
 
-  const addSurgery = useCallback((input: Omit<Surgery, "id">) => updateData((current) => ({
-    ...current,
-    surgeries: [{ ...input, id: `o-${Date.now()}`, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim() }, ...current.surgeries],
-  })), [updateData]);
+  const addSurgery = useCallback((input: Omit<Surgery, "id">) => updateData((current) => {
+    const matchedPatient = current.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.code === input.patientCode.trim() ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined;
+    return { ...current, surgeries: [{ ...input, id: `o-${Date.now()}`, patientLink: input.patientLink ?? matchedPatient, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim() }, ...current.surgeries] };
+  }), [updateData]);
 
-  const updateSurgery = useCallback((surgeryId: string, input: Omit<Surgery, "id">) => updateData((current) => ({
-    ...current,
-    surgeries: current.surgeries.map((surgery) => surgery.id === surgeryId ? { ...input, id: surgeryId, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim() } : surgery),
-  })), [updateData]);
+  const updateSurgery = useCallback((surgeryId: string, input: Omit<Surgery, "id">) => updateData((current) => {
+    const matchedPatient = current.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.code === input.patientCode.trim() ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined;
+    return { ...current, surgeries: current.surgeries.map((surgery) => surgery.id === surgeryId ? { ...input, id: surgeryId, patientLink: input.patientLink ?? matchedPatient, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim() } : surgery) };
+  }), [updateData]);
 
   const addSchedulePdf = useCallback((input: Omit<SchedulePdf, "id" | "uploadedBy" | "uploadedAt">) => updateData((current) => ({
     ...current,
