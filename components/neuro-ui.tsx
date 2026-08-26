@@ -4,17 +4,17 @@ import type { ReactNode } from "react";
 import { useAppLanguage } from "@/lib/language";
 
 export const palette = {
-  navy: "#2B7180",
-  teal: "#347E79",
-  canvas: "#F8FAF9",
+  navy: "#075B73",
+  teal: "#16756E",
+  canvas: "#F5F9FA",
   card: "#FFFFFF",
-  ink: "#153C45",
-  muted: "#5A757C",
-  line: "#D7E1DF",
-  urgent: "#B91C1C",
-  gold: "#D1A13A",
-  paleBlue: "#E7F2F3",
-  paleTeal: "#EDF7F4",
+  ink: "#123B47",
+  muted: "#55727A",
+  line: "#D3E2E4",
+  urgent: "#B42318",
+  gold: "#B87920",
+  paleBlue: "#E5F4F7",
+  paleTeal: "#E7F7F2",
 };
 
 export function AppCard({ children, style }: { children: ReactNode; style?: object }) {

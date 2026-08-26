@@ -21,6 +21,8 @@ describe("نموذج بيانات قسم جراحة المخ والأعصاب", 
     expect(data.weeklyAssignments[0].day).toBe("الأحد");
     expect(data.scheduleDocuments[0].section).toBe("weekly");
     expect(data.scheduleDocuments[0].mimeType).toBe("application/pdf");
+    expect(data.surgeries[0]).toMatchObject({ date: expect.any(String), notes: expect.any(String), status: "مؤكد" });
+    expect(data.surgeries.every((surgery) => surgery.date.length > 0 && surgery.room.length > 0)).toBe(true);
     expect(data.teams.every((team) => Array.isArray(team.dischargedCases))).toBe(true);
     expect(data.teams.flatMap((team) => team.dischargedCases)).toHaveLength(0);
   });

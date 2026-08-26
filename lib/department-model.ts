@@ -59,11 +59,13 @@ export type SchedulePdf = {
 
 export type Surgery = {
   id: string;
+  date: string;
   time: string;
   patientCode: string;
   procedure: string;
   surgeon: string;
   room: string;
+  notes: string;
   status: "مؤكد" | "قيد التحضير" | "بانتظار مراجعة";
 };
 
@@ -226,9 +228,9 @@ export const createInitialDepartmentData = (): DepartmentData => ({
     { id: "pdf-1", section: "weekly", fileName: "weekly_allocation_august.pdf", mimeType: "application/pdf", localUri: "", uploadedBy: "د. عبدالله السالم", uploadedAt: "اليوم، 07:30" },
   ],
   surgeries: [
-    { id: "o1", time: "08:00", patientCode: "NS-2048", procedure: "استئصال ورم سحائي", surgeon: "د. نورة الحربي", room: "غرفة عمليات 3", status: "مؤكد" },
-    { id: "o2", time: "11:30", patientCode: "NS-1985", procedure: "تثبيت فقرات قطنية", surgeon: "د. عبدالله السالم", room: "غرفة عمليات 2", status: "قيد التحضير" },
-    { id: "o3", time: "14:00", patientCode: "NS-2011", procedure: "تحويلة بطينية صفاقية", surgeon: "د. سارة العتيبي", room: "غرفة عمليات 1", status: "بانتظار مراجعة" },
+    { id: "o1", date: "26 أغسطس 2026", time: "08:00", patientCode: "NS-2048", procedure: "استئصال ورم سحائي", surgeon: "د. نورة الحربي", room: "غرفة عمليات 3", notes: "تمت مراجعة صور الرنين وخطة التخدير.", status: "مؤكد" },
+    { id: "o2", date: "26 أغسطس 2026", time: "11:30", patientCode: "NS-1985", procedure: "تثبيت فقرات قطنية", surgeon: "د. عبدالله السالم", room: "غرفة عمليات 2", notes: "بانتظار إتمام تحضيرات غرفة العمليات.", status: "قيد التحضير" },
+    { id: "o3", date: "26 أغسطس 2026", time: "14:00", patientCode: "NS-2011", procedure: "تحويلة بطينية صفاقية", surgeon: "د. سارة العتيبي", room: "غرفة عمليات 1", notes: "تتطلب مراجعة الفريق قبل تأكيد الموعد.", status: "بانتظار مراجعة" },
   ],
   teams: [
     {
