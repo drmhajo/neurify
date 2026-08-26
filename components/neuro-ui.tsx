@@ -32,6 +32,10 @@ export function IconAction({ icon, onPress, label }: { icon: React.ComponentProp
   return <Pressable onPress={onPress} accessibilityLabel={label} style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}><MaterialIcons name={icon} size={22} color={palette.navy} /></Pressable>;
 }
 
+export function NotificationBell({ count, onPress }: { count: number; onPress: () => void }) {
+  return <View style={styles.bellWrap}><Pressable onPress={onPress} accessibilityLabel="الإشعارات" style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}><MaterialIcons name="notifications-none" size={22} color={palette.navy} /></Pressable>{count > 0 ? <View style={styles.badge}><Text style={styles.badgeText}>{count > 9 ? "9+" : count}</Text></View> : null}</View>;
+}
+
 export function SectionTitle({ title, action, onPress }: { title: string; action?: string; onPress?: () => void }) {
   return <View style={styles.sectionTitle}><Text style={styles.sectionHeading}>{title}</Text>{action && onPress ? <Pressable onPress={onPress}><Text style={styles.sectionAction}>{action}</Text></Pressable> : null}</View>;
 }
@@ -62,6 +66,9 @@ const styles = StyleSheet.create({
   primaryText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800", writingDirection: "rtl" },
   lightButtonText: { color: palette.navy },
   iconAction: { height: 40, width: 40, borderRadius: 20, backgroundColor: "#FFFFFF", borderColor: palette.line, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  bellWrap: { position: "relative" },
+  badge: { position: "absolute", top: -4, right: -4, minWidth: 18, height: 18, paddingHorizontal: 3, borderRadius: 9, backgroundColor: palette.urgent, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: palette.canvas },
+  badgeText: { color: "#FFFFFF", fontSize: 9, fontWeight: "900" },
   sectionTitle: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "space-between", marginTop: 24, marginBottom: 12 },
   sectionHeading: { color: palette.ink, fontSize: 18, fontWeight: "800", writingDirection: "rtl" },
   sectionAction: { color: palette.navy, fontSize: 13, fontWeight: "700", writingDirection: "rtl" },

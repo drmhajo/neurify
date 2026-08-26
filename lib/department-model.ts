@@ -57,6 +57,18 @@ export type Consultation = {
   time: string;
 };
 
+export type TeamNotification = {
+  id: string;
+  type: "consultation" | "admitted_case";
+  teamId: string;
+  teamName: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  recipientIds: string[];
+  readByUserIds: string[];
+};
+
 export type CareTeam = {
   id: string;
   name: string;
@@ -74,6 +86,7 @@ export type DepartmentData = {
   shifts: Shift[];
   surgeries: Surgery[];
   teams: CareTeam[];
+  notifications: TeamNotification[];
 };
 
 export const roleLabels: Record<UserRole, string> = {
@@ -134,6 +147,7 @@ export const createInitialDepartmentData = (): DepartmentData => ({
       consultations: [],
     },
   ],
+  notifications: [],
 });
 
 export function getDashboardSummary(data: DepartmentData) {
@@ -142,6 +156,29 @@ export function getDashboardSummary(data: DepartmentData) {
     surgeriesToday: data.surgeries.length,
     admittedCases: data.teams.reduce((total, team) => total + team.cases.filter((item) => item.status === "منوّم").length, 0),
     activeTeams: data.teams.length,
+  };
+}
+
+export function createTeamNotification(input: {
+  id: string;
+  type: TeamNotification["type"];
+  team: Pick<CareTeam, "id" | "name" | "memberIds">;
+  actorName?: string;
+  consultationTitle?: string;
+}): TeamNotification {
+  const isConsultation = input.type === "consultation";
+  return {
+    id: input.id,
+    type: input.type,
+    teamId: input.team.id,
+    teamName: input.team.name,
+    title: isConsultation ? "استشارة جديدة في غرفة الفريق" : "حالة منوّمة جديدة في غرفة الفريق",
+    message: isConsultation
+      ? `أضاف ${input.actorName ?? "عضو الفريق"} استشارة جديدة: ${input.consultationTitle ?? "بدون عنوان"}`
+      : `تمت إضافة حالة منوّمة جديدة إلى ${input.team.name}.`,
+    createdAt: "الآن",
+    recipientIds: input.team.memberIds,
+    readByUserIds: [],
   };
 }
 

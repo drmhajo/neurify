@@ -1,7 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { AppCard, IconAction, MetricCard, palette, PrimaryButton, SectionTitle, StatusPill } from "@/components/neuro-ui";
+import { AppCard, MetricCard, NotificationBell, palette, PrimaryButton, SectionTitle, StatusPill } from "@/components/neuro-ui";
 import { useDepartment } from "@/lib/department-store";
 import { getDashboardSummary } from "@/lib/department-model";
 
@@ -10,9 +10,10 @@ export default function HomeScreen() {
   const summary = getDashboardSummary(data);
   const firstReport = data.reports.find((item) => item.status !== "مكتمل") ?? data.reports[0];
   const firstSurgery = data.surgeries[0];
+  const unreadNotifications = (data.notifications ?? []).filter((item) => item.recipientIds.includes(session?.userId ?? "") && !item.readByUserIds.includes(session?.userId ?? "")).length;
 
   return <ScrollView style={styles.page} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-    <View style={styles.header}><View><Text style={styles.hello}>صباح الخير،</Text><Text style={styles.name}>{session?.name}</Text><Text style={styles.date}>الأربعاء، 26 أغسطس</Text></View><IconAction icon="account-circle" label="حسابي" onPress={() => router.push("/profile")} /></View>
+    <View style={styles.header}><View><Text style={styles.hello}>صباح الخير،</Text><Text style={styles.name}>{session?.name}</Text><Text style={styles.date}>الأربعاء، 26 أغسطس</Text></View><NotificationBell count={unreadNotifications} onPress={() => router.push("/notifications")} /></View>
     <AppCard style={styles.banner}><View style={styles.bannerIcon}><MaterialIcons name="medical-services" color="#FFFFFF" size={23} /></View><View style={styles.bannerCopy}><Text style={styles.bannerTitle}>لوحة متابعة القسم</Text><Text style={styles.bannerText}>اطلع على العمليات والمناوبات والطلبات ذات الأولوية اليوم.</Text></View></AppCard>
     <View style={styles.metricsRow}><MetricCard icon="description" value={summary.openReports} label="طلبات مفتوحة" tone="red" /><MetricCard icon="local-hospital" value={summary.surgeriesToday} label="عمليات اليوم" tone="blue" /></View>
     <View style={styles.metricsRow}><MetricCard icon="hotel" value={summary.admittedCases} label="حالات منوّمة" tone="teal" /><MetricCard icon="groups" value={summary.activeTeams} label="فرق علاجية" tone="gold" /></View>

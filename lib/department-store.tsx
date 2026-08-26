@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   createInitialDepartmentData,
+  createTeamNotification,
   type DepartmentData,
   type DepartmentUser,
   type ReportPriority,
@@ -29,6 +30,8 @@ type DepartmentStore = {
   changeUserRole: (userId: string, role: UserRole) => void;
   addShift: (input: { clinician: string; period: "صباحي" | "مسائي" | "ليلي"; team: string }) => void;
   addSurgery: (input: { patientCode: string; procedure: string; surgeon: string }) => void;
+  markNotificationRead: (notificationId: string) => void;
+  markAllNotificationsRead: () => void;
 };
 
 const DATA_KEY = "ksmc-neuro.demo-data.v1";
@@ -44,7 +47,10 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     const hydrate = async () => {
       try {
         const [storedData, storedSession] = await Promise.all([AsyncStorage.getItem(DATA_KEY), AsyncStorage.getItem(SESSION_KEY)]);
-        if (storedData) setData(JSON.parse(storedData) as DepartmentData);
+        if (storedData) {
+          const parsedData = JSON.parse(storedData) as DepartmentData;
+          setData({ ...parsedData, notifications: parsedData.notifications ?? [] });
+        }
         if (storedSession) setSession(JSON.parse(storedSession) as Session);
       } finally {
         setHydrated(true);
@@ -105,21 +111,33 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     }, ...current.reports],
   })), [session?.name, updateData]);
 
-  const addConsultation = useCallback((teamId: string, input: { title: string; subject: string }) => updateData((current) => ({
-    ...current,
-    teams: current.teams.map((team) => team.id === teamId ? {
-      ...team,
-      consultations: [{ id: `q-${Date.now()}`, title: input.title.trim(), subject: input.subject.trim(), createdBy: session?.name ?? "عضو الفريق", time: "الآن" }, ...team.consultations],
-    } : team),
-  })), [session?.name, updateData]);
+  const addConsultation = useCallback((teamId: string, input: { title: string; subject: string }) => updateData((current) => {
+    const targetTeam = current.teams.find((team) => team.id === teamId);
+    if (!targetTeam) return current;
+    const now = Date.now();
+    return {
+      ...current,
+      teams: current.teams.map((team) => team.id === teamId ? {
+        ...team,
+        consultations: [{ id: `q-${now}`, title: input.title.trim(), subject: input.subject.trim(), createdBy: session?.name ?? "عضو الفريق", time: "الآن" }, ...team.consultations],
+      } : team),
+      notifications: [createTeamNotification({ id: `n-${now}`, type: "consultation", team: targetTeam, actorName: session?.name, consultationTitle: input.title.trim() }), ...(current.notifications ?? [])],
+    };
+  }), [session?.name, updateData]);
 
-  const addCase = useCallback((teamId: string, input: { code: string; diagnosis: string }) => updateData((current) => ({
-    ...current,
-    teams: current.teams.map((team) => team.id === teamId ? {
-      ...team,
-      cases: [{ id: `c-${Date.now()}`, code: input.code.trim(), diagnosis: input.diagnosis.trim(), admittedSince: "الآن", status: "منوّم" }, ...team.cases],
-    } : team),
-  })), [updateData]);
+  const addCase = useCallback((teamId: string, input: { code: string; diagnosis: string }) => updateData((current) => {
+    const targetTeam = current.teams.find((team) => team.id === teamId);
+    if (!targetTeam) return current;
+    const now = Date.now();
+    return {
+      ...current,
+      teams: current.teams.map((team) => team.id === teamId ? {
+        ...team,
+        cases: [{ id: `c-${now}`, code: input.code.trim(), diagnosis: input.diagnosis.trim(), admittedSince: "الآن", status: "منوّم" }, ...team.cases],
+      } : team),
+      notifications: [createTeamNotification({ id: `n-${now}`, type: "admitted_case", team: targetTeam }), ...(current.notifications ?? [])],
+    };
+  }), [updateData]);
 
   const addUser = useCallback((input: { name: string; role: UserRole; teamId: string }) => updateData((current) => {
     const id = `u-${Date.now()}`;
@@ -146,7 +164,29 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     surgeries: [{ id: `o-${Date.now()}`, time: "يُحدد", patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: "يُحدد", status: "بانتظار مراجعة" }, ...current.surgeries],
   })), [updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, addUser, changeUserRole, addShift, addSurgery }), [addCase, addConsultation, addReport, addShift, addSurgery, addUser, advanceReport, changeUserRole, data, hydrated, session, signIn, signInWithGoogleDemo, signOut]);
+  const markNotificationRead = useCallback((notificationId: string) => {
+    const currentUserId = session?.userId;
+    if (!currentUserId) return;
+    updateData((current) => ({
+      ...current,
+      notifications: (current.notifications ?? []).map((item) => item.id === notificationId && !item.readByUserIds.includes(currentUserId)
+        ? { ...item, readByUserIds: [...item.readByUserIds, currentUserId] }
+        : item),
+    }));
+  }, [session?.userId, updateData]);
+
+  const markAllNotificationsRead = useCallback(() => {
+    const currentUserId = session?.userId;
+    if (!currentUserId) return;
+    updateData((current) => ({
+      ...current,
+      notifications: (current.notifications ?? []).map((item) => item.recipientIds.includes(currentUserId) && !item.readByUserIds.includes(currentUserId)
+        ? { ...item, readByUserIds: [...item.readByUserIds, currentUserId] }
+        : item),
+    }));
+  }, [session?.userId, updateData]);
+
+  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, addUser, changeUserRole, addShift, addSurgery, markNotificationRead, markAllNotificationsRead }), [addCase, addConsultation, addReport, addShift, addSurgery, addUser, advanceReport, changeUserRole, data, hydrated, markAllNotificationsRead, markNotificationRead, session, signIn, signInWithGoogleDemo, signOut]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }
