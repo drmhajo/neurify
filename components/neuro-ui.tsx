@@ -1,6 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ReactNode } from "react";
+import { useAppLanguage } from "@/lib/language";
 
 export const palette = {
   navy: "#075985",
@@ -21,39 +22,46 @@ export function AppCard({ children, style }: { children: ReactNode; style?: obje
 }
 
 export function PrimaryButton({ label, onPress, icon = "add", tone = "navy", disabled = false }: { label: string; onPress: () => void; icon?: React.ComponentProps<typeof MaterialIcons>["name"]; tone?: "navy" | "teal" | "light"; disabled?: boolean }) {
+  const { localize, isRTL } = useAppLanguage();
   const dark = tone !== "light";
   return <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.primaryButton, tone === "teal" && styles.tealButton, tone === "light" && styles.lightButton, disabled && styles.disabledButton, pressed && !disabled && styles.pressed]}>
     <MaterialIcons name={icon} size={18} color={dark ? "#FFFFFF" : palette.navy} />
-    <Text style={[styles.primaryText, !dark && styles.lightButtonText]}>{label}</Text>
+    <Text style={[styles.primaryText, !dark && styles.lightButtonText, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(label)}</Text>
   </Pressable>;
 }
 
 export function IconAction({ icon, onPress, label }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; onPress: () => void; label?: string }) {
-  return <Pressable onPress={onPress} accessibilityLabel={label} style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}><MaterialIcons name={icon} size={22} color={palette.navy} /></Pressable>;
+  const { localize } = useAppLanguage();
+  return <Pressable onPress={onPress} accessibilityLabel={label ? localize(label) : undefined} style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}><MaterialIcons name={icon} size={22} color={palette.navy} /></Pressable>;
 }
 
 export function NotificationBell({ count, onPress }: { count: number; onPress: () => void }) {
-  return <View style={styles.bellWrap}><Pressable onPress={onPress} accessibilityLabel="الإشعارات" style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}><MaterialIcons name="notifications-none" size={22} color={palette.navy} /></Pressable>{count > 0 ? <View style={styles.badge}><Text style={styles.badgeText}>{count > 9 ? "9+" : count}</Text></View> : null}</View>;
+  const { localize } = useAppLanguage();
+  return <View style={styles.bellWrap}><Pressable onPress={onPress} accessibilityLabel={localize("الإشعارات")} style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}><MaterialIcons name="notifications-none" size={22} color={palette.navy} /></Pressable>{count > 0 ? <View style={styles.badge}><Text style={styles.badgeText}>{count > 9 ? "9+" : count}</Text></View> : null}</View>;
 }
 
 export function SectionTitle({ title, action, onPress }: { title: string; action?: string; onPress?: () => void }) {
-  return <View style={styles.sectionTitle}><Text style={styles.sectionHeading}>{title}</Text>{action && onPress ? <Pressable onPress={onPress}><Text style={styles.sectionAction}>{action}</Text></Pressable> : null}</View>;
+  const { localize, isRTL } = useAppLanguage();
+  return <View style={[styles.sectionTitle, { flexDirection: isRTL ? "row-reverse" : "row" }]}><Text style={[styles.sectionHeading, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(title)}</Text>{action && onPress ? <Pressable onPress={onPress}><Text style={[styles.sectionAction, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(action)}</Text></Pressable> : null}</View>;
 }
 
 export function StatusPill({ label, tone = "blue" }: { label: string; tone?: "blue" | "teal" | "red" | "gold" | "grey" }) {
+  const { localize, isRTL } = useAppLanguage();
   const toneStyle = tone === "teal" ? styles.pillTeal : tone === "red" ? styles.pillRed : tone === "gold" ? styles.pillGold : tone === "grey" ? styles.pillGrey : styles.pillBlue;
   const textStyle = tone === "teal" ? styles.pillTealText : tone === "red" ? styles.pillRedText : tone === "gold" ? styles.pillGoldText : tone === "grey" ? styles.pillGreyText : styles.pillBlueText;
-  return <View style={[styles.pill, toneStyle]}><Text style={[styles.pillText, textStyle]}>{label}</Text></View>;
+  return <View style={[styles.pill, toneStyle]}><Text style={[styles.pillText, textStyle, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(label)}</Text></View>;
 }
 
 export function MetricCard({ icon, value, label, tone = "blue" }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; value: number | string; label: string; tone?: "blue" | "teal" | "gold" | "red" }) {
+  const { localize, isRTL } = useAppLanguage();
   const background = tone === "teal" ? palette.paleTeal : tone === "gold" ? "#FEF3C7" : tone === "red" ? "#FEE2E2" : palette.paleBlue;
   const color = tone === "teal" ? palette.teal : tone === "gold" ? palette.gold : tone === "red" ? palette.urgent : palette.navy;
-  return <View style={[styles.metricCard, { backgroundColor: background }]}><View style={[styles.metricIcon, { backgroundColor: "#FFFFFFAA" }]}><MaterialIcons name={icon} size={20} color={color} /></View><View><Text style={[styles.metricValue, { color }]}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></View></View>;
+  return <View style={[styles.metricCard, { backgroundColor: background, flexDirection: isRTL ? "row-reverse" : "row" }]}><View style={[styles.metricIcon, { backgroundColor: "#FFFFFFAA" }]}><MaterialIcons name={icon} size={20} color={color} /></View><View><Text style={[styles.metricValue, { color }]}>{value}</Text><Text style={[styles.metricLabel, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(label)}</Text></View></View>;
 }
 
 export function EmptyState({ icon, text }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; text: string }) {
-  return <View style={styles.empty}><MaterialIcons name={icon} size={28} color={palette.muted} /><Text style={styles.emptyText}>{text}</Text></View>;
+  const { localize, isRTL } = useAppLanguage();
+  return <View style={styles.empty}><MaterialIcons name={icon} size={28} color={palette.muted} /><Text style={[styles.emptyText, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(text)}</Text></View>;
 }
 
 const styles = StyleSheet.create({
