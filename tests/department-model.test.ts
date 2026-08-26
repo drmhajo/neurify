@@ -20,6 +20,8 @@ describe("نموذج بيانات قسم جراحة المخ والأعصاب", 
     expect(data.weeklyAssignments).toHaveLength(5);
     expect(data.weeklyAssignments[0].day).toBe("الأحد");
     expect(data.scheduleDocuments[0].section).toBe("weekly");
+    expect(data.teams.every((team) => Array.isArray(team.dischargedCases))).toBe(true);
+    expect(data.teams.flatMap((team) => team.dischargedCases)).toHaveLength(0);
   });
 
   it("يتدرج طلب التقرير من جديد إلى قيد الإعداد ثم مكتمل", () => {

@@ -11,6 +11,9 @@ export type DepartmentUser = {
   active: boolean;
   jobTitle: string;
   permissions: PermissionKey[];
+  email?: string;
+  phone?: string;
+  lastPasswordChangeAt?: string;
 };
 
 export type MedicalReport = {
@@ -78,6 +81,24 @@ export type PatientCase = {
   messages: PatientMessage[];
 };
 
+export type DischargedPatient = PatientCase & {
+  dischargedAt: string;
+  dischargedBy: string;
+  dischargeReason: string;
+};
+
+export type ConsultationPatient = {
+  code: string;
+  fileNumber: string;
+  fullName: string;
+  age: number | null;
+  medicalHistory: string;
+  clinicalTests: string;
+  diagnosis: string;
+};
+
+export type ClinicalDisposition = "follow_up" | "admit" | "discharge";
+
 export type DiagnosticImaging = {
   id: string;
   studyName: string;
@@ -102,6 +123,9 @@ export type Consultation = {
   subject: string;
   createdBy: string;
   time: string;
+  patient?: ConsultationPatient;
+  disposition?: ClinicalDisposition;
+  convertedCaseId?: string;
 };
 
 export type TeamNotification = {
@@ -124,6 +148,7 @@ export type CareTeam = {
   lead: string;
   memberIds: string[];
   cases: PatientCase[];
+  dischargedCases: DischargedPatient[];
   consultations: Consultation[];
 };
 
@@ -205,6 +230,7 @@ export const createInitialDepartmentData = (): DepartmentData => ({
         { id: "c1", code: "NS-2048", fileNumber: "KSMC-007584", fullName: "مريض تجريبي (أ)", age: 53, medicalHistory: "صداع تدريجي خلال أربعة أشهر مع نوبات دوار متقطعة.", clinicalTests: "الفحص العصبي: قوة الأطراف محفوظة؛ لا يوجد عجز بؤري ظاهر.", diagnosis: "ورم سحائي أمامي", admittedSince: "منذ 3 أيام", status: "منوّم", imaging: [{ id: "i1", studyName: "رنين مغناطيسي للدماغ مع صبغة", modality: "MRI", date: "24 أغسطس 2026", fileName: "brain_mri_2408.pdf", mimeType: "application/pdf", localUri: "", addedBy: "د. نورة الحربي" }], messages: [{ id: "m1", text: "تمت مراجعة صور الرنين مع الفريق قبل العملية.", senderName: "د. نورة الحربي", sentAt: "اليوم، 08:10" }] },
         { id: "c2", code: "NS-1973", fileNumber: "KSMC-006973", fullName: "مريض تجريبي (ب)", age: 41, medicalHistory: "نوبات صداع مستمرة مع أعراض بصرية متقطعة.", clinicalTests: "الفحص السريري: يقظة تامة؛ فحص الحقول البصرية بحاجة إلى متابعة.", diagnosis: "ورم دبقي عالي الدرجة", admittedSince: "منذ 6 أيام", status: "متابعة", imaging: [], messages: [] },
       ],
+      dischargedCases: [],
       consultations: [
         { id: "q1", title: "تقييم قبل العملية", subject: "مراجعة خطة الجراحة والصور", createdBy: "د. نورة الحربي", time: "اليوم، 07:45" },
       ],
@@ -214,6 +240,7 @@ export const createInitialDepartmentData = (): DepartmentData => ({
       cases: [
         { id: "c3", code: "NS-1985", fileNumber: "KSMC-007112", fullName: "مريض تجريبي (ج)", age: 62, medicalHistory: "ألم قطني مزمن ممتد إلى الطرف السفلي الأيسر منذ عام.", clinicalTests: "اختبار رفع الساق إيجابي يساراً؛ القوة الحركية 4/5 في عضلات القدم اليسرى.", diagnosis: "تضيّق قطني متعدد المستويات", admittedSince: "منذ يومين", status: "منوّم", imaging: [{ id: "i2", studyName: "رنين مغناطيسي للعمود القطني", modality: "MRI", date: "25 أغسطس 2026", fileName: "lumbar_mri_2508.pdf", mimeType: "application/pdf", localUri: "", addedBy: "د. عبدالله السالم" }], messages: [{ id: "m2", text: "تم اعتماد خطة التثبيت الجراحي بعد اجتماع الفريق.", senderName: "د. عبدالله السالم", sentAt: "أمس، 16:30" }] },
       ],
+      dischargedCases: [],
       consultations: [
         { id: "q2", title: "استشارة علاج طبيعي", subject: "برنامج التأهيل بعد التثبيت", createdBy: "د. سارة العتيبي", time: "أمس، 15:10" },
       ],
@@ -223,6 +250,7 @@ export const createInitialDepartmentData = (): DepartmentData => ({
       cases: [
         { id: "c4", code: "NS-2011", fileNumber: "KSMC-008019", fullName: "مريض تجريبي (د)", age: 35, medicalHistory: "صداع حديث مع غثيان وقيء متكرر خلال أسبوعين.", clinicalTests: "الفحص السريري: استجابة بصرية وحركية مناسبة؛ يلزم رصد العلامات الحيوية.", diagnosis: "استسقاء دماغي", admittedSince: "منذ يوم", status: "منوّم", imaging: [], messages: [] },
       ],
+      dischargedCases: [],
       consultations: [],
     },
   ],
