@@ -1,5 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { AppCard, EmptyState, IconAction, palette, PrimaryButton, SectionTitle, StatusPill } from "@/components/neuro-ui";
@@ -11,13 +11,14 @@ type TeamSection = "consultations" | "inpatients" | "discharged";
 const blankForm = { title: "", subject: "", code: "", fileNumber: "", fullName: "", age: "", medicalHistory: "", clinicalTests: "", diagnosis: "", disposition: "admit" as ClinicalDisposition };
 
 export default function TeamDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, section: requestedSection } = useLocalSearchParams<{ id: string; section?: TeamSection }>();
   const { data, session, addConsultation } = useDepartment();
   const { language, isRTL, localize } = useAppLanguage();
   const team = data.teams.find((item) => item.id === id);
-  const [section, setSection] = useState<TeamSection>("consultations");
+  const [section, setSection] = useState<TeamSection>(requestedSection === "inpatients" || requestedSection === "discharged" || requestedSection === "consultations" ? requestedSection : "consultations");
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(blankForm);
+  useEffect(() => { if (requestedSection === "inpatients" || requestedSection === "discharged" || requestedSection === "consultations") setSection(requestedSection); }, [requestedSection]);
   if (!team) return <View style={styles.page}><View style={styles.notFound}><Text style={[styles.notFoundText, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{language === "en" ? "Team not found." : "لم يتم العثور على الفريق."}</Text><PrimaryButton label="العودة للفرق" icon="arrow-back" onPress={() => router.back()} /></View></View>;
   const canEdit = session?.role === "admin" || team.memberIds.includes(session?.userId ?? "");
   const inpatients = team.cases.filter((item) => item.status === "منوّم");

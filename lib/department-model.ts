@@ -103,6 +103,12 @@ export type ConsultationPatient = {
 
 export type ClinicalDisposition = "follow_up" | "admit" | "discharge";
 
+export function consultationDestination(disposition: ClinicalDisposition) {
+  if (disposition === "admit") return { section: "inpatients" as const, icon: "hotel" as const, color: "#B42318", arabicHint: "سيضاف المريض تلقائياً إلى قائمة المنومين للفريق المعالج.", englishHint: "The patient will be added automatically to the treating team's inpatient list." };
+  if (disposition === "discharge") return { section: "discharged" as const, icon: "archive" as const, color: "#0F766E", arabicHint: "ستنتقل الحالة تلقائياً إلى قائمة الخروج وأرشيف الفريق المعالج.", englishHint: "The case will be moved automatically to the treating team's discharged list and archive." };
+  return { section: "consultations" as const, icon: "forum" as const, color: "#075985", arabicHint: "ستبقى الحالة ضمن قائمة استشارات الفريق المعالج للمتابعة.", englishHint: "The case will stay in the treating team's consultation list for follow-up." };
+}
+
 export type DiagnosticImaging = {
   id: string;
   studyName: string;
