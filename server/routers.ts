@@ -3,7 +3,7 @@ import { z } from "zod";
 import * as db from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { isExpoPushToken, sendTeamPushNotifications } from "./push";
 
 export const appRouter = router({
@@ -35,6 +35,17 @@ export const appRouter = router({
       const result = await sendTeamPushNotifications({ tokens, teamId: input.teamId, type: input.type, title: input.title, body: input.body });
       if (result.invalidTokens.length) await db.deactivatePushTokens(result.invalidTokens);
       return { recipients: tokens.length, sent: result.sent };
+    }),
+  }),
+  backup: router({
+    validate: adminProcedure.input(z.object({ payload: z.string().min(40).max(8_000_000) })).mutation(({ input }) => {
+      try {
+        const backup = JSON.parse(input.payload) as { format?: unknown; version?: unknown; data?: Record<string, unknown> };
+        const collections = ["users", "reports", "shifts", "surgeries", "weeklyAssignments", "scheduleDocuments", "teams", "notifications"];
+        const valid = backup.format === "ksmc-neurosurgery-backup" && backup.version === 1 && collections.every((key) => Array.isArray(backup.data?.[key]));
+        if (!valid) return { valid: false as const, message: "Unsupported backup structure" };
+        return { valid: true as const, message: "Backup structure is valid" };
+      } catch { return { valid: false as const, message: "Backup JSON could not be parsed" }; }
     }),
   }),
 

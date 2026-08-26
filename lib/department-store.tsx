@@ -20,6 +20,7 @@ import {
   rolePermissionDefaults,
 } from "@/lib/department-model";
 import { dispatchTeamPush } from "@/lib/push-notifications";
+import type { DepartmentBackup } from "@/lib/department-backup";
 
 type Session = {
   userId: string;
@@ -55,6 +56,7 @@ type DepartmentStore = {
   changeOwnPassword: (currentPassword: string, newPassword: string) => { ok: boolean; message?: string };
   markNotificationRead: (notificationId: string) => void;
   markAllNotificationsRead: () => void;
+  restoreDepartmentBackup: (backup: DepartmentBackup) => boolean;
 };
 
 const DATA_KEY = "ksmc-neuro.demo-data.v1";
@@ -293,7 +295,13 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     }));
   }, [session?.userId, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, hydrated, markAllNotificationsRead, markNotificationRead, session, signIn, signInWithGoogleDemo, signOut, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
+  const restoreDepartmentBackup = useCallback((backup: DepartmentBackup) => {
+    if (session?.role !== "admin") return false;
+    updateData(() => backup.data);
+    return true;
+  }, [session?.role, updateData]);
+
+  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, hydrated, markAllNotificationsRead, markNotificationRead, restoreDepartmentBackup, session, signIn, signInWithGoogleDemo, signOut, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }
