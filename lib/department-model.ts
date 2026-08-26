@@ -1,4 +1,5 @@
 export type UserRole = "admin" | "consultant" | "coordinator" | "team_member";
+export type PermissionKey = "manage_users" | "manage_permissions" | "manage_teams" | "manage_schedules" | "manage_reports" | "view_all_patients" | "edit_medical_files" | "add_imaging" | "patient_chat" | "view_audit";
 export type ReportPriority = "عاجل" | "عادي" | "متابعة";
 export type ReportStatus = "جديد" | "قيد الإعداد" | "مكتمل";
 
@@ -8,6 +9,8 @@ export type DepartmentUser = {
   role: UserRole;
   teamIds: string[];
   active: boolean;
+  jobTitle: string;
+  permissions: PermissionKey[];
 };
 
 export type MedicalReport = {
@@ -121,12 +124,32 @@ export const roleLabels: Record<UserRole, string> = {
   team_member: "عضو فريق",
 };
 
+export const permissionLabels: Record<PermissionKey, string> = {
+  manage_users: "إدارة المستخدمين",
+  manage_permissions: "إدارة الصلاحيات",
+  manage_teams: "إدارة الفرق العلاجية",
+  manage_schedules: "إدارة الجداول",
+  manage_reports: "إدارة التقارير",
+  view_all_patients: "عرض جميع الملفات الطبية",
+  edit_medical_files: "تعديل الملفات الطبية",
+  add_imaging: "إضافة الأشعة التشخيصية",
+  patient_chat: "الدردشة الخاصة بالحالات",
+  view_audit: "عرض سجل التدقيق",
+};
+
+export const rolePermissionDefaults: Record<UserRole, PermissionKey[]> = {
+  admin: ["manage_users", "manage_permissions", "manage_teams", "manage_schedules", "manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat", "view_audit"],
+  consultant: ["manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat"],
+  coordinator: ["manage_schedules", "manage_reports", "view_all_patients", "patient_chat"],
+  team_member: ["edit_medical_files", "add_imaging", "patient_chat"],
+};
+
 export const createInitialDepartmentData = (): DepartmentData => ({
   users: [
-    { id: "u-admin", name: "د. عبدالله السالم", role: "admin", teamIds: ["t1", "t2", "t3"], active: true },
-    { id: "u-1", name: "د. نورة الحربي", role: "consultant", teamIds: ["t1"], active: true },
-    { id: "u-2", name: "أ. فهد القحطاني", role: "coordinator", teamIds: ["t1", "t2"], active: true },
-    { id: "u-3", name: "د. سارة العتيبي", role: "team_member", teamIds: ["t2"], active: true },
+    { id: "u-admin", name: "د. عبدالله السالم", role: "admin", jobTitle: "رئيس القسم", teamIds: ["t1", "t2", "t3"], active: true, permissions: rolePermissionDefaults.admin },
+    { id: "u-1", name: "د. نورة الحربي", role: "consultant", jobTitle: "استشاري جراحة مخ وأعصاب", teamIds: ["t1"], active: true, permissions: rolePermissionDefaults.consultant },
+    { id: "u-2", name: "أ. فهد القحطاني", role: "coordinator", jobTitle: "منسق طبي", teamIds: ["t1", "t2"], active: true, permissions: rolePermissionDefaults.coordinator },
+    { id: "u-3", name: "د. سارة العتيبي", role: "team_member", jobTitle: "طبيب مقيم", teamIds: ["t2"], active: true, permissions: rolePermissionDefaults.team_member },
   ],
   reports: [
     { id: "r1", patientCode: "NS-2048", title: "تقرير خروج طبي", priority: "عاجل", status: "جديد", requester: "قسم الطوارئ", createdAt: "اليوم، 08:20", dueAt: "اليوم، 13:00" },

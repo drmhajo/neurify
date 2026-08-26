@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createInitialDepartmentData, createTeamNotification, getDashboardSummary, getNextReportStatus } from "../lib/department-model";
+import { createInitialDepartmentData, createTeamNotification, getDashboardSummary, getNextReportStatus, rolePermissionDefaults } from "../lib/department-model";
 
 describe("نموذج بيانات قسم جراحة المخ والأعصاب", () => {
   it("يهيئ بيانات عرض متماسكة للوحة اليوم", () => {
@@ -15,6 +15,8 @@ describe("نموذج بيانات قسم جراحة المخ والأعصاب", 
     expect(data.teams[0].cases[0].imaging).toHaveLength(1);
     expect(data.teams[0].cases[0].clinicalTests).toContain("الفحص العصبي");
     expect(data.teams[0].cases[0].messages).toHaveLength(1);
+    expect(data.users[0].permissions).toEqual(rolePermissionDefaults.admin);
+    expect(data.users[1].jobTitle).toContain("استشاري");
   });
 
   it("يتدرج طلب التقرير من جديد إلى قيد الإعداد ثم مكتمل", () => {

@@ -8,8 +8,10 @@ import {
   type DiagnosticImaging,
   type PatientCase,
   type PatientMessage,
+  type PermissionKey,
   type ReportPriority,
   type UserRole,
+  rolePermissionDefaults,
 } from "@/lib/department-model";
 import { dispatchTeamPush } from "@/lib/push-notifications";
 
@@ -30,8 +32,9 @@ type DepartmentStore = {
   addReport: (input: { patientCode: string; title: string; priority: ReportPriority }) => void;
   addConsultation: (teamId: string, input: { title: string; subject: string }) => void;
   addCase: (teamId: string, input: { code: string; diagnosis: string }) => void;
-  addUser: (input: { name: string; role: UserRole; teamId: string }) => void;
+  addUser: (input: { name: string; role: UserRole; teamId: string; jobTitle?: string }) => void;
   changeUserRole: (userId: string, role: UserRole) => void;
+  updateUserAccess: (userId: string, input: { active: boolean; permissions: PermissionKey[]; teamIds: string[] }) => void;
   addShift: (input: { clinician: string; period: "صباحي" | "مسائي" | "ليلي"; team: string }) => void;
   addSurgery: (input: { patientCode: string; procedure: string; surgeon: string }) => void;
   updateMedicalFile: (teamId: string, caseId: string, input: Pick<PatientCase, "fullName" | "age" | "medicalHistory" | "clinicalTests" | "diagnosis">) => void;
@@ -56,7 +59,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
         const [storedData, storedSession] = await Promise.all([AsyncStorage.getItem(DATA_KEY), AsyncStorage.getItem(SESSION_KEY)]);
         if (storedData) {
           const parsedData = JSON.parse(storedData) as DepartmentData;
-          setData({ ...parsedData, notifications: parsedData.notifications ?? [], teams: parsedData.teams.map((team) => ({ ...team, cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
+          setData({ ...parsedData, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], teams: parsedData.teams.map((team) => ({ ...team, cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
         }
         if (storedSession) setSession(JSON.parse(storedSession) as Session);
       } finally {
@@ -148,9 +151,9 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     void dispatchTeamPush({ teamId, recipientIds: targetTeam.memberIds, type: "admitted_case" });
   }, [data.teams, updateData]);
 
-  const addUser = useCallback((input: { name: string; role: UserRole; teamId: string }) => updateData((current) => {
+  const addUser = useCallback((input: { name: string; role: UserRole; teamId: string; jobTitle?: string }) => updateData((current) => {
     const id = `u-${Date.now()}`;
-    const newUser: DepartmentUser = { id, name: input.name.trim(), role: input.role, teamIds: [input.teamId], active: true };
+    const newUser: DepartmentUser = { id, name: input.name.trim(), role: input.role, jobTitle: input.jobTitle?.trim() || "عضو القسم", teamIds: [input.teamId], active: true, permissions: rolePermissionDefaults[input.role] };
     return {
       ...current,
       users: [...current.users, newUser],
@@ -160,8 +163,23 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const changeUserRole = useCallback((userId: string, role: UserRole) => updateData((current) => ({
     ...current,
-    users: current.users.map((item) => item.id === userId ? { ...item, role } : item),
+    users: current.users.map((item) => item.id === userId ? { ...item, role, permissions: rolePermissionDefaults[role] } : item),
   })), [updateData]);
+
+  const updateUserAccess = useCallback((userId: string, input: { active: boolean; permissions: PermissionKey[]; teamIds: string[] }) => updateData((current) => {
+    const previousUser = current.users.find((user) => user.id === userId);
+    if (!previousUser) return current;
+    return {
+      ...current,
+      users: current.users.map((user) => user.id === userId ? { ...user, ...input } : user),
+      teams: current.teams.map((team) => ({
+        ...team,
+        memberIds: input.teamIds.includes(team.id)
+          ? team.memberIds.includes(userId) ? team.memberIds : [...team.memberIds, userId]
+          : team.memberIds.filter((memberId) => memberId !== userId),
+      })),
+    };
+  }), [updateData]);
 
   const addShift = useCallback((input: { clinician: string; period: "صباحي" | "مسائي" | "ليلي"; team: string }) => updateData((current) => ({
     ...current,
@@ -213,7 +231,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     }));
   }, [session?.userId, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, addUser, changeUserRole, addShift, addSurgery, updateMedicalFile, addDiagnosticImaging, addPatientMessage, markNotificationRead, markAllNotificationsRead }), [addCase, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addShift, addSurgery, addUser, advanceReport, changeUserRole, data, hydrated, markAllNotificationsRead, markNotificationRead, session, signIn, signInWithGoogleDemo, signOut, updateMedicalFile]);
+  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, addUser, changeUserRole, updateUserAccess, addShift, addSurgery, updateMedicalFile, addDiagnosticImaging, addPatientMessage, markNotificationRead, markAllNotificationsRead }), [addCase, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addShift, addSurgery, addUser, advanceReport, changeUserRole, data, hydrated, markAllNotificationsRead, markNotificationRead, session, signIn, signInWithGoogleDemo, signOut, updateMedicalFile, updateUserAccess]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }
