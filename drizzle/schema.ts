@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -24,5 +24,18 @@ export const users = mysqlTable("users", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+export const devicePushTokens = mysqlTable("devicePushTokens", {
+  id: int("id").autoincrement().primaryKey(),
+  staffId: varchar("staffId", { length: 64 }).notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  platform: varchar("platform", { length: 16 }).notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DevicePushToken = typeof devicePushTokens.$inferSelect;
+export type InsertDevicePushToken = typeof devicePushTokens.$inferInsert;
 
 // TODO: Add your tables here

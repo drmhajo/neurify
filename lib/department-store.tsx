@@ -8,6 +8,7 @@ import {
   type ReportPriority,
   type UserRole,
 } from "@/lib/department-model";
+import { dispatchTeamPush } from "@/lib/push-notifications";
 
 type Session = {
   userId: string;
@@ -111,33 +112,35 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     }, ...current.reports],
   })), [session?.name, updateData]);
 
-  const addConsultation = useCallback((teamId: string, input: { title: string; subject: string }) => updateData((current) => {
-    const targetTeam = current.teams.find((team) => team.id === teamId);
-    if (!targetTeam) return current;
+  const addConsultation = useCallback((teamId: string, input: { title: string; subject: string }) => {
+    const targetTeam = data.teams.find((team) => team.id === teamId);
+    if (!targetTeam) return;
     const now = Date.now();
-    return {
+    updateData((current) => ({
       ...current,
       teams: current.teams.map((team) => team.id === teamId ? {
         ...team,
         consultations: [{ id: `q-${now}`, title: input.title.trim(), subject: input.subject.trim(), createdBy: session?.name ?? "عضو الفريق", time: "الآن" }, ...team.consultations],
       } : team),
       notifications: [createTeamNotification({ id: `n-${now}`, type: "consultation", team: targetTeam, actorName: session?.name, consultationTitle: input.title.trim() }), ...(current.notifications ?? [])],
-    };
-  }), [session?.name, updateData]);
+    }));
+    void dispatchTeamPush({ teamId, recipientIds: targetTeam.memberIds, type: "consultation" });
+  }, [data.teams, session?.name, updateData]);
 
-  const addCase = useCallback((teamId: string, input: { code: string; diagnosis: string }) => updateData((current) => {
-    const targetTeam = current.teams.find((team) => team.id === teamId);
-    if (!targetTeam) return current;
+  const addCase = useCallback((teamId: string, input: { code: string; diagnosis: string }) => {
+    const targetTeam = data.teams.find((team) => team.id === teamId);
+    if (!targetTeam) return;
     const now = Date.now();
-    return {
+    updateData((current) => ({
       ...current,
       teams: current.teams.map((team) => team.id === teamId ? {
         ...team,
         cases: [{ id: `c-${now}`, code: input.code.trim(), diagnosis: input.diagnosis.trim(), admittedSince: "الآن", status: "منوّم" }, ...team.cases],
       } : team),
       notifications: [createTeamNotification({ id: `n-${now}`, type: "admitted_case", team: targetTeam }), ...(current.notifications ?? [])],
-    };
-  }), [updateData]);
+    }));
+    void dispatchTeamPush({ teamId, recipientIds: targetTeam.memberIds, type: "admitted_case" });
+  }, [data.teams, updateData]);
 
   const addUser = useCallback((input: { name: string; role: UserRole; teamId: string }) => updateData((current) => {
     const id = `u-${Date.now()}`;

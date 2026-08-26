@@ -93,6 +93,14 @@ const config: ExpoConfig = {
       },
     ],
     [
+      "expo-notifications",
+      {
+        "defaultChannel": "team-alerts",
+        "color": "#075985",
+        "enableBackgroundRemoteNotifications": true
+      }
+    ],
+    [
       "expo-video",
       {
         supportsBackgroundPlayback: true,
