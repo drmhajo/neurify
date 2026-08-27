@@ -1,3 +1,5 @@
+import type { NeurosurgeryProcedureCode } from "./neurosurgery-procedure-catalog";
+
 export type UserRole = "admin" | "consultant" | "coordinator" | "team_member";
 export type PermissionKey = "manage_users" | "manage_permissions" | "manage_teams" | "manage_schedules" | "manage_reports" | "view_all_patients" | "edit_medical_files" | "add_imaging" | "patient_chat" | "view_audit";
 export type ReportPriority = "عاجل" | "عادي" | "متابعة";
@@ -66,6 +68,7 @@ export type Surgery = {
   time: string;
   patientCode: string;
   procedure: string;
+  procedureCode?: NeurosurgeryProcedureCode;
   surgeon: string;
   room: string;
   notes: string;
@@ -84,6 +87,7 @@ export type PatientCase = {
   diagnosis: string;
   clinicalDecision?: string;
   surgeryType?: string;
+  surgeryTypeCode?: NeurosurgeryProcedureCode;
   admittedSince: string;
   admittedAt?: string;
   status: "منوّم" | "متابعة" | "جاهز للخروج";
@@ -107,6 +111,7 @@ export type ConsultationPatient = {
   diagnosis: string;
   clinicalDecision?: string;
   surgeryType?: string;
+  surgeryTypeCode?: NeurosurgeryProcedureCode;
 };
 
 export type ClinicalDisposition = "follow_up" | "admit" | "discharge";
@@ -206,6 +211,10 @@ export type DailyShiftReport = {
   statistics: { consultations: number; requiringFollowUp: number; admissions: number; emergencySurgeries: number };
 };
 
+export type ShiftReportPreferences = {
+  secondOnCallUserId?: string;
+};
+
 export type CareTeam = {
   id: string;
   name: string;
@@ -228,6 +237,7 @@ export type DepartmentData = {
   teams: CareTeam[];
   notifications: TeamNotification[];
   shiftReports: DailyShiftReport[];
+  shiftReportPreferences?: ShiftReportPreferences;
 };
 
 export const roleLabels: Record<UserRole, string> = {
@@ -323,6 +333,7 @@ export const createInitialDepartmentData = (): DepartmentData => ({
   ],
   notifications: [],
   shiftReports: [],
+  shiftReportPreferences: {},
 });
 
 export function getDashboardSummary(data: DepartmentData) {

@@ -18,4 +18,11 @@ describe("تقرير المناوبة اليومي", () => {
     expect(report.consultations[0]).toMatchObject({ mrn: "110000000001", requiresFollowUp: false });
     expect(report.statistics.admissions).toBe(report.admissions.length);
   });
+
+  it("يعتمد المناوب الثاني المختار من مستخدم نشط عند إنشاء التقرير", () => {
+    const data = createInitialDepartmentData();
+    data.shiftReportPreferences = { secondOnCallUserId: "u-3" };
+    const report = buildDailyShiftReport(data, "Admin", new Date("2026-08-25T10:00:00+03:00"));
+    expect(report.onCall.second).toBe("د. سارة العتيبي");
+  });
 });
