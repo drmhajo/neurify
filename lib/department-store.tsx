@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Platform } from "react-native";
 import {
   createInitialDepartmentData,
+  applyWeeklyGroupsRoster,
   createTeamNotification,
   type DepartmentData,
   type DepartmentUser,
@@ -116,9 +117,15 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
         const [storedData, storedSession, storedSyncState] = await Promise.all([AsyncStorage.getItem(DATA_KEY), AsyncStorage.getItem(SESSION_KEY), AsyncStorage.getItem(SYNC_STATE_KEY)]);
         if (storedData) {
           hasPersistedLocalDataRef.current = true;
-          const parsedData = JSON.parse(storedData) as DepartmentData;
+          let parsedData = JSON.parse(storedData) as DepartmentData;
           parsedData.shiftReports ??= [];
           parsedData.users = parsedData.users.map((user) => ({ ...user, username: user.username ?? (user.id === "u-admin" ? "admin" : `staff-${user.id.replace(/[^a-z0-9]/gi, "")}`), passwordRecoveryRequired: user.passwordRecoveryRequired ?? false }));
+          const rosterUpdated = applyWeeklyGroupsRoster(parsedData);
+          if (rosterUpdated !== parsedData) {
+            parsedData = rosterUpdated;
+            dirtyRef.current = true;
+            await AsyncStorage.setItem(DATA_KEY, JSON.stringify(parsedData));
+          }
           setData({ ...parsedData, shiftReportPreferences: parsedData.shiftReportPreferences ?? {}, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], weeklyAssignments: parsedData.weeklyAssignments ?? [], scheduleDocuments: (parsedData.scheduleDocuments ?? []).map((document) => ({ ...document, mimeType: document.mimeType ?? (document.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/*") })), surgeries: parsedData.surgeries.map((surgery) => ({ ...surgery, date: surgery.date ?? "اليوم", notes: surgery.notes ?? "", patientLink: surgery.patientLink ?? parsedData.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.code === surgery.patientCode ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined })), teams: parsedData.teams.map((team) => ({ ...team, dischargedCases: team.dischargedCases ?? [], cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
         }
         if (storedSession) setSession(JSON.parse(storedSession) as Session);
@@ -148,7 +155,10 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       if (!hasPersistedLocalDataRef.current && !dirtyRef.current) {
         const remote = await trpcClient.cloudSync.pull.query();
         if (remote) {
-          const restored = restoreLocalAttachmentReferences(parseCloudDepartmentData(remote.data), localData);
+          const cloudData = parseCloudDepartmentData(remote.data);
+          const rosterData = applyWeeklyGroupsRoster(cloudData);
+          const restored = restoreLocalAttachmentReferences(rosterData, localData);
+          if (rosterData !== cloudData) dirtyRef.current = true;
           dataRef.current = restored;
           hasPersistedLocalDataRef.current = true;
           setData(restored);

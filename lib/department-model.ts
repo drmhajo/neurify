@@ -242,6 +242,7 @@ export type DepartmentData = {
   notifications: TeamNotification[];
   shiftReports: DailyShiftReport[];
   shiftReportPreferences?: ShiftReportPreferences;
+  rosterVersion?: string;
 };
 
 export const roleLabels: Record<UserRole, string> = {
@@ -272,7 +273,115 @@ export const rolePermissionDefaults: Record<UserRole, PermissionKey[]> = {
   team_member: ["edit_medical_files", "add_imaging", "patient_chat"],
 };
 
-export const createInitialDepartmentData = (): DepartmentData => ({
+/** Roster transcribed from the provided Neurosurgery groups Distribution, 19–24 July 2026. */
+export const WEEKLY_GROUPS_ROSTER_VERSION = "ns-weekly-groups-2026-07-19";
+
+type WeeklyRosterMember = Pick<DepartmentUser, "username" | "name" | "role" | "jobTitle">;
+
+const consultantRoster: WeeklyRosterMember[] = [
+  ["sami", "Sami"], ["maryam", "Maryam"], ["babar", "Babar"], ["akram", "Akram"], ["hashmi", "Hashmi"], ["saad", "Saad"], ["ibrahim", "Ibrahim"], ["albaraa", "Albaraa"], ["nuha", "Nuha"], ["wajab", "Wajab"], ["alhammad", "Alhammad"], ["jamaan", "Jama'an"],
+].map(([username, name]) => ({ username, name, role: "consultant", jobTitle: "استشاري | Consultant" }));
+
+const specialistRoster: WeeklyRosterMember[] = [
+  ["ahmed", "Ahmed"], ["awad", "Awad"], ["mostafa", "Mostafa"], ["zaghloul", "Zaghloul"], ["hossam", "Hossam"], ["abdulrahman", "Abdulrahman"], ["shoaib", "Shoaib"], ["marahib", "Marahib"],
+].map(([username, name]) => ({ username, name, role: "team_member", jobTitle: "أخصائي | Specialist" }));
+
+const residentRoster: WeeklyRosterMember[] = [
+  ["osman", "Osman"], ["hajo", "Hajo"], ["omer", "Omer"], ["tahir", "Tahir"], ["m.hashim", "M.Hashim"], ["rahaf", "Rahaf"], ["monzir.r6", "Monzir R6"], ["sarah", "Sarah"], ["ragad.r3", "Ragad R3"], ["lina.r1", "Lina R1"], ["alaa.r1", "Ala'a R1"],
+].map(([username, name]) => ({ username, name, role: "team_member", jobTitle: "طبيب مقيم | Resident" }));
+
+const weeklyGroupsRoster: WeeklyRosterMember[] = [
+  ...consultantRoster,
+  ...specialistRoster,
+  ...residentRoster,
+  { username: "eman", name: "Eman", role: "team_member", jobTitle: "عضو فريق | Team member" },
+  { username: "munira", name: "Munira", role: "team_member", jobTitle: "عضو فريق | Team member" },
+];
+
+const weeklyGroupDefinitions = [
+  { id: "t1", name: "المجموعة أ | Group A (Skull base & vascular)", shortName: "A", color: "#075985", members: ["hashmi", "babar", "albaraa", "wajab", "shoaib", "awad", "omer", "sarah", "tahir", "alaa.r1"] },
+  { id: "t2", name: "المجموعة ب | Group B", shortName: "B", color: "#08766D", members: ["jamaan", "ibrahim", "saad", "marahib", "hossam", "ragad.r3", "rahaf"] },
+  { id: "t3", name: "المجموعة ج | Group C (Spine)", shortName: "C", color: "#B97922", members: ["sami", "nuha", "akram", "marahib", "eman", "ahmed", "rahaf", "munira"] },
+  { id: "t4", name: "فريق الأطفال | Pediatrics", shortName: "Pedia", color: "#9F1239", members: ["maryam", "alhammad", "osman", "lina.r1"] },
+] as const;
+
+const initialSampleUserIds = new Set(["u-1", "u-2", "u-3"]);
+const coreWeeklyGroupIds = weeklyGroupDefinitions.map((team) => team.id);
+
+function compactRosterValue(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * Replaces the previous fictitious staff roster with the supplied weekly group list.
+ * The migration intentionally retains the admin account, existing cases, reports, and any
+ * custom users or teams that were added after the initial demonstration data.
+ */
+export function applyWeeklyGroupsRoster(current: DepartmentData): DepartmentData {
+  if (current.rosterVersion === WEEKLY_GROUPS_ROSTER_VERSION) return current;
+
+  const sourceMemberships = new Map<string, string[]>();
+  weeklyGroupDefinitions.forEach((team) => team.members.forEach((username) => {
+    sourceMemberships.set(username, [...(sourceMemberships.get(username) ?? []), team.id]);
+  }));
+
+  const sourceUserByKey = new Map<string, DepartmentUser>();
+  const matchingUsers = current.users.filter((user) => !initialSampleUserIds.has(user.id));
+  const rosterUsers = weeklyGroupsRoster.map((member) => {
+    const matched = matchingUsers.find((user) => compactRosterValue(user.username) === compactRosterValue(member.username) || compactRosterValue(user.name) === compactRosterValue(member.name));
+    const teamIds = [...new Set([...(sourceMemberships.get(member.username) ?? []), ...(matched?.teamIds ?? []).filter((teamId) => !coreWeeklyGroupIds.includes(teamId as (typeof coreWeeklyGroupIds)[number]))])];
+    const rosterUser: DepartmentUser = {
+      id: matched?.id ?? `u-roster-${member.username.replace(/[^a-z0-9]/g, "-")}`,
+      username: member.username,
+      name: member.name,
+      role: member.role,
+      jobTitle: member.jobTitle,
+      teamIds,
+      active: matched?.active ?? true,
+      permissions: matched?.permissions?.length ? matched.permissions : rolePermissionDefaults[member.role],
+      email: matched?.email,
+      phone: matched?.phone,
+      lastPasswordChangeAt: matched?.lastPasswordChangeAt,
+      passwordRecoveryRequired: matched?.passwordRecoveryRequired,
+    };
+    sourceUserByKey.set(member.username, rosterUser);
+    return rosterUser;
+  });
+
+  const rosterUserIds = new Set(rosterUsers.map((user) => user.id));
+  const retainedUsers = matchingUsers.filter((user) => !rosterUsers.some((rosterUser) => rosterUser.id === user.id));
+  const admin = retainedUsers.find((user) => user.id === "u-admin");
+  const otherRetainedUsers = retainedUsers.filter((user) => user.id !== "u-admin");
+  const users = [
+    ...(admin ? [{ ...admin, teamIds: admin.teamIds.filter((teamId) => !coreWeeklyGroupIds.includes(teamId as (typeof coreWeeklyGroupIds)[number])) }] : []),
+    ...rosterUsers,
+    ...otherRetainedUsers,
+  ];
+
+  const teams = [
+    ...weeklyGroupDefinitions.map((definition) => {
+      const existing = current.teams.find((team) => team.id === definition.id);
+      const rosterMemberIds = definition.members.map((username) => sourceUserByKey.get(username)?.id).filter((id): id is string => Boolean(id));
+      const customMemberIds = (existing?.memberIds ?? []).filter((id) => !initialSampleUserIds.has(id) && !rosterUserIds.has(id) && id !== "u-admin");
+      return {
+        id: definition.id,
+        name: definition.name,
+        shortName: definition.shortName,
+        color: definition.color,
+        lead: "غير محدد في المصدر | Not specified in source",
+        memberIds: [...new Set([...rosterMemberIds, ...customMemberIds])],
+        cases: existing?.cases ?? [],
+        dischargedCases: existing?.dischargedCases ?? [],
+        consultations: existing?.consultations ?? [],
+      };
+    }),
+    ...current.teams.filter((team) => !coreWeeklyGroupIds.includes(team.id as (typeof coreWeeklyGroupIds)[number])),
+  ];
+
+  return { ...current, users, teams, rosterVersion: WEEKLY_GROUPS_ROSTER_VERSION };
+}
+
+export const createInitialDepartmentData = (): DepartmentData => applyWeeklyGroupsRoster({
   users: [
     { id: "u-admin", username: "admin", name: "د. عبدالله السالم", role: "admin", jobTitle: "رئيس القسم", teamIds: ["t1", "t2", "t3"], active: true, permissions: rolePermissionDefaults.admin },
     { id: "u-1", username: "noura", name: "د. نورة الحربي", role: "consultant", jobTitle: "استشاري جراحة مخ وأعصاب", teamIds: ["t1"], active: true, permissions: rolePermissionDefaults.consultant },

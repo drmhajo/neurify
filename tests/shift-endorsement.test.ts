@@ -21,10 +21,10 @@ describe("تقرير المناوبة اليومي", () => {
 
   it("يعتمد أعضاء فريق المناوبة المختارين من المستخدمين النشطين عند إنشاء التقرير", () => {
     const data = createInitialDepartmentData();
-    data.shiftReportPreferences = { firstOnCallUserId: "u-1", secondOnCallUserId: "u-3", thirdOnCallUserId: "u-2" };
+    data.shiftReportPreferences = { firstOnCallUserId: "u-roster-sami", secondOnCallUserId: "u-roster-maryam", thirdOnCallUserId: "u-roster-babar" };
     const report = buildDailyShiftReport(data, "Admin", new Date("2026-08-25T10:00:00+03:00"));
-    expect(report.onCall.first).toBe("د. نورة الحربي");
-    expect(report.onCall.second).toBe("د. سارة العتيبي");
-    expect(report.onCall.third).toBe("أ. فهد القحطاني");
+    expect(report.onCall.first).toBe("Sami");
+    expect(report.onCall.second).toBe("Maryam");
+    expect(report.onCall.third).toBe("Babar");
   });
 });

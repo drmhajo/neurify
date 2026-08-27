@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createInitialDepartmentData, createTeamNotification, getDashboardSummary, getNextReportStatus, rolePermissionDefaults } from "../lib/department-model";
+import { applyWeeklyGroupsRoster, createInitialDepartmentData, createTeamNotification, getDashboardSummary, getNextReportStatus, rolePermissionDefaults } from "../lib/department-model";
 
 describe("نموذج بيانات قسم جراحة المخ والأعصاب", () => {
   it("يهيئ بيانات عرض متماسكة للوحة اليوم", () => {
     const data = createInitialDepartmentData();
     const summary = getDashboardSummary(data);
 
-    expect(data.teams).toHaveLength(3);
+    expect(data.teams).toHaveLength(4);
     expect(summary.openReports).toBe(2);
     expect(summary.surgeriesToday).toBe(3);
     expect(summary.admittedCases).toBe(3);
@@ -32,6 +32,18 @@ describe("نموذج بيانات قسم جراحة المخ والأعصاب", 
     expect(getNextReportStatus("جديد")).toBe("قيد الإعداد");
     expect(getNextReportStatus("قيد الإعداد")).toBe("مكتمل");
     expect(getNextReportStatus("مكتمل")).toBe("مكتمل");
+  });
+
+  it("يطابق المستخدمين والفرق توزيع الأسبوع المرفق مع الاحتفاظ بالحالات التجريبية", () => {
+    const data = createInitialDepartmentData();
+    const migrated = applyWeeklyGroupsRoster({ ...data, rosterVersion: undefined });
+
+    expect(data.users.some((user) => user.name === "Sami" && user.role === "consultant")).toBe(true);
+    expect(data.users.some((user) => user.name === "M.Hashim" && user.jobTitle.includes("Resident"))).toBe(true);
+    expect(data.teams.find((team) => team.id === "t4")?.name).toContain("Pediatrics");
+    expect(data.teams.find((team) => team.id === "t3")?.memberIds).toContain("u-roster-marahib");
+    expect(data.teams.find((team) => team.id === "t1")?.cases.length).toBeGreaterThan(0);
+    expect(migrated.rosterVersion).toBe(data.rosterVersion);
   });
 
   it("يوجه التنبيه إلى أعضاء الفريق فقط ولا يعرض تشخيص الحالة المنوّمة", () => {
