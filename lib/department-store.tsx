@@ -19,6 +19,7 @@ import {
   type Surgery,
   type UserRole,
   type CareTeam,
+  type DailyShiftReport,
   rolePermissionDefaults,
 } from "@/lib/department-model";
 import { dispatchTeamPush } from "@/lib/push-notifications";
@@ -26,6 +27,7 @@ import type { DepartmentBackup } from "@/lib/department-backup";
 import { createTRPCClient } from "@/lib/trpc";
 import { syncFailureStatus, type DepartmentSyncState, parseCloudDepartmentData, prepareDepartmentDataForCloud, restoreLocalAttachmentReferences } from "@/lib/department-sync";
 import { canRemoveDepartmentUser, normalizeDemoUsername } from "@/lib/department-user-admin";
+import { buildDailyShiftReport } from "@/lib/shift-endorsement";
 
 type Session = {
   userId: string;
@@ -42,6 +44,7 @@ type DepartmentStore = {
   signOut: () => Promise<void>;
   advanceReport: (id: string) => void;
   addReport: (input: { patientCode: string; title: string; priority: ReportPriority }) => void;
+  generateDailyShiftReport: () => DailyShiftReport | null;
   addConsultation: (teamId: string, input: { title: string; subject: string; disposition: ClinicalDisposition; patient: ConsultationPatient }) => void;
   addCase: (teamId: string, input: { code: string; diagnosis: string }) => void;
   dischargePatient: (teamId: string, caseId: string, reason: string) => void;
@@ -110,6 +113,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
         if (storedData) {
           hasPersistedLocalDataRef.current = true;
           const parsedData = JSON.parse(storedData) as DepartmentData;
+          parsedData.shiftReports ??= [];
           parsedData.users = parsedData.users.map((user) => ({ ...user, username: user.username ?? (user.id === "u-admin" ? "admin" : `staff-${user.id.replace(/[^a-z0-9]/gi, "")}`), passwordRecoveryRequired: user.passwordRecoveryRequired ?? false }));
           setData({ ...parsedData, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], weeklyAssignments: parsedData.weeklyAssignments ?? [], scheduleDocuments: (parsedData.scheduleDocuments ?? []).map((document) => ({ ...document, mimeType: document.mimeType ?? (document.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/*") })), surgeries: parsedData.surgeries.map((surgery) => ({ ...surgery, date: surgery.date ?? "اليوم", notes: surgery.notes ?? "", patientLink: surgery.patientLink ?? parsedData.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.code === surgery.patientCode ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined })), teams: parsedData.teams.map((team) => ({ ...team, dischargedCases: team.dischargedCases ?? [], cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
         }
@@ -225,17 +229,32 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     }, ...current.reports],
   })), [session?.name, updateData]);
 
+  const generateDailyShiftReport = useCallback(() => {
+    if (!session || !data.users.find((user) => user.id === session.userId)?.permissions.includes("manage_reports")) return null;
+    const report = buildDailyShiftReport(dataRef.current, session.name);
+    updateData((current) => {
+      const recipients = current.users.filter((user) => user.active && user.permissions.includes("manage_reports")).map((user) => user.id);
+      const notificationId = `n-${report.id}`;
+      return {
+        ...current,
+        shiftReports: [report, ...(current.shiftReports ?? []).filter((item) => item.id !== report.id)],
+        notifications: current.notifications.some((item) => item.id === notificationId) ? current.notifications : [{ id: notificationId, type: "shift_report", teamId: "department", teamName: "قسم جراحة المخ والأعصاب", title: "تقرير المناوبة اليومي جاهز", message: `تم إعداد تقرير مناوبة ${report.reportDate}. يمكنك فتحه أو تنزيله من صفحة التقارير.`, createdAt: "الآن", recipientIds: recipients, readByUserIds: [] }, ...current.notifications],
+      };
+    });
+    return report;
+  }, [data.users, session, updateData]);
+
   const addConsultation = useCallback((teamId: string, input: { title: string; subject: string; disposition: ClinicalDisposition; patient: ConsultationPatient }) => {
     const targetTeam = data.teams.find((team) => team.id === teamId);
     if (!targetTeam) return;
     const now = Date.now();
     const caseId = `c-${now}`;
-    const patientCase: PatientCase = { id: caseId, code: input.patient.code.trim(), fileNumber: input.patient.fileNumber.trim() || input.patient.code.trim(), fullName: input.patient.fullName.trim(), age: input.patient.age, medicalHistory: input.patient.medicalHistory.trim() || "غير موثّق بعد", clinicalTests: input.patient.clinicalTests.trim() || "غير موثّق بعد", diagnosis: input.patient.diagnosis.trim(), clinicalDecision: input.patient.clinicalDecision?.trim(), surgeryType: input.patient.surgeryType?.trim(), admittedSince: "الآن", status: input.disposition === "admit" ? "منوّم" : "متابعة", imaging: [], messages: [] };
+    const patientCase: PatientCase = { id: caseId, code: input.patient.code.trim(), fileNumber: input.patient.fileNumber.trim() || input.patient.code.trim(), fullName: input.patient.fullName.trim(), age: input.patient.age, medicalHistory: input.patient.medicalHistory.trim() || "غير موثّق بعد", clinicalTests: input.patient.clinicalTests.trim() || "غير موثّق بعد", diagnosis: input.patient.diagnosis.trim(), clinicalDecision: input.patient.clinicalDecision?.trim(), surgeryType: input.patient.surgeryType?.trim(), admittedSince: "الآن", admittedAt: new Date(now).toISOString(), status: input.disposition === "admit" ? "منوّم" : "متابعة", imaging: [], messages: [] };
     updateData((current) => ({
       ...current,
       teams: current.teams.map((team) => team.id === teamId ? {
         ...team,
-        consultations: [{ id: `q-${now}`, title: input.title.trim(), subject: input.subject.trim(), createdBy: session?.name ?? "عضو الفريق", time: "الآن", patient: input.patient, disposition: input.disposition, convertedCaseId: caseId }, ...team.consultations],
+        consultations: [{ id: `q-${now}`, title: input.title.trim(), subject: input.subject.trim(), createdBy: session?.name ?? "عضو الفريق", time: "الآن", createdAt: new Date(now).toISOString(), patient: input.patient, disposition: input.disposition, convertedCaseId: caseId }, ...team.consultations],
         cases: input.disposition === "discharge" ? team.cases : [patientCase, ...team.cases],
         dischargedCases: input.disposition === "discharge" ? [{ ...patientCase, dischargedAt: "الآن", dischargedBy: session?.name ?? "عضو الفريق", dischargeReason: input.subject.trim() || "خروج من الخدمة" }, ...(team.dischargedCases ?? [])] : team.dischargedCases ?? [],
       } : team),
@@ -253,7 +272,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       ...current,
       teams: current.teams.map((team) => team.id === teamId ? {
         ...team,
-        cases: [{ id: `c-${now}`, code: input.code.trim(), fileNumber: input.code.trim(), fullName: "حالة جديدة", age: null, medicalHistory: "غير موثّق بعد", clinicalTests: "غير موثّق بعد", diagnosis: input.diagnosis.trim(), admittedSince: "الآن", status: "منوّم", imaging: [], messages: [] }, ...team.cases],
+        cases: [{ id: `c-${now}`, code: input.code.trim(), fileNumber: input.code.trim(), fullName: "حالة جديدة", age: null, medicalHistory: "غير موثّق بعد", clinicalTests: "غير موثّق بعد", diagnosis: input.diagnosis.trim(), admittedSince: "الآن", admittedAt: new Date(now).toISOString(), status: "منوّم", imaging: [], messages: [] }, ...team.cases],
       } : team),
       notifications: [createTeamNotification({ id: `n-${now}`, type: "admitted_case", team: targetTeam }), ...(current.notifications ?? [])],
     }));
@@ -320,7 +339,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const addSurgery = useCallback((input: Omit<Surgery, "id">) => updateData((current) => {
     const matchedPatient = current.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.code === input.patientCode.trim() ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined;
-    return { ...current, surgeries: [{ ...input, id: `o-${Date.now()}`, patientLink: input.patientLink ?? matchedPatient, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim() }, ...current.surgeries] };
+    return { ...current, surgeries: [{ ...input, id: `o-${Date.now()}`, patientLink: input.patientLink ?? matchedPatient, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim(), recordedAt: input.recordedAt ?? new Date().toISOString() }, ...current.surgeries] };
   }), [updateData]);
 
   const updateSurgery = useCallback((surgeryId: string, input: Omit<Surgery, "id">) => updateData((current) => {
@@ -407,7 +426,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, hydrated, markAllNotificationsRead, markNotificationRead, removeUser, resetUserPassword, restoreDepartmentBackup, session, signIn, signInWithGoogleDemo, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
+  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, generateDailyShiftReport, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, generateDailyShiftReport, hydrated, markAllNotificationsRead, markNotificationRead, removeUser, resetUserPassword, restoreDepartmentBackup, session, signIn, signInWithGoogleDemo, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }

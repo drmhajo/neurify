@@ -70,6 +70,7 @@ export type Surgery = {
   room: string;
   notes: string;
   status: "مؤكد" | "قيد التحضير" | "بانتظار مراجعة";
+  recordedAt?: string;
 };
 
 export type PatientCase = {
@@ -84,6 +85,7 @@ export type PatientCase = {
   clinicalDecision?: string;
   surgeryType?: string;
   admittedSince: string;
+  admittedAt?: string;
   status: "منوّم" | "متابعة" | "جاهز للخروج";
   imaging: DiagnosticImaging[];
   messages: PatientMessage[];
@@ -145,6 +147,7 @@ export type Consultation = {
   subject: string;
   createdBy: string;
   time: string;
+  createdAt?: string;
   patient?: ConsultationPatient;
   disposition?: ClinicalDisposition;
   convertedCaseId?: string;
@@ -152,7 +155,7 @@ export type Consultation = {
 
 export type TeamNotification = {
   id: string;
-  type: "consultation" | "admitted_case";
+  type: "consultation" | "admitted_case" | "shift_report";
   teamId: string;
   teamName: string;
   title: string;
@@ -160,6 +163,47 @@ export type TeamNotification = {
   createdAt: string;
   recipientIds: string[];
   readByUserIds: string[];
+};
+
+export type ShiftReportConsultation = {
+  id: string;
+  period: "AM" | "PM";
+  mrn: string;
+  age: string;
+  diagnosis: string;
+  consultingSpecialty: string;
+  plan: string;
+  requiresFollowUp: boolean;
+};
+
+export type ShiftReportAdmission = {
+  id: string;
+  mrn: string;
+  diagnosis: string;
+  admissionType: "Elective" | "Emergency" | "Unspecified";
+  plan: string;
+  admittingConsultant: string;
+};
+
+export type ShiftReportEmergencySurgery = {
+  id: string;
+  mrn: string;
+  diagnosis: string;
+  surgery: string;
+};
+
+export type DailyShiftReport = {
+  id: string;
+  reportDate: string;
+  shiftStartAt: string;
+  shiftEndAt: string;
+  generatedAt: string;
+  generatedBy: string;
+  onCall: { first: string; second: string; third: string };
+  consultations: ShiftReportConsultation[];
+  admissions: ShiftReportAdmission[];
+  emergencySurgeries: ShiftReportEmergencySurgery[];
+  statistics: { consultations: number; requiringFollowUp: number; admissions: number; emergencySurgeries: number };
 };
 
 export type CareTeam = {
@@ -183,6 +227,7 @@ export type DepartmentData = {
   scheduleDocuments: SchedulePdf[];
   teams: CareTeam[];
   notifications: TeamNotification[];
+  shiftReports: DailyShiftReport[];
 };
 
 export const roleLabels: Record<UserRole, string> = {
@@ -277,6 +322,7 @@ export const createInitialDepartmentData = (): DepartmentData => ({
     },
   ],
   notifications: [],
+  shiftReports: [],
 });
 
 export function getDashboardSummary(data: DepartmentData) {

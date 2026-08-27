@@ -30,7 +30,9 @@ export function parseDepartmentBackup(source: string | unknown): { ok: true; bac
   const teams = candidate.data.teams as unknown[];
   const surgeries = candidate.data.surgeries as unknown[];
   if (!users.every((user) => isRecord(user) && typeof user.id === "string" && typeof user.name === "string") || !teams.every((team) => isRecord(team) && typeof team.id === "string" && Array.isArray(team.cases)) || !surgeries.every((surgery) => isRecord(surgery) && typeof surgery.id === "string" && typeof surgery.status === "string")) return { ok: false, error: "تحتوي النسخة على سجلات قسم غير صالحة." };
-  return { ok: true, backup: candidate as DepartmentBackup };
+  const rawData = candidate.data as Record<string, unknown>;
+  const data = { ...rawData, shiftReports: Array.isArray(rawData.shiftReports) ? rawData.shiftReports : [] } as DepartmentData;
+  return { ok: true, backup: { ...(candidate as Omit<DepartmentBackup, "data">), data } };
 }
 
 export function backupFileName(backup: DepartmentBackup) {

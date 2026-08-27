@@ -9,7 +9,7 @@ import {
 
 function createData(): DepartmentData {
   return {
-    users: [], reports: [], shifts: [], surgeries: [], weeklyAssignments: [], notifications: [],
+    users: [], reports: [], shifts: [], surgeries: [], weeklyAssignments: [], notifications: [], shiftReports: [],
     scheduleDocuments: [{ id: "schedule-1", section: "shifts", fileName: "weekly.pdf", mimeType: "application/pdf", localUri: "file:///schedule.pdf", uploadedBy: "Demo", uploadedAt: "now" }],
     teams: [{
       id: "team-1", name: "Demo", shortName: "D", color: "#075985", lead: "Demo", memberIds: [], consultations: [], dischargedCases: [],
