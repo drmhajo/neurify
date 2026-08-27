@@ -7,6 +7,11 @@ import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { isExpoPushToken, sendTeamPushNotifications } from "./push";
 import { getPilotSnapshot, savePilotSnapshot } from "./supabase-sync";
 
+function requireOperationalServiceEnabled(service: "cloud synchronization" | "push notifications") {
+  const variable = service === "cloud synchronization" ? "DEPARTMENT_CLOUD_SYNC_ENABLED" : "DEPARTMENT_PUSH_ENABLED";
+  if (process.env[variable] !== "true") throw new Error(`${service} is disabled until approved access controls are configured`);
+}
+
 export const appRouter = router({
   // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
@@ -22,6 +27,7 @@ export const appRouter = router({
   }),
   push: router({
     register: publicProcedure.input(z.object({ staffId: z.string().min(1).max(64), token: z.string().min(10).max(255), platform: z.enum(["ios", "android"]) })).mutation(async ({ input }) => {
+      requireOperationalServiceEnabled("push notifications");
       if (!isExpoPushToken(input.token)) throw new Error("Invalid push token");
       return db.upsertDevicePushToken(input);
     }),
@@ -32,6 +38,7 @@ export const appRouter = router({
       title: z.string().min(1).max(80),
       body: z.string().min(1).max(180),
     })).mutation(async ({ input }) => {
+      requireOperationalServiceEnabled("push notifications");
       const tokens = await db.getActivePushTokens(input.recipientIds);
       const result = await sendTeamPushNotifications({ tokens, teamId: input.teamId, type: input.type, title: input.title, body: input.body });
       if (result.invalidTokens.length) await db.deactivatePushTokens(result.invalidTokens);
@@ -42,6 +49,7 @@ export const appRouter = router({
       title: z.string().min(1).max(80),
       body: z.string().min(1).max(280),
     })).mutation(async ({ input }) => {
+      requireOperationalServiceEnabled("push notifications");
       const tokens = await db.getActivePushTokens(input.recipientIds);
       const result = await sendTeamPushNotifications({ tokens, teamId: "department", type: "general_announcement", title: input.title, body: input.body });
       if (result.invalidTokens.length) await db.deactivatePushTokens(result.invalidTokens);
@@ -60,10 +68,8 @@ export const appRouter = router({
     }),
   }),
   cloudSync: router({
-    pull: publicProcedure.query(() => getPilotSnapshot()),
-    // Pilot-only: the client uses the existing local demonstration login, so this route must
-    // never be treated as a substitute for institutional identity or clinical authorization.
-    push: publicProcedure.input(z.object({ data: z.unknown(), actorName: z.string().min(1).max(120) })).mutation(({ input }) => savePilotSnapshot(input)),
+    pull: publicProcedure.query(() => { requireOperationalServiceEnabled("cloud synchronization"); return getPilotSnapshot(); }),
+    push: publicProcedure.input(z.object({ data: z.unknown(), actorName: z.string().min(1).max(120) })).mutation(({ input }) => { requireOperationalServiceEnabled("cloud synchronization"); return savePilotSnapshot(input); }),
   }),
 
   // TODO: add feature routers here, e.g.

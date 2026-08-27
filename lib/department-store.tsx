@@ -3,8 +3,9 @@ import * as SecureStore from "expo-secure-store";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Platform } from "react-native";
 import {
-  createInitialDepartmentData,
+  createInternalDepartmentData,
   applyWeeklyGroupsRoster,
+  prepareInternalReleaseData,
   createTeamNotification,
   type DepartmentData,
   type DepartmentUser,
@@ -42,8 +43,8 @@ type DepartmentStore = {
   hydrated: boolean;
   session: Session | null;
   data: DepartmentData;
+  completeInitialSetup: (password: string) => Promise<{ ok: boolean; message?: string }>;
   signIn: (username: string, password: string) => Promise<{ ok: boolean; message?: string; recoveryRequired?: boolean }>;
-  signInWithGoogleDemo: () => Promise<void>;
   signOut: () => Promise<void>;
   advanceReport: (id: string) => void;
   addReport: (input: { patientCode: string; title: string; priority: ReportPriority }) => void;
@@ -77,23 +78,29 @@ type DepartmentStore = {
   syncNow: () => Promise<boolean>;
 };
 
-const DATA_KEY = "ksmc-neuro.demo-data.v1";
-const SESSION_KEY = "ksmc-neuro.demo-session.v1";
-const SYNC_STATE_KEY = "ksmc-neuro.demo-sync-state.v1";
-const PASSWORD_KEY_PREFIX = "ksmc.neuro.demo.password.";
-const DEFAULT_DEMO_PASSWORD = "Neuro@2026";
+const DATA_KEY = "ksmc-neuro.department-data.v2";
+const SESSION_KEY = "ksmc-neuro.department-session.v2";
+const SYNC_STATE_KEY = "ksmc-neuro.department-sync-state.v2";
+const PASSWORD_KEY_PREFIX = "ksmc.neuro.department.password.";
+const LEGACY_DATA_KEY = "ksmc-neuro.demo-data.v1";
+const LEGACY_SESSION_KEY = "ksmc-neuro.demo-session.v1";
+const LEGACY_SYNC_STATE_KEY = "ksmc-neuro.demo-sync-state.v1";
+const LEGACY_PASSWORD_KEY_PREFIX = "ksmc.neuro.demo.password.";
 const DepartmentContext = createContext<DepartmentStore | null>(null);
+const CLOUD_SYNC_ENABLED = process.env.EXPO_PUBLIC_ENABLE_CLOUD_SYNC === "true";
 
 function passwordKey(userId: string) { return `${PASSWORD_KEY_PREFIX}${userId}`; }
-async function readDemoPassword(userId: string) {
-  if (Platform.OS === "web") return (await AsyncStorage.getItem(passwordKey(userId))) ?? DEFAULT_DEMO_PASSWORD;
-  return (await SecureStore.getItemAsync(passwordKey(userId))) ?? DEFAULT_DEMO_PASSWORD;
+function legacyPasswordKey(userId: string) { return `${LEGACY_PASSWORD_KEY_PREFIX}${userId}`; }
+async function readDepartmentPassword(userId: string) {
+  if (Platform.OS === "web") return (await AsyncStorage.getItem(passwordKey(userId))) ?? (await AsyncStorage.getItem(legacyPasswordKey(userId)));
+  return (await SecureStore.getItemAsync(passwordKey(userId))) ?? (await SecureStore.getItemAsync(legacyPasswordKey(userId)));
 }
-async function writeDemoPassword(userId: string, password: string) {
+async function hasDepartmentPassword(userId: string) { return Boolean(await readDepartmentPassword(userId)); }
+async function writeDepartmentPassword(userId: string, password: string) {
   if (Platform.OS === "web") return AsyncStorage.setItem(passwordKey(userId), password);
   return SecureStore.setItemAsync(passwordKey(userId), password);
 }
-async function removeDemoPassword(userId: string) {
+async function removeDepartmentPassword(userId: string) {
   if (Platform.OS === "web") return AsyncStorage.removeItem(passwordKey(userId));
   return SecureStore.deleteItemAsync(passwordKey(userId));
 }
@@ -101,7 +108,7 @@ function createTemporaryPassword() { return `KSMC-${Math.floor(100000 + Math.ran
 
 export function DepartmentProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
-  const [data, setData] = useState<DepartmentData>(createInitialDepartmentData);
+  const [data, setData] = useState<DepartmentData>(createInternalDepartmentData);
   const [session, setSession] = useState<Session | null>(null);
   const [syncState, setSyncState] = useState<DepartmentSyncState>({ status: "local" });
   const dataRef = useRef(data);
@@ -115,22 +122,36 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const hydrate = async () => {
       try {
-        const [storedData, storedSession, storedSyncState] = await Promise.all([AsyncStorage.getItem(DATA_KEY), AsyncStorage.getItem(SESSION_KEY), AsyncStorage.getItem(SYNC_STATE_KEY)]);
-        if (storedData) {
+        let initialSetupCompleted = false;
+        const [storedData, legacyData, storedSession, legacySession, storedSyncState, legacySyncState] = await Promise.all([AsyncStorage.getItem(DATA_KEY), AsyncStorage.getItem(LEGACY_DATA_KEY), AsyncStorage.getItem(SESSION_KEY), AsyncStorage.getItem(LEGACY_SESSION_KEY), AsyncStorage.getItem(SYNC_STATE_KEY), AsyncStorage.getItem(LEGACY_SYNC_STATE_KEY)]);
+        const restoredData = storedData ?? legacyData;
+        const restoredSession = storedSession ?? legacySession;
+        const restoredSyncState = storedSyncState ?? legacySyncState;
+        if (restoredData) {
           hasPersistedLocalDataRef.current = true;
-          let parsedData = JSON.parse(storedData) as DepartmentData;
+          let parsedData = JSON.parse(restoredData) as DepartmentData;
           parsedData.shiftReports ??= [];
           parsedData.users = parsedData.users.map((user) => ({ ...user, username: user.username ?? (user.id === "u-admin" ? "admin" : `staff-${user.id.replace(/[^a-z0-9]/gi, "")}`), passwordRecoveryRequired: user.passwordRecoveryRequired ?? false }));
           const rosterUpdated = applyWeeklyGroupsRoster(parsedData);
-          if (rosterUpdated !== parsedData) {
-            parsedData = rosterUpdated;
+          const releaseReadyData = prepareInternalReleaseData(rosterUpdated);
+          if (releaseReadyData !== parsedData) {
+            parsedData = releaseReadyData;
             dirtyRef.current = true;
             await AsyncStorage.setItem(DATA_KEY, JSON.stringify(parsedData));
           }
+          initialSetupCompleted = Boolean(parsedData.initialSetupCompleted);
           setData({ ...parsedData, shiftReportPreferences: parsedData.shiftReportPreferences ?? {}, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], weeklyAssignments: parsedData.weeklyAssignments ?? [], scheduleDocuments: (parsedData.scheduleDocuments ?? []).map((document) => ({ ...document, mimeType: document.mimeType ?? (document.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/*") })), surgeries: parsedData.surgeries.map((surgery) => ({ ...surgery, date: surgery.date ?? "اليوم", notes: surgery.notes ?? "", patientLink: surgery.patientLink ?? parsedData.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.fileNumber === surgery.patientCode || patientCase.code === surgery.patientCode ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined })), teams: parsedData.teams.map((team) => ({ ...team, dischargedCases: team.dischargedCases ?? [], cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, weekendPlan: patientCase.weekendPlan ?? "", fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
         }
-        if (storedSession) setSession(JSON.parse(storedSession) as Session);
-        if (storedSyncState) setSyncState(JSON.parse(storedSyncState) as DepartmentSyncState);
+        if (restoredSession && initialSetupCompleted) {
+          setSession(JSON.parse(restoredSession) as Session);
+          await AsyncStorage.setItem(SESSION_KEY, restoredSession);
+        } else if (!initialSetupCompleted) {
+          await AsyncStorage.removeItem(SESSION_KEY);
+        }
+        if (restoredSyncState) {
+          setSyncState(JSON.parse(restoredSyncState) as DepartmentSyncState);
+          await AsyncStorage.setItem(SYNC_STATE_KEY, restoredSyncState);
+        }
       } finally {
         setHydrated(true);
       }
@@ -150,16 +171,21 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const syncNow = useCallback(async () => {
     if (session?.role !== "admin") return false;
+    if (!CLOUD_SYNC_ENABLED) {
+      setSyncState((current) => ({ ...current, status: "local" }));
+      return false;
+    }
     setSyncState((current) => ({ ...current, status: "syncing" }));
     try {
       const localData = dataRef.current;
-      if (!hasPersistedLocalDataRef.current && !dirtyRef.current) {
+      if (!hasPersistedLocalDataRef.current) {
         const remote = await trpcClient.cloudSync.pull.query();
         if (remote) {
           const cloudData = parseCloudDepartmentData(remote.data);
           const rosterData = applyWeeklyGroupsRoster(cloudData);
-          const restored = restoreLocalAttachmentReferences(rosterData, localData);
-          if (rosterData !== cloudData) dirtyRef.current = true;
+          const releaseReadyData = prepareInternalReleaseData(rosterData);
+          const restored = { ...restoreLocalAttachmentReferences(releaseReadyData, localData), initialSetupCompleted: localData.initialSetupCompleted };
+          if (releaseReadyData !== cloudData) dirtyRef.current = true;
           dataRef.current = restored;
           hasPersistedLocalDataRef.current = true;
           setData(restored);
@@ -201,21 +227,29 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   }, [hydrated, session?.role, session?.userId, syncNow]);
 
   const signIn = useCallback(async (username: string, password: string) => {
+    if (!data.initialSetupCompleted) return { ok: false, message: "يلزم إكمال إعداد حساب المشرف أولاً." };
     if (!username.trim() || !password.trim()) return { ok: false, message: "أدخل اسم المستخدم وكلمة المرور." };
     const user = data.users.find((item) => item.active && normalizeDemoUsername(item.username ?? "") === normalizeDemoUsername(username));
-    if (!user || password !== await readDemoPassword(user.id)) return { ok: false, message: "تحقق من بيانات الدخول." };
+    if (user?.passwordRecoveryRequired && !await hasDepartmentPassword(user.id)) return { ok: false, message: "يلزم أن يعيّن المشرف كلمة مرور مؤقتة لهذا الحساب أولاً." };
+    if (!user || password !== await readDepartmentPassword(user.id)) return { ok: false, message: "تحقق من بيانات الدخول." };
     const nextSession: Session = { userId: user.id, name: user.name, role: user.role };
     setSession(nextSession);
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
     return { ok: true, recoveryRequired: user.passwordRecoveryRequired };
-  }, [data.users]);
+  }, [data.initialSetupCompleted, data.users]);
 
-  const signInWithGoogleDemo = useCallback(async () => {
-    const user = data.users[1];
-    const nextSession: Session = { userId: user.id, name: user.name, role: user.role };
+  const completeInitialSetup = useCallback(async (password: string) => {
+    if (data.initialSetupCompleted) return { ok: false, message: "تم إعداد التطبيق بالفعل." };
+    if (password.length < 12) return { ok: false, message: "استخدم كلمة مرور من 12 حرفاً على الأقل." };
+    const admin = data.users.find((user) => user.id === "u-admin" && user.active);
+    if (!admin) return { ok: false, message: "تعذر العثور على حساب المشرف." };
+    await writeDepartmentPassword(admin.id, password);
+    const nextSession: Session = { userId: admin.id, name: admin.name, role: admin.role };
+    updateData((current) => ({ ...current, initialSetupCompleted: true, users: current.users.map((user) => user.id === admin.id ? { ...user, passwordRecoveryRequired: false, lastPasswordChangeAt: "الآن" } : user) }));
     setSession(nextSession);
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
-  }, [data.users]);
+    return { ok: true };
+  }, [data.initialSetupCompleted, data.users, updateData]);
 
   const signOut = useCallback(async () => {
     setSession(null);
@@ -343,14 +377,14 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   const removeUser = useCallback(async (userId: string) => {
     if (session?.role !== "admin" || !canRemoveDepartmentUser(data.users, userId, session.userId)) return false;
     updateData((current) => ({ ...current, users: current.users.filter((user) => user.id !== userId), teams: current.teams.map((team) => ({ ...team, memberIds: team.memberIds.filter((memberId) => memberId !== userId) })) }));
-    await removeDemoPassword(userId).catch(() => undefined);
+    await removeDepartmentPassword(userId).catch(() => undefined);
     return true;
   }, [data.users, session?.role, session?.userId, updateData]);
 
   const resetUserPassword = useCallback(async (userId: string) => {
     if (session?.role !== "admin" || !data.users.some((user) => user.id === userId)) return { ok: false };
     const temporaryPassword = createTemporaryPassword();
-    await writeDemoPassword(userId, temporaryPassword);
+    await writeDepartmentPassword(userId, temporaryPassword);
     updateData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, passwordRecoveryRequired: true, lastPasswordChangeAt: "الآن" } : user) }));
     return { ok: true, temporaryPassword };
   }, [data.users, session?.role, updateData]);
@@ -454,8 +488,8 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     if (!currentPassword || newPassword.length < 8) return { ok: false, message: "أدخل كلمة المرور الحالية وكلمة جديدة من 8 أحرف على الأقل." };
     const userId = session?.userId;
     if (!userId) return { ok: false, message: "انتهت جلسة المستخدم." };
-    if (currentPassword !== await readDemoPassword(userId)) return { ok: false, message: "كلمة المرور الحالية غير صحيحة." };
-    await writeDemoPassword(userId, newPassword);
+    if (currentPassword !== await readDepartmentPassword(userId)) return { ok: false, message: "كلمة المرور الحالية غير صحيحة." };
+    await writeDepartmentPassword(userId, newPassword);
     updateData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, lastPasswordChangeAt: "الآن", passwordRecoveryRequired: false } : user) }));
     return { ok: true };
   }, [session?.userId, updateData]);
@@ -488,7 +522,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, generateDailyShiftReport, hydrated, markAllNotificationsRead, markNotificationRead, removeUser, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signInWithGoogleDemo, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
+  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, data, dischargePatient, generateDailyShiftReport, hydrated, markAllNotificationsRead, markNotificationRead, removeUser, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }

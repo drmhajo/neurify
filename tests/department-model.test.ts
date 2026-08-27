@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyWeeklyGroupsRoster, createInitialDepartmentData, createTeamNotification, getDashboardSummary, getNextReportStatus, rolePermissionDefaults } from "../lib/department-model";
+import { applyWeeklyGroupsRoster, createInitialDepartmentData, createInternalDepartmentData, createTeamNotification, getDashboardSummary, getNextReportStatus, rolePermissionDefaults } from "../lib/department-model";
 
 describe("نموذج بيانات قسم جراحة المخ والأعصاب", () => {
   it("يهيئ بيانات عرض متماسكة للوحة اليوم", () => {
@@ -26,6 +26,18 @@ describe("نموذج بيانات قسم جراحة المخ والأعصاب", 
     expect(data.surgeries[0].patientLink).toEqual({ teamId: "t1", caseId: "c1" });
     expect(data.teams.every((team) => Array.isArray(team.dischargedCases))).toBe(true);
     expect(data.teams.flatMap((team) => team.dischargedCases)).toHaveLength(0);
+  });
+
+  it("يهيئ إصداراً داخلياً خالياً من بيانات المرضى التشغيلية ويطلب تهيئة المشرف", () => {
+    const data = createInternalDepartmentData();
+
+    expect(data.initialSetupCompleted).toBe(false);
+    expect(data.reports).toEqual([]);
+    expect(data.shifts).toEqual([]);
+    expect(data.surgeries).toEqual([]);
+    expect(data.teams.flatMap((team) => team.cases)).toEqual([]);
+    expect(data.users.find((user) => user.id === "u-admin")?.active).toBe(true);
+    expect(data.users.filter((user) => user.id !== "u-admin").every((user) => !user.active)).toBe(true);
   });
 
   it("يتدرج طلب التقرير من جديد إلى قيد الإعداد ثم مكتمل", () => {

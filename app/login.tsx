@@ -7,10 +7,12 @@ import { palette, PrimaryButton } from "@/components/neuro-ui";
 import { useAppLanguage } from "@/lib/language";
 
 export default function LoginScreen() {
-  const { signIn, signInWithGoogleDemo } = useDepartment();
+  const { data, signIn, completeInitialSetup } = useDepartment();
   const { language, setLanguage, isRTL, t, localize } = useAppLanguage();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [setupPassword, setSetupPassword] = useState("");
+  const [setupConfirmation, setSetupConfirmation] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSignIn = async () => {
@@ -29,8 +31,18 @@ export default function LoginScreen() {
     router.replace("/(tabs)");
   };
 
-  const handleGoogle = async () => {
-    await signInWithGoogleDemo();
+  const handleInitialSetup = async () => {
+    if (setupPassword !== setupConfirmation) {
+      Alert.alert(language === "en" ? "Password mismatch" : "كلمتا المرور غير متطابقتين", language === "en" ? "Confirm the administrator password again." : "أعد تأكيد كلمة مرور المشرف.");
+      return;
+    }
+    setSubmitting(true);
+    const result = await completeInitialSetup(setupPassword);
+    setSubmitting(false);
+    if (!result.ok) {
+      Alert.alert(language === "en" ? "Setup not completed" : "تعذر إكمال الإعداد", result.message ? localize(result.message) : undefined);
+      return;
+    }
     router.replace("/(tabs)");
   };
 
@@ -43,15 +55,7 @@ export default function LoginScreen() {
       <Text style={[styles.subtitle, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("hospital")}</Text>
       <Text style={[styles.description, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: "center" }]}>{t("workspace")}</Text>
       <View style={styles.form}>
-        <Text style={[styles.formTitle, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{t("signIn")}</Text>
-        <Text style={[styles.label, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{t("username")}</Text>
-        <View style={styles.inputShell}><MaterialIcons name="person-outline" size={20} color={palette.muted} /><TextInput value={username} onChangeText={setUsername} placeholder={t("usernameHint")} placeholderTextColor="#9FB3C8" autoCapitalize="none" textAlign={isRTL ? "right" : "left"} style={[styles.input, { writingDirection: isRTL ? "rtl" : "ltr" }]} returnKeyType="next" /></View>
-        <Text style={[styles.label, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{t("password")}</Text>
-        <View style={styles.inputShell}><MaterialIcons name="lock-outline" size={20} color={palette.muted} /><TextInput value={password} onChangeText={setPassword} placeholder={t("passwordHint")} placeholderTextColor="#9FB3C8" secureTextEntry textAlign={isRTL ? "right" : "left"} style={[styles.input, { writingDirection: isRTL ? "rtl" : "ltr" }]} returnKeyType="done" onSubmitEditing={handleSignIn} /></View>
-        <PrimaryButton label={submitting ? t("verifying") : t("secureSignIn")} onPress={handleSignIn} icon="login" disabled={submitting} />
-        <View style={styles.orLine}><View style={styles.line} /><Text style={styles.orText}>{t("or")}</Text><View style={styles.line} /></View>
-        <Pressable onPress={handleGoogle} style={({ pressed }) => [styles.googleButton, pressed && { opacity: 0.78 }]}><MaterialIcons name="account-circle" size={21} color={palette.navy} /><Text style={[styles.googleText, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("continueGoogle")}</Text></Pressable>
-        <View style={styles.demoInfo}><MaterialIcons name="info-outline" size={17} color={palette.gold} /><Text style={[styles.demoText, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{t("demo")}</Text></View>
+        {data.initialSetupCompleted ? <><Text style={[styles.formTitle, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{t("signIn")}</Text><Text style={[styles.label, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{t("username")}</Text><View style={styles.inputShell}><MaterialIcons name="person-outline" size={20} color={palette.muted} /><TextInput value={username} onChangeText={setUsername} placeholder={t("usernameHint")} placeholderTextColor="#9FB3C8" autoCapitalize="none" textAlign={isRTL ? "right" : "left"} style={[styles.input, { writingDirection: isRTL ? "rtl" : "ltr" }]} returnKeyType="next" /></View><Text style={[styles.label, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{t("password")}</Text><View style={styles.inputShell}><MaterialIcons name="lock-outline" size={20} color={palette.muted} /><TextInput value={password} onChangeText={setPassword} placeholder={t("passwordHint")} placeholderTextColor="#9FB3C8" secureTextEntry textAlign={isRTL ? "right" : "left"} style={[styles.input, { writingDirection: isRTL ? "rtl" : "ltr" }]} returnKeyType="done" onSubmitEditing={handleSignIn} /></View><PrimaryButton label={submitting ? t("verifying") : t("secureSignIn")} onPress={handleSignIn} icon="login" disabled={submitting} /><View style={styles.demoInfo}><MaterialIcons name="info-outline" size={17} color={palette.gold} /><Text style={[styles.demoText, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{t("demo")}</Text></View></> : <><Text style={[styles.formTitle, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{language === "en" ? "Administrator setup" : "تهيئة حساب المشرف"}</Text><Text style={[styles.setupText, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{language === "en" ? "Set a private administrator password to start this internal workspace. Staff accounts remain inactive until you enable them." : "عيّن كلمة مرور خاصة للمشرف لبدء مساحة العمل الداخلية. تبقى حسابات الطاقم غير مفعّلة حتى تقوم بتمكينها."}</Text><Text style={[styles.label, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{language === "en" ? "Administrator password" : "كلمة مرور المشرف"}</Text><View style={styles.inputShell}><MaterialIcons name="lock-outline" size={20} color={palette.muted} /><TextInput value={setupPassword} onChangeText={setSetupPassword} placeholder={language === "en" ? "At least 12 characters" : "12 حرفاً على الأقل"} placeholderTextColor="#9FB3C8" secureTextEntry textAlign={isRTL ? "right" : "left"} style={[styles.input, { writingDirection: isRTL ? "rtl" : "ltr" }]} returnKeyType="next" /></View><Text style={[styles.label, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{language === "en" ? "Confirm password" : "تأكيد كلمة المرور"}</Text><View style={styles.inputShell}><MaterialIcons name="verified-user" size={20} color={palette.muted} /><TextInput value={setupConfirmation} onChangeText={setSetupConfirmation} placeholder={language === "en" ? "Enter it again" : "أدخلها مرة أخرى"} placeholderTextColor="#9FB3C8" secureTextEntry textAlign={isRTL ? "right" : "left"} style={[styles.input, { writingDirection: isRTL ? "rtl" : "ltr" }]} returnKeyType="done" onSubmitEditing={handleInitialSetup} /></View><PrimaryButton label={submitting ? t("verifying") : (language === "en" ? "Set up administrator account" : "إعداد حساب المشرف")} onPress={handleInitialSetup} icon="admin-panel-settings" disabled={submitting} /></>}
       </View>
       <Text style={[styles.footnote, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("training")}</Text>
     </View>
@@ -69,14 +73,10 @@ const styles = StyleSheet.create({
   description: { color: "#526D82", fontSize: 14, lineHeight: 22, textAlign: "center", writingDirection: "rtl", marginTop: 52, marginBottom: 18, paddingHorizontal: 16 },
   form: { width: "100%", backgroundColor: "#FFFFFF", borderRadius: 22, padding: 20, borderWidth: 1, borderColor: palette.line, shadowColor: palette.navy, shadowOpacity: 0.1, shadowRadius: 20, shadowOffset: { width: 0, height: 9 }, elevation: 3 },
   formTitle: { color: palette.ink, fontSize: 19, fontWeight: "900", writingDirection: "rtl", textAlign: "right", marginBottom: 18 },
+  setupText: { color: palette.muted, fontSize: 12, lineHeight: 18, marginBottom: 16 },
   label: { color: palette.ink, fontSize: 13, fontWeight: "800", writingDirection: "rtl", textAlign: "right", marginBottom: 7 },
   inputShell: { height: 50, borderColor: palette.line, borderWidth: 1, borderRadius: 14, flexDirection: "row", alignItems: "center", paddingHorizontal: 13, gap: 9, marginBottom: 14 },
   input: { flex: 1, color: palette.ink, fontSize: 14, writingDirection: "rtl" },
-  orLine: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 17 },
-  line: { flex: 1, height: 1, backgroundColor: palette.line },
-  orText: { color: palette.muted, fontSize: 12, fontWeight: "700" },
-  googleButton: { height: 48, flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 9, borderColor: "#BED4E6", borderWidth: 1, borderRadius: 14, backgroundColor: "#FFFFFF" },
-  googleText: { color: palette.navy, fontSize: 14, fontWeight: "800", writingDirection: "rtl" },
   demoInfo: { marginTop: 14, flexDirection: "row-reverse", alignItems: "center", gap: 6, backgroundColor: "#FFF7DF", padding: 10, borderRadius: 12 },
   demoText: { color: "#75530D", fontSize: 11, lineHeight: 17, flex: 1, textAlign: "right", writingDirection: "rtl" },
   footnote: { color: palette.muted, fontSize: 11, textAlign: "center", lineHeight: 17, marginTop: 18, writingDirection: "rtl", paddingHorizontal: 12 },

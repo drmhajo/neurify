@@ -246,6 +246,8 @@ export type DepartmentData = {
   shiftReports: DailyShiftReport[];
   shiftReportPreferences?: ShiftReportPreferences;
   rosterVersion?: string;
+  releaseVersion?: string;
+  initialSetupCompleted?: boolean;
 };
 
 export const roleLabels: Record<UserRole, string> = {
@@ -278,6 +280,7 @@ export const rolePermissionDefaults: Record<UserRole, PermissionKey[]> = {
 
 /** Roster transcribed from the provided Neurosurgery groups Distribution, 19–24 July 2026. */
 export const WEEKLY_GROUPS_ROSTER_VERSION = "ns-weekly-groups-2026-07-19-consultant-leads";
+export const INTERNAL_RELEASE_VERSION = "internal-release-v1";
 
 type WeeklyRosterMember = Pick<DepartmentUser, "username" | "name" | "role" | "jobTitle">;
 
@@ -309,6 +312,13 @@ const weeklyGroupDefinitions = [
 ] as const;
 
 const initialSampleUserIds = new Set(["u-1", "u-2", "u-3"]);
+const initialSampleReportIds = new Set(["r1", "r2", "r3"]);
+const initialSampleShiftIds = new Set(["s1", "s2", "s3", "s4"]);
+const initialSampleWeeklyAssignmentIds = new Set(["w1", "w2", "w3", "w4", "w5"]);
+const initialSampleScheduleDocumentIds = new Set(["pdf-1"]);
+const initialSampleSurgeryIds = new Set(["o1", "o2", "o3"]);
+const initialSampleCaseIds = new Set(["c1", "c2", "c3", "c4"]);
+const initialSampleConsultationIds = new Set(["q1", "q2"]);
 const coreWeeklyGroupIds = weeklyGroupDefinitions.map((team) => team.id);
 
 function compactRosterValue(value: string) {
@@ -340,12 +350,12 @@ export function applyWeeklyGroupsRoster(current: DepartmentData): DepartmentData
       role: member.role,
       jobTitle: member.jobTitle,
       teamIds,
-      active: matched?.active ?? true,
+      active: matched?.active ?? false,
       permissions: matched?.permissions?.length ? matched.permissions : rolePermissionDefaults[member.role],
       email: matched?.email,
       phone: matched?.phone,
       lastPasswordChangeAt: matched?.lastPasswordChangeAt,
-      passwordRecoveryRequired: matched?.passwordRecoveryRequired,
+      passwordRecoveryRequired: matched?.passwordRecoveryRequired ?? true,
     };
     sourceUserByKey.set(member.username, rosterUser);
     return rosterUser;
@@ -452,6 +462,60 @@ export const createInitialDepartmentData = (): DepartmentData => applyWeeklyGrou
   shiftReports: [],
   shiftReportPreferences: {},
 });
+
+/**
+ * Empty internal workspace for new installations.  Clinical records, schedules, reports,
+ * conversations, and attachments are intentionally never bundled with a release build.
+ * The department administrator signs in once, changes the bootstrap password, then activates
+ * and provisions staff accounts from the administration screen.
+ */
+export const createInternalDepartmentData = (): DepartmentData => applyWeeklyGroupsRoster({
+  users: [
+    { id: "u-admin", username: "admin", name: "د. عبدالله السالم", role: "admin", jobTitle: "رئيس القسم", teamIds: [], active: true, permissions: rolePermissionDefaults.admin, passwordRecoveryRequired: true },
+  ],
+  reports: [],
+  shifts: [],
+  surgeries: [],
+  weeklyAssignments: [],
+  scheduleDocuments: [],
+  teams: weeklyGroupDefinitions.map((team) => ({
+    id: team.id,
+    name: team.name,
+    shortName: team.shortName,
+    color: team.color,
+    lead: team.lead,
+    memberIds: [],
+    cases: [],
+    dischargedCases: [],
+    consultations: [],
+  })),
+  notifications: [],
+  shiftReports: [],
+  shiftReportPreferences: {},
+  releaseVersion: INTERNAL_RELEASE_VERSION,
+  initialSetupCompleted: false,
+});
+
+/** Removes only known bundled demonstration records, preserving department-created records. */
+export function prepareInternalReleaseData(current: DepartmentData): DepartmentData {
+  if (current.releaseVersion === INTERNAL_RELEASE_VERSION && typeof current.initialSetupCompleted === "boolean") return current;
+  return {
+    ...current,
+    reports: current.reports.filter((item) => !initialSampleReportIds.has(item.id)),
+    shifts: current.shifts.filter((item) => !initialSampleShiftIds.has(item.id)),
+    weeklyAssignments: current.weeklyAssignments.filter((item) => !initialSampleWeeklyAssignmentIds.has(item.id)),
+    scheduleDocuments: current.scheduleDocuments.filter((item) => !initialSampleScheduleDocumentIds.has(item.id)),
+    surgeries: current.surgeries.filter((item) => !initialSampleSurgeryIds.has(item.id)),
+    teams: current.teams.map((team) => ({
+      ...team,
+      cases: team.cases.filter((item) => !initialSampleCaseIds.has(item.id)),
+      dischargedCases: (team.dischargedCases ?? []).filter((item) => !initialSampleCaseIds.has(item.id)),
+      consultations: team.consultations.filter((item) => !initialSampleConsultationIds.has(item.id)),
+    })),
+    releaseVersion: INTERNAL_RELEASE_VERSION,
+    initialSetupCompleted: false,
+  };
+}
 
 export function getDashboardSummary(data: DepartmentData) {
   return {
