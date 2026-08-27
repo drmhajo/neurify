@@ -1,5 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Platform } from "react-native";
 import {
   createInitialDepartmentData,
   createTeamNotification,
@@ -23,6 +25,7 @@ import { dispatchTeamPush } from "@/lib/push-notifications";
 import type { DepartmentBackup } from "@/lib/department-backup";
 import { createTRPCClient } from "@/lib/trpc";
 import { syncFailureStatus, type DepartmentSyncState, parseCloudDepartmentData, prepareDepartmentDataForCloud, restoreLocalAttachmentReferences } from "@/lib/department-sync";
+import { canRemoveDepartmentUser, normalizeDemoUsername } from "@/lib/department-user-admin";
 
 type Session = {
   userId: string;
@@ -34,7 +37,7 @@ type DepartmentStore = {
   hydrated: boolean;
   session: Session | null;
   data: DepartmentData;
-  signIn: (username: string, password: string) => Promise<{ ok: boolean; message?: string }>;
+  signIn: (username: string, password: string) => Promise<{ ok: boolean; message?: string; recoveryRequired?: boolean }>;
   signInWithGoogleDemo: () => Promise<void>;
   signOut: () => Promise<void>;
   advanceReport: (id: string) => void;
@@ -42,9 +45,11 @@ type DepartmentStore = {
   addConsultation: (teamId: string, input: { title: string; subject: string; disposition: ClinicalDisposition; patient: ConsultationPatient }) => void;
   addCase: (teamId: string, input: { code: string; diagnosis: string }) => void;
   dischargePatient: (teamId: string, caseId: string, reason: string) => void;
-  addUser: (input: { name: string; role: UserRole; teamId: string; jobTitle?: string }) => void;
+  addUser: (input: { name: string; username: string; role: UserRole; teamId: string; jobTitle?: string }) => void;
   changeUserRole: (userId: string, role: UserRole) => void;
   updateUserAccess: (userId: string, input: { active: boolean; permissions: PermissionKey[]; teamIds: string[] }) => void;
+  removeUser: (userId: string) => Promise<boolean>;
+  resetUserPassword: (userId: string) => Promise<{ ok: boolean; temporaryPassword?: string }>;
   addShift: (input: { clinician: string; period: "صباحي" | "مسائي" | "ليلي"; team: string }) => void;
   addSurgery: (input: Omit<Surgery, "id">) => void;
   updateSurgery: (surgeryId: string, input: Omit<Surgery, "id">) => void;
@@ -55,7 +60,7 @@ type DepartmentStore = {
   addDiagnosticImaging: (teamId: string, caseId: string, input: Omit<DiagnosticImaging, "id" | "addedBy">) => void;
   addPatientMessage: (teamId: string, caseId: string, text: string, attachment?: PatientMessage["attachment"]) => void;
   updateOwnProfile: (input: { name: string; jobTitle: string; email: string; phone: string }) => void;
-  changeOwnPassword: (currentPassword: string, newPassword: string) => { ok: boolean; message?: string };
+  changeOwnPassword: (currentPassword: string, newPassword: string) => Promise<{ ok: boolean; message?: string }>;
   markNotificationRead: (notificationId: string) => void;
   markAllNotificationsRead: () => void;
   restoreDepartmentBackup: (backup: DepartmentBackup) => boolean;
@@ -66,7 +71,24 @@ type DepartmentStore = {
 const DATA_KEY = "ksmc-neuro.demo-data.v1";
 const SESSION_KEY = "ksmc-neuro.demo-session.v1";
 const SYNC_STATE_KEY = "ksmc-neuro.demo-sync-state.v1";
+const PASSWORD_KEY_PREFIX = "ksmc.neuro.demo.password.";
+const DEFAULT_DEMO_PASSWORD = "Neuro@2026";
 const DepartmentContext = createContext<DepartmentStore | null>(null);
+
+function passwordKey(userId: string) { return `${PASSWORD_KEY_PREFIX}${userId}`; }
+async function readDemoPassword(userId: string) {
+  if (Platform.OS === "web") return (await AsyncStorage.getItem(passwordKey(userId))) ?? DEFAULT_DEMO_PASSWORD;
+  return (await SecureStore.getItemAsync(passwordKey(userId))) ?? DEFAULT_DEMO_PASSWORD;
+}
+async function writeDemoPassword(userId: string, password: string) {
+  if (Platform.OS === "web") return AsyncStorage.setItem(passwordKey(userId), password);
+  return SecureStore.setItemAsync(passwordKey(userId), password);
+}
+async function removeDemoPassword(userId: string) {
+  if (Platform.OS === "web") return AsyncStorage.removeItem(passwordKey(userId));
+  return SecureStore.deleteItemAsync(passwordKey(userId));
+}
+function createTemporaryPassword() { return `KSMC-${Math.floor(100000 + Math.random() * 900000)}!`; }
 
 export function DepartmentProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
@@ -88,6 +110,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
         if (storedData) {
           hasPersistedLocalDataRef.current = true;
           const parsedData = JSON.parse(storedData) as DepartmentData;
+          parsedData.users = parsedData.users.map((user) => ({ ...user, username: user.username ?? (user.id === "u-admin" ? "admin" : `staff-${user.id.replace(/[^a-z0-9]/gi, "")}`), passwordRecoveryRequired: user.passwordRecoveryRequired ?? false }));
           setData({ ...parsedData, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], weeklyAssignments: parsedData.weeklyAssignments ?? [], scheduleDocuments: (parsedData.scheduleDocuments ?? []).map((document) => ({ ...document, mimeType: document.mimeType ?? (document.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/*") })), surgeries: parsedData.surgeries.map((surgery) => ({ ...surgery, date: surgery.date ?? "اليوم", notes: surgery.notes ?? "", patientLink: surgery.patientLink ?? parsedData.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.code === surgery.patientCode ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined })), teams: parsedData.teams.map((team) => ({ ...team, dischargedCases: team.dischargedCases ?? [], cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
         }
         if (storedSession) setSession(JSON.parse(storedSession) as Session);
@@ -160,12 +183,12 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (username: string, password: string) => {
     if (!username.trim() || !password.trim()) return { ok: false, message: "أدخل اسم المستخدم وكلمة المرور." };
-    const isAdmin = username.trim().toLowerCase() === "admin" && password === "Neuro@2026";
-    const user = isAdmin ? data.users[0] : data.users.find((item) => item.role !== "admin") ?? data.users[1];
-    const nextSession: Session = { userId: user.id, name: user.name, role: isAdmin ? "admin" : user.role };
+    const user = data.users.find((item) => item.active && normalizeDemoUsername(item.username ?? "") === normalizeDemoUsername(username));
+    if (!user || password !== await readDemoPassword(user.id)) return { ok: false, message: "تحقق من بيانات الدخول." };
+    const nextSession: Session = { userId: user.id, name: user.name, role: user.role };
     setSession(nextSession);
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
-    return { ok: true };
+    return { ok: true, recoveryRequired: user.passwordRecoveryRequired };
   }, [data.users]);
 
   const signInWithGoogleDemo = useCallback(async () => {
@@ -245,15 +268,30 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     updateData((current) => ({ ...current, teams: current.teams.map((item) => item.id === teamId ? { ...item, cases: item.cases.filter((patientCase) => patientCase.id !== caseId), dischargedCases: [archived, ...(item.dischargedCases ?? [])] } : item) }));
   }, [data.teams, session?.name, updateData]);
 
-  const addUser = useCallback((input: { name: string; role: UserRole; teamId: string; jobTitle?: string }) => updateData((current) => {
+  const addUser = useCallback((input: { name: string; username: string; role: UserRole; teamId: string; jobTitle?: string }) => updateData((current) => {
     const id = `u-${Date.now()}`;
-    const newUser: DepartmentUser = { id, name: input.name.trim(), role: input.role, jobTitle: input.jobTitle?.trim() || "عضو القسم", teamIds: [input.teamId], active: true, permissions: rolePermissionDefaults[input.role] };
+    const newUser: DepartmentUser = { id, username: normalizeDemoUsername(input.username), name: input.name.trim(), role: input.role, jobTitle: input.jobTitle?.trim() || "عضو القسم", teamIds: [input.teamId], active: true, permissions: rolePermissionDefaults[input.role], passwordRecoveryRequired: true };
     return {
       ...current,
       users: [...current.users, newUser],
       teams: current.teams.map((team) => team.id === input.teamId ? { ...team, memberIds: [...team.memberIds, id] } : team),
     };
   }), [updateData]);
+
+  const removeUser = useCallback(async (userId: string) => {
+    if (session?.role !== "admin" || !canRemoveDepartmentUser(data.users, userId, session.userId)) return false;
+    updateData((current) => ({ ...current, users: current.users.filter((user) => user.id !== userId), teams: current.teams.map((team) => ({ ...team, memberIds: team.memberIds.filter((memberId) => memberId !== userId) })) }));
+    await removeDemoPassword(userId).catch(() => undefined);
+    return true;
+  }, [data.users, session?.role, session?.userId, updateData]);
+
+  const resetUserPassword = useCallback(async (userId: string) => {
+    if (session?.role !== "admin" || !data.users.some((user) => user.id === userId)) return { ok: false };
+    const temporaryPassword = createTemporaryPassword();
+    await writeDemoPassword(userId, temporaryPassword);
+    updateData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, passwordRecoveryRequired: true, lastPasswordChangeAt: "الآن" } : user) }));
+    return { ok: true, temporaryPassword };
+  }, [data.users, session?.role, updateData]);
 
   const changeUserRole = useCallback((userId: string, role: UserRole) => updateData((current) => ({
     ...current,
@@ -331,11 +369,13 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     if (session) { const nextSession = { ...session, name }; setSession(nextSession); AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession)).catch(() => undefined); }
   }, [session, updateData]);
 
-  const changeOwnPassword = useCallback((currentPassword: string, newPassword: string) => {
+  const changeOwnPassword = useCallback(async (currentPassword: string, newPassword: string) => {
     if (!currentPassword || newPassword.length < 8) return { ok: false, message: "أدخل كلمة المرور الحالية وكلمة جديدة من 8 أحرف على الأقل." };
     const userId = session?.userId;
     if (!userId) return { ok: false, message: "انتهت جلسة المستخدم." };
-    updateData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, lastPasswordChangeAt: "الآن" } : user) }));
+    if (currentPassword !== await readDemoPassword(userId)) return { ok: false, message: "كلمة المرور الحالية غير صحيحة." };
+    await writeDemoPassword(userId, newPassword);
+    updateData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, lastPasswordChangeAt: "الآن", passwordRecoveryRequired: false } : user) }));
     return { ok: true };
   }, [session?.userId, updateData]);
 
@@ -367,7 +407,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, hydrated, markAllNotificationsRead, markNotificationRead, restoreDepartmentBackup, session, signIn, signInWithGoogleDemo, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
+  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, hydrated, markAllNotificationsRead, markNotificationRead, removeUser, resetUserPassword, restoreDepartmentBackup, session, signIn, signInWithGoogleDemo, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }

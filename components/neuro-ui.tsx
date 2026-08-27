@@ -4,17 +4,18 @@ import type { ReactNode } from "react";
 import { useAppLanguage } from "@/lib/language";
 
 export const palette = {
-  navy: "#075B73",
-  teal: "#16756E",
-  canvas: "#F5F9FA",
+  navy: "#123D63",
+  teal: "#08766D",
+  canvas: "#F3F7FB",
   card: "#FFFFFF",
-  ink: "#123B47",
-  muted: "#55727A",
-  line: "#D3E2E4",
+  ink: "#152F47",
+  muted: "#60778C",
+  line: "#D8E4EE",
   urgent: "#B42318",
-  gold: "#B87920",
-  paleBlue: "#E5F4F7",
-  paleTeal: "#E7F7F2",
+  gold: "#B97922",
+  paleBlue: "#E7F0FA",
+  paleTeal: "#E5F5F1",
+  paleGold: "#FFF5E1",
 };
 
 export function AppCard({ children, style }: { children: ReactNode; style?: object }) {
@@ -65,10 +66,10 @@ export function EmptyState({ icon, text }: { icon: React.ComponentProps<typeof M
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: palette.card, borderWidth: 1, borderColor: palette.line, borderRadius: 20, padding: 16, shadowColor: "#486581", shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 1 },
+  card: { backgroundColor: palette.card, borderWidth: 1, borderColor: palette.line, borderRadius: 18, padding: 16, shadowColor: "#123D63", shadowOpacity: 0.055, shadowRadius: 14, shadowOffset: { width: 0, height: 5 }, elevation: 2 },
   primaryButton: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: palette.navy, minHeight: 46, paddingHorizontal: 16, borderRadius: 14 },
   tealButton: { backgroundColor: palette.teal },
-  lightButton: { backgroundColor: palette.paleBlue, borderWidth: 1, borderColor: "#BFDBFE" },
+  lightButton: { backgroundColor: palette.paleBlue, borderWidth: 1, borderColor: "#C9DDED" },
   disabledButton: { opacity: 0.5 },
   pressed: { opacity: 0.84, transform: [{ scale: 0.98 }] },
   primaryText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800", writingDirection: "rtl" },

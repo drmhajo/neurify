@@ -5,6 +5,7 @@ export type ReportStatus = "جديد" | "قيد الإعداد" | "مكتمل";
 
 export type DepartmentUser = {
   id: string;
+  username: string;
   name: string;
   role: UserRole;
   teamIds: string[];
@@ -14,6 +15,7 @@ export type DepartmentUser = {
   email?: string;
   phone?: string;
   lastPasswordChangeAt?: string;
+  passwordRecoveryRequired?: boolean;
 };
 
 export type MedicalReport = {
@@ -208,10 +210,10 @@ export const rolePermissionDefaults: Record<UserRole, PermissionKey[]> = {
 
 export const createInitialDepartmentData = (): DepartmentData => ({
   users: [
-    { id: "u-admin", name: "د. عبدالله السالم", role: "admin", jobTitle: "رئيس القسم", teamIds: ["t1", "t2", "t3"], active: true, permissions: rolePermissionDefaults.admin },
-    { id: "u-1", name: "د. نورة الحربي", role: "consultant", jobTitle: "استشاري جراحة مخ وأعصاب", teamIds: ["t1"], active: true, permissions: rolePermissionDefaults.consultant },
-    { id: "u-2", name: "أ. فهد القحطاني", role: "coordinator", jobTitle: "منسق طبي", teamIds: ["t1", "t2"], active: true, permissions: rolePermissionDefaults.coordinator },
-    { id: "u-3", name: "د. سارة العتيبي", role: "team_member", jobTitle: "طبيب مقيم", teamIds: ["t2"], active: true, permissions: rolePermissionDefaults.team_member },
+    { id: "u-admin", username: "admin", name: "د. عبدالله السالم", role: "admin", jobTitle: "رئيس القسم", teamIds: ["t1", "t2", "t3"], active: true, permissions: rolePermissionDefaults.admin },
+    { id: "u-1", username: "noura", name: "د. نورة الحربي", role: "consultant", jobTitle: "استشاري جراحة مخ وأعصاب", teamIds: ["t1"], active: true, permissions: rolePermissionDefaults.consultant },
+    { id: "u-2", username: "fahad", name: "أ. فهد القحطاني", role: "coordinator", jobTitle: "منسق طبي", teamIds: ["t1", "t2"], active: true, permissions: rolePermissionDefaults.coordinator },
+    { id: "u-3", username: "sara", name: "د. سارة العتيبي", role: "team_member", jobTitle: "طبيب مقيم", teamIds: ["t2"], active: true, permissions: rolePermissionDefaults.team_member },
   ],
   reports: [
     { id: "r1", patientCode: "NS-2048", title: "تقرير خروج طبي", priority: "عاجل", status: "جديد", requester: "قسم الطوارئ", createdAt: "اليوم، 08:20", dueAt: "اليوم، 13:00" },

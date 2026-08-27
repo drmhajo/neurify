@@ -21,6 +21,11 @@ export default function LoginScreen() {
       Alert.alert(t("accessDenied"), result.message ? localize(result.message) : t("checkCredentials"));
       return;
     }
+    if (result.recoveryRequired) {
+      Alert.alert(language === "en" ? "Password update required" : "يلزم تحديث كلمة المرور", language === "en" ? "The administrator issued a temporary password. Update it now from your account screen." : "أصدر المشرف كلمة مرور مؤقتة. حدّثها الآن من شاشة حسابك.");
+      router.replace("/profile");
+      return;
+    }
     router.replace("/(tabs)");
   };
 
@@ -55,14 +60,14 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: palette.canvas },
-  topDecoration: { position: "absolute", top: 0, left: 0, right: 0, height: 250, backgroundColor: palette.navy, borderBottomLeftRadius: 48, borderBottomRightRadius: 48 },
+  topDecoration: { position: "absolute", top: 0, left: 0, right: 0, height: 258, backgroundColor: palette.navy, borderBottomLeftRadius: 54, borderBottomRightRadius: 54 },
   content: { flex: 1, paddingHorizontal: 24, paddingTop: 72, alignItems: "center" },
   languageToggle: { position: "absolute", top: 22, right: 22, flexDirection: "row", backgroundColor: "#FFFFFF24", padding: 3, borderRadius: 12 }, languageButton: { minWidth: 56, alignItems: "center", paddingHorizontal: 7, paddingVertical: 6, borderRadius: 9 }, languageButtonActive: { backgroundColor: "#FFFFFF" }, languageText: { color: "#D8EEF9", fontSize: 11, fontWeight: "800" }, languageTextActive: { color: palette.navy },
   mark: { width: 94, height: 94, borderRadius: 30, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", borderWidth: 4, borderColor: "#FFFFFF55", overflow: "hidden" }, logo: { width: 88, height: 88 },
   title: { marginTop: 14, color: "#FFFFFF", fontSize: 25, fontWeight: "900", writingDirection: "rtl", textAlign: "center" },
   subtitle: { marginTop: 5, color: "#D8EEF9", fontSize: 14, fontWeight: "700", writingDirection: "rtl" },
   description: { color: "#526D82", fontSize: 14, lineHeight: 22, textAlign: "center", writingDirection: "rtl", marginTop: 52, marginBottom: 18, paddingHorizontal: 16 },
-  form: { width: "100%", backgroundColor: "#FFFFFF", borderRadius: 24, padding: 20, borderWidth: 1, borderColor: palette.line, shadowColor: "#102A43", shadowOpacity: 0.09, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 2 },
+  form: { width: "100%", backgroundColor: "#FFFFFF", borderRadius: 22, padding: 20, borderWidth: 1, borderColor: palette.line, shadowColor: palette.navy, shadowOpacity: 0.1, shadowRadius: 20, shadowOffset: { width: 0, height: 9 }, elevation: 3 },
   formTitle: { color: palette.ink, fontSize: 19, fontWeight: "900", writingDirection: "rtl", textAlign: "right", marginBottom: 18 },
   label: { color: palette.ink, fontSize: 13, fontWeight: "800", writingDirection: "rtl", textAlign: "right", marginBottom: 7 },
   inputShell: { height: 50, borderColor: palette.line, borderWidth: 1, borderRadius: 14, flexDirection: "row", alignItems: "center", paddingHorizontal: 13, gap: 9, marginBottom: 14 },

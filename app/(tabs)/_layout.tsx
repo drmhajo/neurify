@@ -13,7 +13,7 @@ export default function TabLayout() {
   const { t } = useAppLanguage();
   const insets = useSafeAreaInsets();
   const bottomPadding = Platform.OS === "web" ? 10 : Math.max(insets.bottom, 8);
-  return <RequireSession><Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: palette.navy, tabBarInactiveTintColor: "#829AB1", tabBarButton: HapticTab, tabBarStyle: { height: 60 + bottomPadding, paddingTop: 8, paddingBottom: bottomPadding, backgroundColor: "#FFFFFF", borderTopColor: palette.line }, tabBarLabelStyle: { fontSize: 10, fontWeight: "700" } }}>
+  return <RequireSession><Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: palette.navy, tabBarInactiveTintColor: "#8094A7", tabBarButton: HapticTab, tabBarStyle: { height: 64 + bottomPadding, paddingTop: 9, paddingBottom: bottomPadding, backgroundColor: "#FFFFFF", borderTopColor: palette.line, borderTopWidth: 1 }, tabBarLabelStyle: { fontSize: 10, fontWeight: "800" } }}>
     <Tabs.Screen name="index" options={{ title: t("home"), tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} /> }} />
     <Tabs.Screen name="reports" options={{ title: t("reports"), tabBarIcon: ({ color }) => <IconSymbol size={24} name="doc.text.fill" color={color} /> }} />
     <Tabs.Screen name="schedule" options={{ title: t("schedules"), tabBarIcon: ({ color }) => <IconSymbol size={24} name="calendar" color={color} /> }} />
