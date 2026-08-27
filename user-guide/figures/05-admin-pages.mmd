@@ -1,0 +1,20 @@
+flowchart LR
+  A[لوحة التحكم] --> B[نظرة عامة]
+  A --> C[المستخدمون]
+  A --> D[الفرق]
+  A --> E[التواصل التشغيلي]
+  A --> F[النسخ الاحتياطي]
+  B --> B1[مؤشرات القسم]
+  C --> C1[تفعيل عضو]
+  C --> C2[كلمة مرور مؤقتة]
+  C --> C3[صلاحيات وإسناد فريق]
+  D --> D1[الاسم واللون]
+  D --> D2[الاستشاري القائد]
+  E --> E1[إشعار عام]
+  F --> F1[تصدير أو استعادة]
+  classDef root fill:#123D63,stroke:#123D63,color:#fff,stroke-width:2px;
+  classDef section fill:#08766D,stroke:#08766D,color:#fff,stroke-width:2px;
+  classDef detail fill:#F3F7FB,stroke:#B97922,color:#123D63,stroke-width:2px;
+  class A root;
+  class B,C,D,E,F section;
+  class B1,C1,C2,C3,D1,D2,E1,F1 detail;

@@ -1,0 +1,16 @@
+flowchart TB
+  subgraph S1[1. تسجيل الدخول والتهيئة]
+    A1[تعيين كلمة مرور المشرف<br/>ثم تسجيل الدخول]
+  end
+  subgraph S2[2. الرئيسية]
+    A2[استشارة جديدة<br/>ملخص الفريق والتنقل]
+  end
+  subgraph S3[3. الفرق]
+    A3[فرق باسم الاستشاريين<br/>فتح غرفة الفريق]
+  end
+  subgraph S4[4. غرفة الفريق]
+    A4[المنومون، المتابعة، الخروج<br/>فتح الملف الطبي]
+  end
+  A1 --> A2 --> A3 --> A4
+  classDef page fill:#F3F7FB,stroke:#123D63,color:#123D63,stroke-width:2px;
+  class A1,A2,A3,A4 page;

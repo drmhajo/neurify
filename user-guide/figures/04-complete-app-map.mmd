@@ -1,0 +1,24 @@
+flowchart TB
+  A[تسجيل الدخول<br/>وتهيئة المشرف] --> B[الرئيسية]
+  B --> C[الفرق]
+  B --> D[الجداول والعمليات]
+  B --> E[التقارير]
+  B --> F[لوحة التحكم]
+  B --> G[الملف الشخصي]
+  B --> H[الإشعارات]
+  C --> I[غرفة الفريق]
+  I --> J[الملف الطبي]
+  J --> K[Weekend Plan]
+  E --> L[Weekend Endorsement]
+  E --> M[تقرير المناوبة]
+  E --> N[الأرشيف ولوحة البيانات]
+  F --> O[المستخدمون والصلاحيات]
+  F --> P[الفرق والقادة]
+  F --> Q[إشعار عام]
+  F --> R[النسخ الاحتياطي]
+  classDef start fill:#123D63,stroke:#123D63,color:#fff,stroke-width:2px;
+  classDef tab fill:#08766D,stroke:#08766D,color:#fff,stroke-width:2px;
+  classDef detail fill:#F3F7FB,stroke:#B97922,color:#123D63,stroke-width:2px;
+  class A,B start;
+  class C,D,E,F,G,H tab;
+  class I,J,K,L,M,N,O,P,Q,R detail;

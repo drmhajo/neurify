@@ -1,0 +1,21 @@
+flowchart TB
+  subgraph S10[10. طلبات التقارير]
+    A10[طلب تقرير طبي<br/>مدخل التقارير المتخصصة]
+  end
+  subgraph S11[11. تقرير المناوبة]
+    A11[المناوب الأول والثاني والثالث<br/>إنشاء التقرير]
+  end
+  subgraph S12[12. أرشيف المناوبة]
+    A12[فلترة بالتاريخ والطبيب<br/>استعراض وتنزيل]
+  end
+  subgraph S13[13. لوحة البيانات]
+    A13[اختيار الشهر<br/>إحصاءات وتصدير]
+  end
+  subgraph S14[14. Weekend Endorsement]
+    A14[استشاري وبحث سريع<br/>PDF أو Excel]
+  end
+  A10 --> A11 --> A12
+  A10 --> A13
+  A10 --> A14
+  classDef page fill:#FDF6EC,stroke:#B97922,color:#123D63,stroke-width:2px;
+  class A10,A11,A12,A13,A14 page;

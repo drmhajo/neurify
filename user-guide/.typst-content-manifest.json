@@ -1,11 +1,11 @@
 {
-  "task_kind": "new-document",
+  "task_kind": "existing-typst",
   "output": "pdf",
   "signals": [],
-  "hard_constraints": ["Arabic RTL primary language", "illustrated workflow guide", "A4 printable PDF"],
+  "hard_constraints": ["Arabic RTL primary language", "detailed page-by-page illustrated guide", "complete app workflow diagram", "A4 printable PDF"],
   "content_features": {
     "code_blocks": 0,
-    "defined_terms": 8,
-    "portrait_images": 1
+    "defined_terms": 12,
+    "portrait_images": 18
   }
 }

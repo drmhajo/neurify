@@ -1,0 +1,22 @@
+flowchart TB
+  subgraph S5[5. استشارة جديدة]
+    A5[رقم الملف والبيانات<br/>الفريق، القرار، والمسار]
+  end
+  subgraph S6[6. الملف الطبي]
+    A6[البيانات السريرية<br/>تعديل أو خروج]
+  end
+  subgraph S7[7. الأشعة والدردشة]
+    A7[عرض أو تنزيل المرفقات<br/>تواصل داخل الحالة]
+  end
+  subgraph S8[8. العمليات]
+    A8[اختيار المريض المنوّم<br/>التاريخ والحالة والملاحظات]
+  end
+  subgraph S9[9. Weekend Plan]
+    A9[خطة نهاية الأسبوع<br/>حفظ وآخر تحديث]
+  end
+  A5 --> A6
+  A6 --> A7
+  A6 --> A8
+  A6 --> A9
+  classDef page fill:#EDF8F6,stroke:#08766D,color:#123D63,stroke-width:2px;
+  class A5,A6,A7,A8,A9 page;

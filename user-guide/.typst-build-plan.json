@@ -1,13 +1,10 @@
 {
   "base": {
     "auto_apply": true,
-    "conflict_group": "document-base",
-    "id": "report-entry",
-    "kind": "asset",
+    "id": "existing-project",
+    "kind": "existing-project",
     "ownership": "global",
-    "path": "assets/report-entry.typ",
-    "reason": "General professional document fallback.",
-    "status": "ready"
+    "reason": "Preserve the user's existing Typst project as the base."
   },
   "catalog_version": "2026-07-17-affiliated-formats-v3",
   "channel": "typst-pdf",
@@ -27,13 +24,13 @@
     }
   ],
   "exclusions": [],
-  "fingerprint": "sha256:c59c2095993ee7ffd9185711959af799f892788e3320ebf7b0e49979b0e38fad",
+  "fingerprint": "sha256:c87d514b0a7fa65aa5b1c3f7cfc79d607e78559f739302ba72fd988c961f435c",
   "next_action": "minimal-compile-preflight",
   "optional_idea": null,
   "question": null,
   "reused": false,
   "schema_version": 1,
   "state": "ready",
-  "style_owner": "report-entry",
+  "style_owner": "existing-project",
   "typst_version": "typst 0.15.1 (9dfd3a08)"
 }

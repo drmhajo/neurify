@@ -1,0 +1,18 @@
+flowchart TB
+  A[الرئيسية<br/>استشارة جديدة] --> B[تسجيل رقم الملف والبيانات]
+  B --> C[اختيار الفريق]
+  C --> D[تحديد تنويم أو متابعة أو خروج]
+  D --> E[غرفة الفريق]
+  E --> F[الملف الطبي]
+  F --> G[البيانات السريرية]
+  F --> H[الأشعة والمرفقات]
+  F --> I[دردشة الحالة]
+  F --> J[العمليات]
+  F --> K[Weekend Plan]
+  F --> L[خروج إلى الأرشيف]
+  classDef root fill:#123D63,stroke:#123D63,color:#fff,stroke-width:2px;
+  classDef action fill:#08766D,stroke:#08766D,color:#fff,stroke-width:2px;
+  classDef detail fill:#F3F7FB,stroke:#B97922,color:#123D63,stroke-width:2px;
+  class A,B,C,D,E,F root;
+  class G,H,I,J,K action;
+  class L detail;

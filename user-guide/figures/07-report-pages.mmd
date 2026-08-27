@@ -1,0 +1,19 @@
+flowchart TB
+  A[صفحة التقارير] --> B[طلبات التقارير الطبية]
+  A --> C[تقرير المناوبة]
+  A --> D[Oncall Endorsement archive]
+  A --> E[لوحة البيانات الشهرية]
+  A --> F[Weekend Endorsement]
+  C --> C1[اختيار 1st / 2nd / 3rd on-call]
+  C1 --> C2[إنشاء PDF]
+  E --> E1[اختيار الشهر]
+  E1 --> E2[PDF أو Excel]
+  F --> F1[مرشح الاستشاري]
+  F1 --> F2[بحث بالاسم أو رقم الملف]
+  F2 --> F3[PDF أو Excel]
+  classDef root fill:#123D63,stroke:#123D63,color:#fff,stroke-width:2px;
+  classDef section fill:#08766D,stroke:#08766D,color:#fff,stroke-width:2px;
+  classDef detail fill:#F3F7FB,stroke:#B97922,color:#123D63,stroke-width:2px;
+  class A root;
+  class B,C,D,E,F section;
+  class C1,C2,E1,E2,F1,F2,F3 detail;
