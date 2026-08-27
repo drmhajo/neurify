@@ -28,4 +28,15 @@ describe("Weekend Endorsement", () => {
     expect(html).toContain("King Saud Medical City");
     expect(html).toContain("Not documented");
   });
+
+  it("يقصر التقرير ومحتوى الطباعة على الاستشاري المحدد", () => {
+    const data = createInitialDepartmentData();
+    const report = buildWeekendEndorsementReport(data, "Admin", "Dr. Hashmi");
+    const html = createWeekendEndorsementHtml(report);
+
+    expect(report.consultantFilter).toBe("Dr. Hashmi");
+    expect(report.entries).toHaveLength(1);
+    expect(report.entries.every((entry) => entry.consultant === "Dr. Hashmi")).toBe(true);
+    expect(html).toContain("Treating consultant · Dr. Hashmi");
+  });
 });
