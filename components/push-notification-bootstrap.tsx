@@ -6,14 +6,16 @@ import { router } from "expo-router";
 export function PushNotificationBootstrap() {
   useEffect(() => {
     if (Platform.OS === "web") return;
-    const openTeam = (notification: Notifications.Notification) => {
+    const openNotification = (notification: Notifications.Notification) => {
+      const destination = notification.request.content.data?.url;
+      if (destination === "/notifications") { router.push("/notifications"); return; }
       const teamId = notification.request.content.data?.teamId;
       if (typeof teamId === "string") router.push({ pathname: "/team/[id]", params: { id: teamId } });
     };
     Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response?.notification) openTeam(response.notification);
+      if (response?.notification) openNotification(response.notification);
     }).catch(() => undefined);
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => openTeam(response.notification));
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => openNotification(response.notification));
     return () => subscription.remove();
   }, []);
 

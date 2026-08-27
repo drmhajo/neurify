@@ -96,7 +96,7 @@ const config: ExpoConfig = {
     [
       "expo-notifications",
       {
-        "defaultChannel": "team-alerts",
+        "defaultChannel": "department-alerts",
         "color": "#075985",
         "enableBackgroundRemoteNotifications": true
       }

@@ -37,8 +37,8 @@ export async function enablePushNotifications(staffId: string): Promise<PushSetu
   }
 
   if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("team-alerts", {
-      name: "تنبيهات الفرق العلاجية",
+    await Notifications.setNotificationChannelAsync("department-alerts", {
+      name: "تنبيهات قسم جراحة المخ والأعصاب",
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 200, 150, 200],
       lightColor: "#075985",
@@ -58,7 +58,7 @@ export async function enablePushNotifications(staffId: string): Promise<PushSetu
 
   const projectId = getProjectId();
   if (!projectId) {
-    return { state: "needs_build", message: "يلزم إصدار نسخة مؤسسية من التطبيق لتسجيل هذا الجهاز للإشعارات الفورية." };
+    return { state: "needs_build", message: "يلزم ربط الحزمة بمعرّف مشروع Expo ثم إصدار نسخة تطبيق جديدة لتسجيل هذا الجهاز للإشعارات الفورية." };
   }
 
   try {
@@ -90,5 +90,18 @@ export async function dispatchTeamPush(input: {
     });
   } catch {
     // يبقى التنبيه الداخلي متاحاً حتى تتم إعادة المحاولة في التحديث المؤسسي للخادم.
+  }
+}
+
+export async function dispatchGeneralPush(input: {
+  recipientIds: string[];
+  title: string;
+  body: string;
+}): Promise<void> {
+  try {
+    const client = createTRPCClient();
+    await client.push.sendGeneral.mutate(input);
+  } catch {
+    // يبقى الإعلان الداخلي محفوظاً، وتُعاد محاولة Push عند الإعلان التالي أو بعد تفعيل الجهاز.
   }
 }

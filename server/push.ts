@@ -1,4 +1,4 @@
-export type PushEventType = "consultation" | "admitted_case";
+export type PushEventType = "consultation" | "admitted_case" | "general_announcement";
 
 type ExpoPushTicket = {
   status: "ok" | "error";
@@ -22,8 +22,8 @@ export function createTeamPushPayload(input: {
     body: input.body,
     sound: "default" as const,
     priority: "high" as const,
-    channelId: "team-alerts",
-    data: { teamId: input.teamId, type: input.type },
+    channelId: "department-alerts",
+    data: input.type === "general_announcement" ? { type: input.type, url: "/notifications" } : { teamId: input.teamId, type: input.type },
   };
 }
 

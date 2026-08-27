@@ -37,6 +37,16 @@ export const appRouter = router({
       if (result.invalidTokens.length) await db.deactivatePushTokens(result.invalidTokens);
       return { recipients: tokens.length, sent: result.sent };
     }),
+    sendGeneral: publicProcedure.input(z.object({
+      recipientIds: z.array(z.string().min(1).max(64)).min(1).max(500),
+      title: z.string().min(1).max(80),
+      body: z.string().min(1).max(280),
+    })).mutation(async ({ input }) => {
+      const tokens = await db.getActivePushTokens(input.recipientIds);
+      const result = await sendTeamPushNotifications({ tokens, teamId: "department", type: "general_announcement", title: input.title, body: input.body });
+      if (result.invalidTokens.length) await db.deactivatePushTokens(result.invalidTokens);
+      return { recipients: tokens.length, sent: result.sent };
+    }),
   }),
   backup: router({
     validate: adminProcedure.input(z.object({ payload: z.string().min(40).max(8_000_000) })).mutation(({ input }) => {

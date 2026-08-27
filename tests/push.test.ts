@@ -20,4 +20,10 @@ describe("إرسال إشعارات الفرق العلاجية", () => {
     expect(payload.body).not.toContain("NS-");
     expect(payload.priority).toBe("high");
   });
+
+  it("يوجه الإعلان العام إلى صندوق الإشعارات من دون تضمين بيانات مرضى", () => {
+    const payload = createTeamPushPayload({ token: "ExponentPushToken[abc-123]", teamId: "department", type: "general_announcement", title: "إعلان عام", body: "رسالة للقسم" });
+    expect(payload.data).toEqual({ type: "general_announcement", url: "/notifications" });
+    expect(payload.body).not.toContain("NS-");
+  });
 });

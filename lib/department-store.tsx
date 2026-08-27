@@ -23,7 +23,7 @@ import {
   type OnCallSlot,
   rolePermissionDefaults,
 } from "@/lib/department-model";
-import { dispatchTeamPush } from "@/lib/push-notifications";
+import { dispatchGeneralPush, dispatchTeamPush } from "@/lib/push-notifications";
 import type { DepartmentBackup } from "@/lib/department-backup";
 import { createTRPCClient } from "@/lib/trpc";
 import { syncFailureStatus, type DepartmentSyncState, parseCloudDepartmentData, prepareDepartmentDataForCloud, restoreLocalAttachmentReferences } from "@/lib/department-sync";
@@ -244,6 +244,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       const recipientIds = current.users.filter((user) => user.active).map((user) => user.id);
       return { ...current, notifications: [createGeneralAnnouncement({ id: `n-general-${now}`, title: validated.title, message: validated.message, recipientIds }), ...(current.notifications ?? [])] };
     });
+    void dispatchGeneralPush({ recipientIds: dataRef.current.users.filter((user) => user.active).map((user) => user.id), title: validated.title, body: validated.message });
     return { ok: true, recipientCount };
   }, [session, updateData]);
 
