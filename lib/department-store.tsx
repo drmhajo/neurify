@@ -20,6 +20,7 @@ import {
   type UserRole,
   type CareTeam,
   type DailyShiftReport,
+  type OnCallSlot,
   rolePermissionDefaults,
 } from "@/lib/department-model";
 import { dispatchTeamPush } from "@/lib/push-notifications";
@@ -45,7 +46,7 @@ type DepartmentStore = {
   advanceReport: (id: string) => void;
   addReport: (input: { patientCode: string; title: string; priority: ReportPriority }) => void;
   generateDailyShiftReport: () => DailyShiftReport | null;
-  setSecondOnCallUserId: (userId: string) => void;
+  setOnCallUserId: (slot: OnCallSlot, userId: string) => void;
   addConsultation: (teamId: string, input: { title: string; subject: string; disposition: ClinicalDisposition; patient: ConsultationPatient }) => void;
   addCase: (teamId: string, input: { code: string; diagnosis: string }) => void;
   dischargePatient: (teamId: string, caseId: string, reason: string) => void;
@@ -245,10 +246,17 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return report;
   }, [data.users, session, updateData]);
 
-  const setSecondOnCallUserId = useCallback((userId: string) => updateData((current) => ({
-    ...current,
-    shiftReportPreferences: { ...current.shiftReportPreferences, secondOnCallUserId: userId },
-  })), [updateData]);
+  const setOnCallUserId = useCallback((slot: OnCallSlot, userId: string) => updateData((current) => {
+    const preferenceKey: Record<OnCallSlot, "firstOnCallUserId" | "secondOnCallUserId" | "thirdOnCallUserId"> = {
+      first: "firstOnCallUserId",
+      second: "secondOnCallUserId",
+      third: "thirdOnCallUserId",
+    };
+    return {
+      ...current,
+      shiftReportPreferences: { ...current.shiftReportPreferences, [preferenceKey[slot]]: userId },
+    };
+  }), [updateData]);
 
   const addConsultation = useCallback((teamId: string, input: { title: string; subject: string; disposition: ClinicalDisposition; patient: ConsultationPatient }) => {
     const targetTeam = data.teams.find((team) => team.id === teamId);
@@ -432,7 +440,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, generateDailyShiftReport, setSecondOnCallUserId, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, generateDailyShiftReport, hydrated, markAllNotificationsRead, markNotificationRead, removeUser, resetUserPassword, restoreDepartmentBackup, session, setSecondOnCallUserId, signIn, signInWithGoogleDemo, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
+  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, generateDailyShiftReport, hydrated, markAllNotificationsRead, markNotificationRead, removeUser, resetUserPassword, restoreDepartmentBackup, session, setOnCallUserId, signIn, signInWithGoogleDemo, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }

@@ -211,8 +211,12 @@ export type DailyShiftReport = {
   statistics: { consultations: number; requiringFollowUp: number; admissions: number; emergencySurgeries: number };
 };
 
+export type OnCallSlot = "first" | "second" | "third";
+
 export type ShiftReportPreferences = {
+  firstOnCallUserId?: string;
   secondOnCallUserId?: string;
+  thirdOnCallUserId?: string;
 };
 
 export type CareTeam = {

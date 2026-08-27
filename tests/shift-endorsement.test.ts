@@ -19,10 +19,12 @@ describe("تقرير المناوبة اليومي", () => {
     expect(report.statistics.admissions).toBe(report.admissions.length);
   });
 
-  it("يعتمد المناوب الثاني المختار من مستخدم نشط عند إنشاء التقرير", () => {
+  it("يعتمد أعضاء فريق المناوبة المختارين من المستخدمين النشطين عند إنشاء التقرير", () => {
     const data = createInitialDepartmentData();
-    data.shiftReportPreferences = { secondOnCallUserId: "u-3" };
+    data.shiftReportPreferences = { firstOnCallUserId: "u-1", secondOnCallUserId: "u-3", thirdOnCallUserId: "u-2" };
     const report = buildDailyShiftReport(data, "Admin", new Date("2026-08-25T10:00:00+03:00"));
+    expect(report.onCall.first).toBe("د. نورة الحربي");
     expect(report.onCall.second).toBe("د. سارة العتيبي");
+    expect(report.onCall.third).toBe("أ. فهد القحطاني");
   });
 });

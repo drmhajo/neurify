@@ -10,21 +10,24 @@ import { getShiftWindow } from "@/lib/shift-endorsement";
 import { useAppLanguage } from "@/lib/language";
 
 export default function ShiftReportScreen() {
-  const { data, session, generateDailyShiftReport, setSecondOnCallUserId } = useDepartment();
+  const { data, session, generateDailyShiftReport, setOnCallUserId } = useDepartment();
   const { language, isRTL } = useAppLanguage();
   const [selected, setSelected] = useState<DailyShiftReport | null>(null);
   const [downloading, setDownloading] = useState(false);
   const canManage = Boolean(session && data.users.find((user) => user.id === session.userId)?.permissions.includes("manage_reports"));
   const activeUsers = data.users.filter((user) => user.active);
-  const selectedSecondOnCallId = data.shiftReportPreferences?.secondOnCallUserId;
-  const selectedSecondOnCall = activeUsers.find((user) => user.id === selectedSecondOnCallId);
+  const selectedOnCall = {
+    first: activeUsers.find((user) => user.id === data.shiftReportPreferences?.firstOnCallUserId),
+    second: activeUsers.find((user) => user.id === data.shiftReportPreferences?.secondOnCallUserId),
+    third: activeUsers.find((user) => user.id === data.shiftReportPreferences?.thirdOnCallUserId),
+  };
   const window = getShiftWindow();
 
   const generate = () => {
-    if (!selectedSecondOnCall) {
+    if (!selectedOnCall.first || !selectedOnCall.second || !selectedOnCall.third) {
       Alert.alert(
-        language === "en" ? "2nd on-call required" : "المناوب الثاني مطلوب",
-        language === "en" ? "Select the 2nd on-call clinician from the active users before creating the report." : "اختر المناوب الثاني من المستخدمين النشطين قبل إنشاء التقرير.",
+        language === "en" ? "On-call team required" : "فريق المناوبة مطلوب",
+        language === "en" ? "Select the 1st, 2nd, and 3rd on-call clinicians from active users before creating the report." : "اختر المناوب الأول والثاني والثالث من المستخدمين النشطين قبل إنشاء التقرير.",
       );
       return;
     }
@@ -95,31 +98,15 @@ export default function ShiftReportScreen() {
       {canManage ? (
         <AppCard style={styles.onCallCard}>
           <View style={[styles.onCallHead, direction(isRTL)]}>
-            <View style={styles.onCallBadge}><MaterialIcons name="person-outline" size={18} color={palette.teal} /></View>
+            <View style={styles.onCallBadge}><MaterialIcons name="groups" size={18} color={palette.teal} /></View>
             <View style={styles.headerCopy}>
-              <Text style={[styles.onCallTitle, align(isRTL)]}>2nd on-call</Text>
-              <Text style={[styles.onCallHint, align(isRTL)]}>{language === "en" ? "Choose from active registered users for this report." : "اختر من المستخدمين المسجلين والنشطين لهذا التقرير."}</Text>
+              <Text style={[styles.onCallTitle, align(isRTL)]}>{language === "en" ? "On-call team" : "فريق المناوبة"}</Text>
+              <Text style={[styles.onCallHint, align(isRTL)]}>{language === "en" ? "Choose active registered users for all three on-call roles." : "اختر المستخدمين المسجلين والنشطين للأدوار الثلاثة في المناوبة."}</Text>
             </View>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.onCallChoices, direction(isRTL)]}>
-            {activeUsers.map((user) => {
-              const active = user.id === selectedSecondOnCallId;
-              return (
-                <Pressable
-                  key={user.id}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
-                  onPress={() => setSecondOnCallUserId(user.id)}
-                  style={({ pressed }) => [styles.onCallChoice, active && styles.onCallChoiceActive, pressed && styles.pressed]}
-                >
-                  <MaterialIcons name={active ? "check-circle" : "account-circle"} size={19} color={active ? "#FFFFFF" : palette.teal} />
-                  <Text style={[styles.onCallName, active && styles.onCallNameActive, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{user.name}</Text>
-                  <Text style={[styles.onCallRole, active && styles.onCallRoleActive, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{user.jobTitle}</Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-          <Text style={[styles.onCallSelected, align(isRTL)]}>{selectedSecondOnCall ? (language === "en" ? `Selected: ${selectedSecondOnCall.name}` : `المختار: ${selectedSecondOnCall.name}`) : (language === "en" ? "No clinician selected yet." : "لم يتم اختيار المناوب الثاني بعد.")}</Text>
+          <OnCallUserPicker slot="first" selectedUser={selectedOnCall.first} users={activeUsers} language={language} isRTL={isRTL} onSelect={setOnCallUserId} />
+          <OnCallUserPicker slot="second" selectedUser={selectedOnCall.second} users={activeUsers} language={language} isRTL={isRTL} onSelect={setOnCallUserId} />
+          <OnCallUserPicker slot="third" selectedUser={selectedOnCall.third} users={activeUsers} language={language} isRTL={isRTL} onSelect={setOnCallUserId} />
         </AppCard>
       ) : null}
 
@@ -169,6 +156,15 @@ function MiniStat({ value, label }: { value: number; label: string }) {
   return <View style={styles.miniStat}><Text style={styles.miniValue}>{value}</Text><Text style={styles.miniLabel}>{label}</Text></View>;
 }
 
+function OnCallUserPicker({ slot, selectedUser, users, language, isRTL, onSelect }: { slot: "first" | "second" | "third"; selectedUser?: { id: string; name: string; jobTitle: string }; users: { id: string; name: string; jobTitle: string }[]; language: "ar" | "en"; isRTL: boolean; onSelect: (slot: "first" | "second" | "third", userId: string) => void }) {
+  const labels = {
+    first: language === "en" ? "1st on-call" : "المناوب الأول",
+    second: language === "en" ? "2nd on-call" : "المناوب الثاني",
+    third: language === "en" ? "3rd on-call" : "المناوب الثالث",
+  };
+  return <View style={styles.onCallSection}><Text style={[styles.onCallSectionTitle, align(isRTL)]}>{labels[slot]}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.onCallChoices, direction(isRTL)]}>{users.map((user) => { const active = user.id === selectedUser?.id; return <Pressable key={user.id} accessibilityRole="radio" accessibilityState={{ selected: active }} onPress={() => onSelect(slot, user.id)} style={({ pressed }) => [styles.onCallChoice, active && styles.onCallChoiceActive, pressed && styles.pressed]}><MaterialIcons name={active ? "check-circle" : "account-circle"} size={19} color={active ? "#FFFFFF" : palette.teal} /><Text style={[styles.onCallName, active && styles.onCallNameActive, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{user.name}</Text><Text style={[styles.onCallRole, active && styles.onCallRoleActive, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{user.jobTitle}</Text></Pressable>; })}</ScrollView><Text style={[styles.onCallSelected, align(isRTL)]}>{selectedUser ? (language === "en" ? `Selected: ${selectedUser.name}` : `المختار: ${selectedUser.name}`) : (language === "en" ? "No clinician selected yet." : "لم يتم اختيار مستخدم بعد.")}</Text></View>;
+}
+
 function InfoRow({ label, value, isRTL }: { label: string; value: string; isRTL: boolean }) {
   return <View style={[styles.infoRow, direction(isRTL)]}><Text style={[styles.infoLabel, align(isRTL)]}>{label}</Text><Text style={[styles.infoValue, align(isRTL)]}>{value}</Text></View>;
 }
@@ -197,7 +193,9 @@ const styles = StyleSheet.create({
   onCallBadge: { height: 34, width: 34, borderRadius: 11, backgroundColor: palette.paleTeal, alignItems: "center", justifyContent: "center" },
   onCallTitle: { color: palette.ink, fontSize: 13, fontWeight: "900" },
   onCallHint: { color: palette.muted, fontSize: 10, marginTop: 2, lineHeight: 15 },
-  onCallChoices: { gap: 8, paddingTop: 12, paddingBottom: 6 },
+  onCallSection: { borderTopColor: palette.line, borderTopWidth: 1, marginTop: 12, paddingTop: 10 },
+  onCallSectionTitle: { color: palette.navy, fontSize: 11, fontWeight: "900" },
+  onCallChoices: { gap: 8, paddingTop: 8, paddingBottom: 6 },
   onCallChoice: { width: 156, minHeight: 79, borderWidth: 1, borderColor: "#BDE5DB", backgroundColor: "#F4FBF9", borderRadius: 13, padding: 10, gap: 3 },
   onCallChoiceActive: { backgroundColor: palette.teal, borderColor: palette.teal },
   onCallName: { color: palette.ink, fontSize: 11, fontWeight: "900", marginTop: 2 },

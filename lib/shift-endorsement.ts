@@ -43,8 +43,8 @@ export function buildDailyShiftReport(data: DepartmentData, generatedBy: string,
     return Number.isNaN(timestamp) || (timestamp >= startAt && timestamp <= endAt);
   };
   const onCall = data.shifts.slice(0, 3).map((shift) => shift.clinician);
-  const selectedSecondOnCall = data.shiftReportPreferences?.secondOnCallUserId
-    ? data.users.find((user) => user.id === data.shiftReportPreferences?.secondOnCallUserId && user.active)?.name
+  const selectedOnCall = (userId?: string) => userId
+    ? data.users.find((user) => user.id === userId && user.active)?.name
     : undefined;
   const consultations = data.teams.flatMap((team) => team.consultations)
     .filter((consultation) => Boolean(consultation.patient) && happenedWithinShift(consultation.createdAt))
@@ -79,7 +79,11 @@ export function buildDailyShiftReport(data: DepartmentData, generatedBy: string,
     shiftEndAt: window.endAt,
     generatedAt: now.toISOString(),
     generatedBy,
-    onCall: { first: onCall[0] || "—", second: selectedSecondOnCall || onCall[1] || "—", third: onCall[2] || "—" },
+    onCall: {
+      first: selectedOnCall(data.shiftReportPreferences?.firstOnCallUserId) || onCall[0] || "—",
+      second: selectedOnCall(data.shiftReportPreferences?.secondOnCallUserId) || onCall[1] || "—",
+      third: selectedOnCall(data.shiftReportPreferences?.thirdOnCallUserId) || onCall[2] || "—",
+    },
     consultations,
     admissions,
     emergencySurgeries,
