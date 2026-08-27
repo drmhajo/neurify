@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   createInitialDepartmentData,
   createTeamNotification,
@@ -21,6 +21,8 @@ import {
 } from "@/lib/department-model";
 import { dispatchTeamPush } from "@/lib/push-notifications";
 import type { DepartmentBackup } from "@/lib/department-backup";
+import { createTRPCClient } from "@/lib/trpc";
+import { syncFailureStatus, type DepartmentSyncState, parseCloudDepartmentData, prepareDepartmentDataForCloud, restoreLocalAttachmentReferences } from "@/lib/department-sync";
 
 type Session = {
   userId: string;
@@ -57,26 +59,39 @@ type DepartmentStore = {
   markNotificationRead: (notificationId: string) => void;
   markAllNotificationsRead: () => void;
   restoreDepartmentBackup: (backup: DepartmentBackup) => boolean;
+  syncState: DepartmentSyncState;
+  syncNow: () => Promise<boolean>;
 };
 
 const DATA_KEY = "ksmc-neuro.demo-data.v1";
 const SESSION_KEY = "ksmc-neuro.demo-session.v1";
+const SYNC_STATE_KEY = "ksmc-neuro.demo-sync-state.v1";
 const DepartmentContext = createContext<DepartmentStore | null>(null);
 
 export function DepartmentProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [data, setData] = useState<DepartmentData>(createInitialDepartmentData);
   const [session, setSession] = useState<Session | null>(null);
+  const [syncState, setSyncState] = useState<DepartmentSyncState>({ status: "local" });
+  const dataRef = useRef(data);
+  const dirtyRef = useRef(false);
+  const hasPersistedLocalDataRef = useRef(false);
+  const firstSyncUserRef = useRef<string | null>(null);
+  const trpcClient = useMemo(() => createTRPCClient(), []);
+
+  useEffect(() => { dataRef.current = data; }, [data]);
 
   useEffect(() => {
     const hydrate = async () => {
       try {
-        const [storedData, storedSession] = await Promise.all([AsyncStorage.getItem(DATA_KEY), AsyncStorage.getItem(SESSION_KEY)]);
+        const [storedData, storedSession, storedSyncState] = await Promise.all([AsyncStorage.getItem(DATA_KEY), AsyncStorage.getItem(SESSION_KEY), AsyncStorage.getItem(SYNC_STATE_KEY)]);
         if (storedData) {
+          hasPersistedLocalDataRef.current = true;
           const parsedData = JSON.parse(storedData) as DepartmentData;
           setData({ ...parsedData, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], weeklyAssignments: parsedData.weeklyAssignments ?? [], scheduleDocuments: (parsedData.scheduleDocuments ?? []).map((document) => ({ ...document, mimeType: document.mimeType ?? (document.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/*") })), surgeries: parsedData.surgeries.map((surgery) => ({ ...surgery, date: surgery.date ?? "اليوم", notes: surgery.notes ?? "", patientLink: surgery.patientLink ?? parsedData.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.code === surgery.patientCode ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined })), teams: parsedData.teams.map((team) => ({ ...team, dischargedCases: team.dischargedCases ?? [], cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
         }
         if (storedSession) setSession(JSON.parse(storedSession) as Session);
+        if (storedSyncState) setSyncState(JSON.parse(storedSyncState) as DepartmentSyncState);
       } finally {
         setHydrated(true);
       }
@@ -87,10 +102,61 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   const updateData = useCallback((updater: (current: DepartmentData) => DepartmentData) => {
     setData((current) => {
       const next = updater(current);
+      dataRef.current = next;
+      dirtyRef.current = true;
       AsyncStorage.setItem(DATA_KEY, JSON.stringify(next)).catch(() => undefined);
       return next;
     });
   }, []);
+
+  const syncNow = useCallback(async () => {
+    if (session?.role !== "admin") return false;
+    setSyncState((current) => ({ ...current, status: "syncing" }));
+    try {
+      const localData = dataRef.current;
+      if (!hasPersistedLocalDataRef.current && !dirtyRef.current) {
+        const remote = await trpcClient.cloudSync.pull.query();
+        if (remote) {
+          const restored = restoreLocalAttachmentReferences(parseCloudDepartmentData(remote.data), localData);
+          dataRef.current = restored;
+          hasPersistedLocalDataRef.current = true;
+          setData(restored);
+          await AsyncStorage.setItem(DATA_KEY, JSON.stringify(restored));
+          const nextState: DepartmentSyncState = { status: "synced", lastSyncedAt: remote.updatedAt, version: remote.version };
+          setSyncState(nextState);
+          await AsyncStorage.setItem(SYNC_STATE_KEY, JSON.stringify(nextState));
+          return true;
+        }
+      }
+      const saved = await trpcClient.cloudSync.push.mutate({ data: prepareDepartmentDataForCloud(localData), actorName: session.name });
+      dirtyRef.current = false;
+      hasPersistedLocalDataRef.current = true;
+      const nextState: DepartmentSyncState = { status: "synced", lastSyncedAt: saved.updatedAt, version: saved.version };
+      setSyncState(nextState);
+      await AsyncStorage.setItem(SYNC_STATE_KEY, JSON.stringify(nextState));
+      return true;
+    } catch (error) {
+      const status = syncFailureStatus(error);
+      setSyncState((current) => {
+        const nextState: DepartmentSyncState = { ...current, status };
+        AsyncStorage.setItem(SYNC_STATE_KEY, JSON.stringify(nextState)).catch(() => undefined);
+        return nextState;
+      });
+      return false;
+    }
+  }, [session, trpcClient]);
+
+  useEffect(() => {
+    if (!hydrated || session?.role !== "admin" || !dirtyRef.current) return;
+    const timer = setTimeout(() => { void syncNow(); }, 1400);
+    return () => clearTimeout(timer);
+  }, [data, hydrated, session?.role, syncNow]);
+
+  useEffect(() => {
+    if (!hydrated || session?.role !== "admin" || firstSyncUserRef.current === session.userId) return;
+    firstSyncUserRef.current = session.userId;
+    void syncNow();
+  }, [hydrated, session?.role, session?.userId, syncNow]);
 
   const signIn = useCallback(async (username: string, password: string) => {
     if (!username.trim() || !password.trim()) return { ok: false, message: "أدخل اسم المستخدم وكلمة المرور." };
@@ -301,7 +367,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, hydrated, markAllNotificationsRead, markNotificationRead, restoreDepartmentBackup, session, signIn, signInWithGoogleDemo, signOut, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
+  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, hydrated, markAllNotificationsRead, markNotificationRead, restoreDepartmentBackup, session, signIn, signInWithGoogleDemo, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }

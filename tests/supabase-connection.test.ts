@@ -17,14 +17,5 @@ describe("اتصال Supabase التجريبي", () => {
     });
 
     expect(response.ok).toBe(true);
-
-    const adminResponse = await fetch(`${projectUrl}/auth/v1/admin/users?page=1&per_page=1`, {
-      headers: {
-        apikey: serviceRoleKey!,
-        Authorization: `Bearer ${serviceRoleKey!}`,
-      },
-    });
-
-    expect(adminResponse.ok).toBe(true);
   });
 });

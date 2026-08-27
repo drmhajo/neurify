@@ -5,6 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { isExpoPushToken, sendTeamPushNotifications } from "./push";
+import { getPilotSnapshot, savePilotSnapshot } from "./supabase-sync";
 
 export const appRouter = router({
   // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -47,6 +48,12 @@ export const appRouter = router({
         return { valid: true as const, message: "Backup structure is valid" };
       } catch { return { valid: false as const, message: "Backup JSON could not be parsed" }; }
     }),
+  }),
+  cloudSync: router({
+    pull: publicProcedure.query(() => getPilotSnapshot()),
+    // Pilot-only: the client uses the existing local demonstration login, so this route must
+    // never be treated as a substitute for institutional identity or clinical authorization.
+    push: publicProcedure.input(z.object({ data: z.unknown(), actorName: z.string().min(1).max(120) })).mutation(({ input }) => savePilotSnapshot(input)),
   }),
 
   // TODO: add feature routers here, e.g.
