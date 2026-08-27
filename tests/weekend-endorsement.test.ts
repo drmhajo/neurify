@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialDepartmentData } from "../lib/department-model";
-import { buildWeekendEndorsementReport, createWeekendEndorsementHtml } from "../lib/weekend-endorsement";
+import { buildWeekendEndorsementReport, createWeekendEndorsementHtml, searchWeekendEndorsementEntries } from "../lib/weekend-endorsement";
 import { createWeekendEndorsementWorkbook, weekendEndorsementExcelRows, weekendEndorsementExportFileName } from "../lib/weekend-endorsement-export-data";
 
 describe("Weekend Endorsement", () => {
@@ -50,5 +50,15 @@ describe("Weekend Endorsement", () => {
     expect(rows.summary).toContainEqual(["Scope", "Dr. Hashmi"]);
     expect(rows.plans).toHaveLength(2);
     expect(workbook.SheetNames).toEqual(["Summary", "Inpatient plans"]);
+  });
+
+  it("يبحث في نتائج الاستشاري بالاسم أو رقم الملف دون تغيير نطاق التقرير", () => {
+    const report = buildWeekendEndorsementReport(createInitialDepartmentData(), "Admin", "Dr. Hashmi");
+    const entry = report.entries[0];
+
+    expect(searchWeekendEndorsementEntries(report.entries, entry.fileNumber)).toEqual([entry]);
+    expect(searchWeekendEndorsementEntries(report.entries, entry.patientName.slice(0, 3))).toEqual([entry]);
+    expect(searchWeekendEndorsementEntries(report.entries, "no match")).toEqual([]);
+    expect(report.entries).toHaveLength(1);
   });
 });

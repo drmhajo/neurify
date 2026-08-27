@@ -200,3 +200,4 @@
 - [x] إنشاء وطباعة تقرير Weekend Endorsement موحد للحالات المنومة.
 - [x] إضافة تصفية Weekend Endorsement حسب الاستشاري وتطبيقها على الطباعة.
 - [x] إضافة تصدير Weekend Endorsement المصفى إلى PDF وExcel.
+- [x] إضافة بحث سريع باسم المريض أو رقم الملف في Weekend Endorsement وربطه بالتصدير.

@@ -17,6 +17,12 @@ export type WeekendEndorsementReport = {
   entries: WeekendEndorsementEntry[];
 };
 
+export function searchWeekendEndorsementEntries(entries: WeekendEndorsementEntry[], query: string) {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  if (!normalizedQuery) return entries;
+  return entries.filter((entry) => `${entry.patientName} ${entry.fileNumber}`.toLocaleLowerCase().includes(normalizedQuery));
+}
+
 export function buildWeekendEndorsementReport(data: DepartmentData, generatedBy: string, consultantFilter?: string): WeekendEndorsementReport {
   return {
     generatedAt: new Date().toISOString(),
