@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createGeneralAnnouncement } from "../lib/general-announcement";
 import type { DepartmentData } from "../lib/department-model";
 import {
   parseCloudDepartmentData,
@@ -40,6 +41,24 @@ describe("لقطات المزامنة التجريبية", () => {
     expect(merged.scheduleDocuments[0].localUri).toBe("file:///schedule.pdf");
     expect(merged.teams[0].cases[0].imaging[0].localUri).toBe("file:///ct.jpg");
     expect(merged.teams[0].cases[0].messages[0].attachment?.localUri).toBe("file:///clip.mp4");
+  });
+
+  it("يحفظ الإشعار الجماعي ويستعيده ضمن لقطة المزامنة دون تعديل المستلمين", () => {
+    const local = createData();
+    const announcement = createGeneralAnnouncement({
+      id: "announcement-1",
+      title: "تحديث المناوبة",
+      message: "يرجى مراجعة تسليم المناوبة اليومي.",
+      recipientIds: ["user-a", "user-b"],
+      createdAt: "2026-08-27T07:00:00.000Z",
+    });
+    local.notifications = [announcement];
+
+    const cloud = prepareDepartmentDataForCloud(local);
+    const restored = restoreLocalAttachmentReferences(cloud, local);
+
+    expect(cloud.notifications).toEqual([announcement]);
+    expect(restored.notifications[0]).toMatchObject({ type: "general_announcement", recipientIds: ["user-a", "user-b"] });
   });
 
   it("يرفض أي لقطة لا تحتوي على أقسام بيانات القسم المطلوبة", () => {
