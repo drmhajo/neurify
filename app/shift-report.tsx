@@ -8,6 +8,7 @@ import { useDepartment } from "@/lib/department-store";
 import { exportShiftReport } from "@/lib/shift-report-export";
 import { getShiftWindow } from "@/lib/shift-endorsement";
 import { useAppLanguage } from "@/lib/language";
+import { LogoLoading } from "@/components/logo-loading";
 
 export default function ShiftReportScreen() {
   const { data, session, generateDailyShiftReport, setOnCallUserId } = useDepartment();
@@ -77,6 +78,7 @@ export default function ShiftReportScreen() {
 
   return (
     <View style={styles.page}>
+      {downloading ? <LogoLoading overlay label={language === "en" ? "Preparing shift report…" : "جارٍ تجهيز تقرير المناوبة…"} /> : null}
       <View style={[styles.header, direction(isRTL)]}>
         <IconAction icon={isRTL ? "arrow-forward" : "arrow-back"} label={language === "en" ? "Back" : "رجوع"} onPress={() => router.back()} />
         <View style={styles.headerCopy}>

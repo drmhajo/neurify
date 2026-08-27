@@ -7,6 +7,7 @@ import { useDepartment } from "@/lib/department-store";
 import { availableReportMonths, buildMonthlyShiftReportAnalytics, monthLabel } from "@/lib/shift-report-analytics";
 import { exportMonthlyDashboardExcel, exportMonthlyDashboardPdf } from "@/lib/shift-report-dashboard-export-platform";
 import { useAppLanguage } from "@/lib/language";
+import { LogoLoading } from "@/components/logo-loading";
 
 function align(isRTL: boolean) {
   return {
@@ -100,6 +101,7 @@ export default function ShiftReportDashboardScreen() {
 
   return (
     <View style={styles.page}>
+      {exporting ? <LogoLoading overlay label={exporting === "pdf" ? (language === "en" ? "Preparing PDF report…" : "جارٍ تجهيز تقرير PDF…") : (language === "en" ? "Preparing Excel workbook…" : "جارٍ تجهيز ملف Excel…")} /> : null}
       <View style={[styles.header, direction(isRTL)]}>
         <IconAction icon={isRTL ? "arrow-forward" : "arrow-back"} label={language === "en" ? "Back" : "رجوع"} onPress={() => router.back()} />
         <View style={styles.headerCopy}>
