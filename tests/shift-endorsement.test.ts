@@ -19,6 +19,14 @@ describe("تقرير المناوبة اليومي", () => {
     expect(report.statistics.admissions).toBe(report.admissions.length);
   });
 
+  it("يظهر التدخل الجراحي المختار في الاستشارة ضمن قسم العمليات الإسعافية", () => {
+    const data = createInitialDepartmentData();
+    data.teams[0].consultations[0].patient = { code: "NS-OR", fileNumber: "110000000002", fullName: "Demo", age: 42, medicalHistory: "", clinicalTests: "", diagnosis: "Acute hydrocephalus", surgeryType: "External ventricular drain" };
+    data.teams[0].consultations[0].createdAt = "2026-08-25T08:00:00.000+03:00";
+    const report = buildDailyShiftReport(data, "Admin", new Date("2026-08-25T10:00:00+03:00"));
+    expect(report.emergencySurgeries).toContainEqual(expect.objectContaining({ mrn: "110000000002", diagnosis: "Acute hydrocephalus", surgery: "External ventricular drain" }));
+  });
+
   it("يعتمد أعضاء فريق المناوبة المختارين من المستخدمين النشطين عند إنشاء التقرير", () => {
     const data = createInitialDepartmentData();
     data.users = data.users.map((user) => ["u-roster-sami", "u-roster-maryam", "u-roster-babar"].includes(user.id) ? { ...user, active: true } : user);

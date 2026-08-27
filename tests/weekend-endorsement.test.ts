@@ -7,6 +7,8 @@ describe("Weekend Endorsement", () => {
   it("يجمع جميع الحالات المنومة مع رقم الملف والاستشاري والخطة في تقرير واحد", () => {
     const data = createInitialDepartmentData();
     data.teams[0].cases[0].weekendPlan = "Repeat MRI and escalate if neurology changes.";
+    data.teams[0].cases[0].ward = "Ward 4";
+    data.teams[0].cases[0].bed = "Bed 12";
 
     const report = buildWeekendEndorsementReport(data, "Admin");
     const patient = report.entries.find((entry) => entry.id === data.teams[0].cases[0].id);
@@ -16,6 +18,9 @@ describe("Weekend Endorsement", () => {
       patientName: data.teams[0].cases[0].fullName,
       fileNumber: data.teams[0].cases[0].fileNumber,
       consultant: "Dr. Hashmi",
+      ward: "Ward 4",
+      bed: "Bed 12",
+      diagnosis: data.teams[0].cases[0].diagnosis,
       weekendPlan: "Repeat MRI and escalate if neurology changes.",
     });
   });
@@ -28,6 +33,8 @@ describe("Weekend Endorsement", () => {
     expect(html).toContain("Weekend Endorsement");
     expect(html).toContain("King Saud Medical City");
     expect(html).toContain("Not documented");
+    expect(html).toContain("Ward");
+    expect(html).toContain("Diagnosis");
   });
 
   it("يقصر التقرير ومحتوى الطباعة على الاستشاري المحدد", () => {
@@ -49,6 +56,8 @@ describe("Weekend Endorsement", () => {
     expect(weekendEndorsementExportFileName(report, "xlsx")).toContain("dr-hashmi");
     expect(rows.summary).toContainEqual(["Scope", "Dr. Hashmi"]);
     expect(rows.plans).toHaveLength(2);
+    expect(rows.plans[0]).toContain("Ward");
+    expect(rows.plans[0]).toContain("Diagnosis");
     expect(workbook.SheetNames).toEqual(["Summary", "Inpatient plans"]);
   });
 

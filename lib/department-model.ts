@@ -85,6 +85,8 @@ export type PatientCase = {
   medicalHistory: string;
   clinicalTests: string;
   diagnosis: string;
+  ward?: string;
+  bed?: string;
   clinicalDecision?: string;
   weekendPlan?: string;
   weekendPlanUpdatedAt?: string;

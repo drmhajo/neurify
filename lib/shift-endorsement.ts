@@ -67,12 +67,22 @@ export function buildDailyShiftReport(data: DepartmentData, generatedBy: string,
     plan: patient.clinicalDecision || "—",
     admittingConsultant: team.lead,
   })));
-  const emergencySurgeries = data.surgeries
+  const recordedEmergencySurgeries = data.surgeries
     .filter((surgery) => /emergency|urgent|طارئ|إسعاف/i.test(`${surgery.procedure} ${surgery.notes}`) && happenedWithinShift(surgery.recordedAt))
     .map((surgery) => {
       const patient = data.teams.flatMap((team) => team.cases).find((item) => item.fileNumber === surgery.patientCode || item.code === surgery.patientCode);
       return { id: surgery.id, mrn: patient?.fileNumber || surgery.patientCode, diagnosis: patient?.diagnosis || "—", surgery: surgery.procedure };
     });
+  const selectedSurgicalInterventions = data.teams.flatMap((team) => team.consultations
+    .filter((consultation) => Boolean(consultation.patient?.surgeryType) && happenedWithinShift(consultation.createdAt))
+    .map((consultation) => ({
+      id: `consultation-${consultation.id}`,
+      mrn: consultation.patient!.fileNumber || consultation.patient!.code,
+      diagnosis: consultation.patient!.diagnosis || "—",
+      surgery: consultation.patient!.surgeryType!,
+    })));
+  const emergencySurgeries = [...selectedSurgicalInterventions, ...recordedEmergencySurgeries]
+    .filter((item, index, items) => items.findIndex((candidate) => candidate.mrn === item.mrn && candidate.surgery === item.surgery) === index);
   return {
     id: `shift-${window.reportDate}`,
     reportDate: window.reportDate,
