@@ -1,7 +1,10 @@
 import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { createTRPCClient } from "@/lib/trpc";
+
+const PUSH_REGISTRATION_KEY_PREFIX = "ksmc.neuro.push-registration.";
 
 export type PushSetupState = "idle" | "enabled" | "denied" | "unavailable" | "needs_build" | "error";
 
@@ -29,6 +32,10 @@ export async function getPushPermissionState(): Promise<PushSetupState> {
   if (Platform.OS === "web") return "unavailable";
   const settings = await Notifications.getPermissionsAsync();
   return settings.status === "granted" ? "enabled" : "idle";
+}
+
+export async function isPushDeviceRegistered(staffId: string): Promise<boolean> {
+  return (await AsyncStorage.getItem(`${PUSH_REGISTRATION_KEY_PREFIX}${staffId}`)) === "registered";
 }
 
 export async function enablePushNotifications(staffId: string): Promise<PushSetupResult> {
@@ -64,7 +71,9 @@ export async function enablePushNotifications(staffId: string): Promise<PushSetu
   try {
     const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
     const client = createTRPCClient();
-    await client.push.register.mutate({ staffId, token, platform: Platform.OS === "ios" ? "ios" : "android" });
+    const registration = await client.push.register.mutate({ staffId, token, platform: Platform.OS === "ios" ? "ios" : "android" });
+    if (!registration.persisted) return { state: "error", message: "تعذر حفظ تسجيل الجهاز في خدمة الإشعارات. حاول مرة أخرى لاحقاً." };
+    await AsyncStorage.setItem(`${PUSH_REGISTRATION_KEY_PREFIX}${staffId}`, "registered");
     return { state: "enabled", message: "تم تفعيل التنبيهات الفورية على هذا الجهاز.", token };
   } catch {
     return { state: "error", message: "تعذر تسجيل الجهاز حالياً. تحقق من الاتصال بالشبكة وحاول مرة أخرى." };
