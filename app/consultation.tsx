@@ -10,7 +10,7 @@ import { useAppLanguage } from "@/lib/language";
 import { NEUROSURGERY_PROCEDURES, procedureLabel, type NeurosurgeryProcedureCode } from "@/lib/neurosurgery-procedure-catalog";
 
 const blankForm = {
-  title: "", subject: "", code: "", fileNumber: "", fullName: "", age: "", medicalHistory: "", clinicalTests: "", diagnosis: "",
+  title: "", subject: "", fileNumber: "", fullName: "", age: "", medicalHistory: "", clinicalTests: "", diagnosis: "",
   clinicalDecision: "", surgicalIntervention: false, surgeryType: "", surgeryTypeCode: undefined as NeurosurgeryProcedureCode | undefined, disposition: "follow_up" as ClinicalDisposition,
 };
 
@@ -24,7 +24,7 @@ export default function NewConsultationScreen() {
 
   const submit = () => {
     if (!teamId) { Alert.alert(language === "en" ? "Treating team required" : "الفريق المعالج مطلوب", language === "en" ? "Select the treating team before saving the consultation." : "اختر الفريق المعالج قبل حفظ الاستشارة."); return; }
-    if (!form.title.trim() || !form.code.trim() || !form.fullName.trim() || !form.diagnosis.trim()) { Alert.alert(language === "en" ? "Missing information" : "بيانات ناقصة", language === "en" ? "Enter the consultation title, patient code, patient name, and diagnosis." : "أدخل عنوان الاستشارة ورمز الحالة واسم المريض والتشخيص."); return; }
+    if (!form.title.trim() || !form.fileNumber.trim() || !form.fullName.trim() || !form.diagnosis.trim()) { Alert.alert(language === "en" ? "Missing information" : "بيانات ناقصة", language === "en" ? "Enter the consultation title, medical record number, patient name, and diagnosis." : "أدخل عنوان الاستشارة ورقم الملف واسم المريض والتشخيص."); return; }
     const decisionError = validateConsultationDecision(form);
     if (decisionError) { Alert.alert(language === "en" ? "Clinical decision required" : "القرار السريري مطلوب", decisionError === "missing_surgery_type" ? (language === "en" ? "Enter the surgery type for the planned surgical intervention." : "أدخل نوع العملية للتدخل الجراحي المخطط.") : (language === "en" ? "Enter the clinical decision before saving the consultation." : "اكتب القرار السريري قبل حفظ الاستشارة.")); return; }
     addConsultation(teamId, {
@@ -32,7 +32,7 @@ export default function NewConsultationScreen() {
       subject: form.subject || form.diagnosis,
       disposition: form.disposition,
       patient: {
-        code: form.code, fileNumber: form.fileNumber || form.code, fullName: form.fullName, age: Number(form.age) || null,
+        code: form.fileNumber, fileNumber: form.fileNumber, fullName: form.fullName, age: Number(form.age) || null,
         medicalHistory: form.medicalHistory, clinicalTests: form.clinicalTests, diagnosis: form.diagnosis,
         clinicalDecision: form.clinicalDecision, surgeryType: form.surgicalIntervention ? form.surgeryType : undefined, surgeryTypeCode: form.surgicalIntervention ? form.surgeryTypeCode : undefined,
       },
@@ -56,7 +56,7 @@ export default function NewConsultationScreen() {
     <AppCard style={styles.formCard}>
       <Field label={language === "en" ? "Consultation title" : "عنوان الاستشارة"} value={form.title} onChangeText={(value) => setForm({ ...form, title: value })} placeholder={language === "en" ? "e.g. Pre-operative assessment" : "مثال: تقييم قبل العملية"} isRTL={isRTL} />
       <Field label={language === "en" ? "Patient name" : "اسم المريض"} value={form.fullName} onChangeText={(value) => setForm({ ...form, fullName: value })} placeholder={language === "en" ? "Full name" : "الاسم الكامل"} isRTL={isRTL} />
-      <View style={[styles.rowFields, { flexDirection: isRTL ? "row-reverse" : "row" }]}><View style={styles.flexField}><Field label={language === "en" ? "Patient code" : "رمز الحالة"} value={form.code} onChangeText={(value) => setForm({ ...form, code: value })} placeholder="NS-2051" isRTL={isRTL} /></View><View style={styles.flexField}><Field label={language === "en" ? "Medical record no." : "رقم الملف"} value={form.fileNumber} onChangeText={(value) => setForm({ ...form, fileNumber: value })} placeholder="KSMC-000000" isRTL={isRTL} /></View></View>
+      <Field label={language === "en" ? "Medical record no." : "رقم الملف"} value={form.fileNumber} onChangeText={(value) => setForm({ ...form, fileNumber: value })} placeholder="KSMC-000000" isRTL={isRTL} />
       <Field label={language === "en" ? "Age" : "العمر"} value={form.age} onChangeText={(value) => setForm({ ...form, age: value })} keyboardType="numeric" isRTL={isRTL} />
       <Field label={language === "en" ? "Diagnosis" : "التشخيص"} value={form.diagnosis} onChangeText={(value) => setForm({ ...form, diagnosis: value })} placeholder={language === "en" ? "Clinical diagnosis" : "التشخيص السريري"} isRTL={isRTL} />
       <Field label={language === "en" ? "Clinical history" : "التاريخ المرضي"} value={form.medicalHistory} onChangeText={(value) => setForm({ ...form, medicalHistory: value })} multiline isRTL={isRTL} />

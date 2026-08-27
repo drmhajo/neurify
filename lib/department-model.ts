@@ -274,7 +274,7 @@ export const rolePermissionDefaults: Record<UserRole, PermissionKey[]> = {
 };
 
 /** Roster transcribed from the provided Neurosurgery groups Distribution, 19–24 July 2026. */
-export const WEEKLY_GROUPS_ROSTER_VERSION = "ns-weekly-groups-2026-07-19";
+export const WEEKLY_GROUPS_ROSTER_VERSION = "ns-weekly-groups-2026-07-19-consultant-leads";
 
 type WeeklyRosterMember = Pick<DepartmentUser, "username" | "name" | "role" | "jobTitle">;
 
@@ -299,10 +299,10 @@ const weeklyGroupsRoster: WeeklyRosterMember[] = [
 ];
 
 const weeklyGroupDefinitions = [
-  { id: "t1", name: "المجموعة أ | Group A (Skull base & vascular)", shortName: "A", color: "#075985", members: ["hashmi", "babar", "albaraa", "wajab", "shoaib", "awad", "omer", "sarah", "tahir", "alaa.r1"] },
-  { id: "t2", name: "المجموعة ب | Group B", shortName: "B", color: "#08766D", members: ["jamaan", "ibrahim", "saad", "marahib", "hossam", "ragad.r3", "rahaf"] },
-  { id: "t3", name: "المجموعة ج | Group C (Spine)", shortName: "C", color: "#B97922", members: ["sami", "nuha", "akram", "marahib", "eman", "ahmed", "rahaf", "munira"] },
-  { id: "t4", name: "فريق الأطفال | Pediatrics", shortName: "Pedia", color: "#9F1239", members: ["maryam", "alhammad", "osman", "lina.r1"] },
+  { id: "t1", name: "فريق د. Hashmi | Dr. Hashmi", shortName: "Hashmi", color: "#075985", lead: "Dr. Hashmi", members: ["hashmi", "babar", "albaraa", "wajab", "shoaib", "awad", "omer", "sarah", "tahir", "alaa.r1"] },
+  { id: "t2", name: "فريق د. Jama'an | Dr. Jama'an", shortName: "Jama'an", color: "#08766D", lead: "Dr. Jama'an", members: ["jamaan", "ibrahim", "saad", "marahib", "hossam", "ragad.r3", "rahaf"] },
+  { id: "t3", name: "فريق د. Sami | Dr. Sami", shortName: "Sami", color: "#B97922", lead: "Dr. Sami", members: ["sami", "nuha", "akram", "marahib", "eman", "ahmed", "rahaf", "munira"] },
+  { id: "t4", name: "فريق د. Maryam | Dr. Maryam", shortName: "Maryam", color: "#9F1239", lead: "Dr. Maryam", members: ["maryam", "alhammad", "osman", "lina.r1"] },
 ] as const;
 
 const initialSampleUserIds = new Set(["u-1", "u-2", "u-3"]);
@@ -368,7 +368,7 @@ export function applyWeeklyGroupsRoster(current: DepartmentData): DepartmentData
         name: definition.name,
         shortName: definition.shortName,
         color: definition.color,
-        lead: "غير محدد في المصدر | Not specified in source",
+        lead: definition.lead,
         memberIds: [...new Set([...rosterMemberIds, ...customMemberIds])],
         cases: existing?.cases ?? [],
         dischargedCases: existing?.dischargedCases ?? [],

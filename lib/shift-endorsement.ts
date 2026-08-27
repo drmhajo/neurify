@@ -70,7 +70,7 @@ export function buildDailyShiftReport(data: DepartmentData, generatedBy: string,
   const emergencySurgeries = data.surgeries
     .filter((surgery) => /emergency|urgent|طارئ|إسعاف/i.test(`${surgery.procedure} ${surgery.notes}`) && happenedWithinShift(surgery.recordedAt))
     .map((surgery) => {
-      const patient = data.teams.flatMap((team) => team.cases).find((item) => item.code === surgery.patientCode);
+      const patient = data.teams.flatMap((team) => team.cases).find((item) => item.fileNumber === surgery.patientCode || item.code === surgery.patientCode);
       return { id: surgery.id, mrn: patient?.fileNumber || surgery.patientCode, diagnosis: patient?.diagnosis || "—", surgery: surgery.procedure };
     });
   return {

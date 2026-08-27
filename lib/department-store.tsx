@@ -290,7 +290,8 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     if (!targetTeam) return;
     const now = Date.now();
     const caseId = `c-${now}`;
-    const patientCase: PatientCase = { id: caseId, code: input.patient.code.trim(), fileNumber: input.patient.fileNumber.trim() || input.patient.code.trim(), fullName: input.patient.fullName.trim(), age: input.patient.age, medicalHistory: input.patient.medicalHistory.trim() || "غير موثّق بعد", clinicalTests: input.patient.clinicalTests.trim() || "غير موثّق بعد", diagnosis: input.patient.diagnosis.trim(), clinicalDecision: input.patient.clinicalDecision?.trim(), surgeryType: input.patient.surgeryType?.trim(), admittedSince: "الآن", admittedAt: new Date(now).toISOString(), status: input.disposition === "admit" ? "منوّم" : "متابعة", imaging: [], messages: [] };
+    const fileNumber = input.patient.fileNumber.trim() || input.patient.code.trim();
+    const patientCase: PatientCase = { id: caseId, code: fileNumber, fileNumber, fullName: input.patient.fullName.trim(), age: input.patient.age, medicalHistory: input.patient.medicalHistory.trim() || "غير موثّق بعد", clinicalTests: input.patient.clinicalTests.trim() || "غير موثّق بعد", diagnosis: input.patient.diagnosis.trim(), clinicalDecision: input.patient.clinicalDecision?.trim(), surgeryType: input.patient.surgeryType?.trim(), admittedSince: "الآن", admittedAt: new Date(now).toISOString(), status: input.disposition === "admit" ? "منوّم" : "متابعة", imaging: [], messages: [] };
     updateData((current) => ({
       ...current,
       teams: current.teams.map((team) => team.id === teamId ? {
@@ -379,12 +380,12 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   })), [updateData]);
 
   const addSurgery = useCallback((input: Omit<Surgery, "id">) => updateData((current) => {
-    const matchedPatient = current.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.code === input.patientCode.trim() ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined;
+    const matchedPatient = current.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.fileNumber === input.patientCode.trim() || patientCase.code === input.patientCode.trim() ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined;
     return { ...current, surgeries: [{ ...input, id: `o-${Date.now()}`, patientLink: input.patientLink ?? matchedPatient, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim(), recordedAt: input.recordedAt ?? new Date().toISOString() }, ...current.surgeries] };
   }), [updateData]);
 
   const updateSurgery = useCallback((surgeryId: string, input: Omit<Surgery, "id">) => updateData((current) => {
-    const matchedPatient = current.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.code === input.patientCode.trim() ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined;
+    const matchedPatient = current.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.fileNumber === input.patientCode.trim() || patientCase.code === input.patientCode.trim() ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined;
     return { ...current, surgeries: current.surgeries.map((surgery) => surgery.id === surgeryId ? { ...input, id: surgeryId, patientLink: input.patientLink ?? matchedPatient, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim() } : surgery) };
   }), [updateData]);
 

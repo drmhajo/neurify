@@ -40,7 +40,10 @@ describe("نموذج بيانات قسم جراحة المخ والأعصاب", 
 
     expect(data.users.some((user) => user.name === "Sami" && user.role === "consultant")).toBe(true);
     expect(data.users.some((user) => user.name === "M.Hashim" && user.jobTitle.includes("Resident"))).toBe(true);
-    expect(data.teams.find((team) => team.id === "t4")?.name).toContain("Pediatrics");
+    expect(data.teams.find((team) => team.id === "t1")).toMatchObject({ name: "فريق د. Hashmi | Dr. Hashmi", lead: "Dr. Hashmi" });
+    expect(data.teams.find((team) => team.id === "t2")).toMatchObject({ name: "فريق د. Jama'an | Dr. Jama'an", lead: "Dr. Jama'an" });
+    expect(data.teams.find((team) => team.id === "t3")).toMatchObject({ name: "فريق د. Sami | Dr. Sami", lead: "Dr. Sami" });
+    expect(data.teams.find((team) => team.id === "t4")).toMatchObject({ name: "فريق د. Maryam | Dr. Maryam", lead: "Dr. Maryam" });
     expect(data.teams.find((team) => team.id === "t3")?.memberIds).toContain("u-roster-marahib");
     expect(data.teams.find((team) => team.id === "t1")?.cases.length).toBeGreaterThan(0);
     expect(migrated.rosterVersion).toBe(data.rosterVersion);
