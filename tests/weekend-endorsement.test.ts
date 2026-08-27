@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialDepartmentData } from "../lib/department-model";
 import { buildWeekendEndorsementReport, createWeekendEndorsementHtml } from "../lib/weekend-endorsement";
+import { createWeekendEndorsementWorkbook, weekendEndorsementExcelRows, weekendEndorsementExportFileName } from "../lib/weekend-endorsement-export-data";
 
 describe("Weekend Endorsement", () => {
   it("يجمع جميع الحالات المنومة مع رقم الملف والاستشاري والخطة في تقرير واحد", () => {
@@ -38,5 +39,16 @@ describe("Weekend Endorsement", () => {
     expect(report.entries).toHaveLength(1);
     expect(report.entries.every((entry) => entry.consultant === "Dr. Hashmi")).toBe(true);
     expect(html).toContain("Treating consultant · Dr. Hashmi");
+  });
+
+  it("ينشئ ملف Excel مصفّى يضم الملخص وخطط المرضى فقط", () => {
+    const report = buildWeekendEndorsementReport(createInitialDepartmentData(), "Admin", "Dr. Hashmi");
+    const rows = weekendEndorsementExcelRows(report, "en");
+    const workbook = createWeekendEndorsementWorkbook(report, "en");
+
+    expect(weekendEndorsementExportFileName(report, "xlsx")).toContain("dr-hashmi");
+    expect(rows.summary).toContainEqual(["Scope", "Dr. Hashmi"]);
+    expect(rows.plans).toHaveLength(2);
+    expect(workbook.SheetNames).toEqual(["Summary", "Inpatient plans"]);
   });
 });

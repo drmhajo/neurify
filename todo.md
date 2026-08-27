@@ -199,3 +199,4 @@
 - [x] إضافة شاشة Weekend Plan في الملف الطبي مع حفظها لأعضاء الفريق المعالج.
 - [x] إنشاء وطباعة تقرير Weekend Endorsement موحد للحالات المنومة.
 - [x] إضافة تصفية Weekend Endorsement حسب الاستشاري وتطبيقها على الطباعة.
+- [x] إضافة تصدير Weekend Endorsement المصفى إلى PDF وExcel.
