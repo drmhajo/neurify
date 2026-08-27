@@ -1,0 +1,15 @@
+flowchart TD
+  A[استشارة جديدة] --> B[إدخال اسم المريض<br/>ورقم الملف]
+  B --> C[اختيار الفريق المعالج]
+  C --> D{المسار السريري}
+  D -->|تنويم| E[قائمة المرضى المنومين<br/>داخل الفريق]
+  D -->|متابعة| F[قائمة الاستشارات والمتابعة]
+  D -->|خروج| G[أرشيف المرضى المخرجين]
+  E --> H[فتح الملف الطبي]
+  H --> I[تحديث السجل والأشعة<br/>والدردشة والعمليات]
+  classDef primary fill:#123D63,stroke:#123D63,color:#fff,stroke-width:2px;
+  classDef action fill:#08766D,stroke:#08766D,color:#fff,stroke-width:2px;
+  classDef warning fill:#B97922,stroke:#B97922,color:#fff,stroke-width:2px;
+  class A,B,C,H,I primary;
+  class D,E,F action;
+  class G warning;

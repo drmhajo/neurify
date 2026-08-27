@@ -1,0 +1,14 @@
+flowchart TD
+  A[فتح التطبيق لأول مرة] --> B[تهيئة حساب المشرف<br/>تعيين كلمة مرور خاصة]
+  B --> C[لوحة التحكم]
+  C --> D[مراجعة المستخدمين]
+  D --> E[تفعيل عضو الفريق]
+  E --> F[إصدار كلمة مرور مؤقتة]
+  F --> G[إسناد العضو للفريق]
+  G --> H[بدء الاستخدام اليومي]
+  classDef primary fill:#123D63,stroke:#123D63,color:#fff,stroke-width:2px;
+  classDef action fill:#08766D,stroke:#08766D,color:#fff,stroke-width:2px;
+  classDef neutral fill:#F3F7FB,stroke:#B97922,color:#123D63,stroke-width:2px;
+  class A,B,C primary;
+  class D,E,F,G action;
+  class H neutral;

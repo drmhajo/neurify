@@ -1,0 +1,16 @@
+flowchart LR
+  A[فتح الملف الطبي] --> B[تبويب Weekend Plan]
+  B --> C[كتابة الخطة وحفظها]
+  C --> D[طلبات التقارير]
+  D --> E[Weekend Endorsement]
+  E --> F[تصفية بالاستشاري]
+  F --> G[بحث بالاسم أو رقم الملف]
+  G --> H{تصدير التقرير}
+  H --> I[PDF للطباعة أو المشاركة]
+  H --> J[Excel للمتابعة]
+  classDef primary fill:#123D63,stroke:#123D63,color:#fff,stroke-width:2px;
+  classDef action fill:#08766D,stroke:#08766D,color:#fff,stroke-width:2px;
+  classDef output fill:#B97922,stroke:#B97922,color:#fff,stroke-width:2px;
+  class A,B,C,D,E,F,G primary;
+  class H action;
+  class I,J output;
