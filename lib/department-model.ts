@@ -1,7 +1,7 @@
 import type { NeurosurgeryProcedureCode } from "./neurosurgery-procedure-catalog";
 
 export type UserRole = "admin" | "consultant" | "coordinator" | "team_member";
-export type PermissionKey = "manage_users" | "manage_permissions" | "manage_teams" | "manage_schedules" | "manage_reports" | "view_all_patients" | "edit_medical_files" | "add_imaging" | "patient_chat" | "view_audit";
+export type PermissionKey = "manage_users" | "manage_permissions" | "manage_teams" | "manage_schedules" | "manage_reports" | "view_all_patients" | "edit_medical_files" | "add_imaging" | "patient_chat" | "view_audit" | "send_general_announcement";
 export type ReportPriority = "عاجل" | "عادي" | "متابعة";
 export type ReportStatus = "جديد" | "قيد الإعداد" | "مكتمل";
 
@@ -160,7 +160,7 @@ export type Consultation = {
 
 export type TeamNotification = {
   id: string;
-  type: "consultation" | "admitted_case" | "shift_report";
+  type: "consultation" | "admitted_case" | "shift_report" | "general_announcement";
   teamId: string;
   teamName: string;
   title: string;
@@ -262,10 +262,11 @@ export const permissionLabels: Record<PermissionKey, string> = {
   add_imaging: "إضافة الأشعة التشخيصية",
   patient_chat: "الدردشة الخاصة بالحالات",
   view_audit: "عرض سجل التدقيق",
+  send_general_announcement: "إرسال إشعار عام",
 };
 
 export const rolePermissionDefaults: Record<UserRole, PermissionKey[]> = {
-  admin: ["manage_users", "manage_permissions", "manage_teams", "manage_schedules", "manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat", "view_audit"],
+  admin: ["manage_users", "manage_permissions", "manage_teams", "manage_schedules", "manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat", "view_audit", "send_general_announcement"],
   consultant: ["manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat"],
   coordinator: ["manage_schedules", "manage_reports", "view_all_patients", "patient_chat"],
   team_member: ["edit_medical_files", "add_imaging", "patient_chat"],

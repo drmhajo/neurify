@@ -29,6 +29,7 @@ import { createTRPCClient } from "@/lib/trpc";
 import { syncFailureStatus, type DepartmentSyncState, parseCloudDepartmentData, prepareDepartmentDataForCloud, restoreLocalAttachmentReferences } from "@/lib/department-sync";
 import { canRemoveDepartmentUser, normalizeDemoUsername } from "@/lib/department-user-admin";
 import { buildDailyShiftReport } from "@/lib/shift-endorsement";
+import { createGeneralAnnouncement, validateGeneralAnnouncement } from "@/lib/general-announcement";
 
 type Session = {
   userId: string;
@@ -45,6 +46,7 @@ type DepartmentStore = {
   signOut: () => Promise<void>;
   advanceReport: (id: string) => void;
   addReport: (input: { patientCode: string; title: string; priority: ReportPriority }) => void;
+  sendGeneralAnnouncement: (input: { title: string; message: string }) => { ok: boolean; recipientCount: number; reason?: "permission" | "validation" };
   generateDailyShiftReport: () => DailyShiftReport | null;
   setOnCallUserId: (slot: OnCallSlot, userId: string) => void;
   addConsultation: (teamId: string, input: { title: string; subject: string; disposition: ClinicalDisposition; patient: ConsultationPatient }) => void;
@@ -230,6 +232,20 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       dueAt: input.priority === "عاجل" ? "اليوم، 13:00" : "خلال 24 ساعة",
     }, ...current.reports],
   })), [session?.name, updateData]);
+
+  const sendGeneralAnnouncement = useCallback((input: { title: string; message: string }) => {
+    const currentUser = session ? dataRef.current.users.find((user) => user.id === session.userId) : undefined;
+    if (!currentUser?.active || !currentUser.permissions.includes("send_general_announcement")) return { ok: false, recipientCount: 0, reason: "permission" as const };
+    const validated = validateGeneralAnnouncement(input);
+    if (!validated.ok) return { ok: false, recipientCount: 0, reason: "validation" as const };
+    const now = Date.now();
+    const recipientCount = dataRef.current.users.filter((user) => user.active).length;
+    updateData((current) => {
+      const recipientIds = current.users.filter((user) => user.active).map((user) => user.id);
+      return { ...current, notifications: [createGeneralAnnouncement({ id: `n-general-${now}`, title: validated.title, message: validated.message, recipientIds }), ...(current.notifications ?? [])] };
+    });
+    return { ok: true, recipientCount };
+  }, [session, updateData]);
 
   const generateDailyShiftReport = useCallback(() => {
     if (!session || !data.users.find((user) => user.id === session.userId)?.permissions.includes("manage_reports")) return null;
@@ -440,7 +456,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, generateDailyShiftReport, hydrated, markAllNotificationsRead, markNotificationRead, removeUser, resetUserPassword, restoreDepartmentBackup, session, setOnCallUserId, signIn, signInWithGoogleDemo, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
+  const value = useMemo(() => ({ hydrated, session, data, signIn, signInWithGoogleDemo, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, addDiagnosticImaging, addPatientMessage, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, data, dischargePatient, generateDailyShiftReport, hydrated, markAllNotificationsRead, markNotificationRead, removeUser, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signInWithGoogleDemo, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }
