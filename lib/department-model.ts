@@ -149,6 +149,19 @@ export type PatientMessage = {
   };
 };
 
+/** A department-wide operational discussion message, intentionally separate from patient records. */
+export type GeneralDiscussionMessage = {
+  id: string;
+  text: string;
+  senderId: string;
+  senderName: string;
+  sentAt: string;
+};
+
+export function createGeneralDiscussionMessage(input: GeneralDiscussionMessage): GeneralDiscussionMessage {
+  return { ...input, text: input.text.trim() };
+}
+
 export type Consultation = {
   id: string;
   title: string;
@@ -243,6 +256,7 @@ export type DepartmentData = {
   scheduleDocuments: SchedulePdf[];
   teams: CareTeam[];
   notifications: TeamNotification[];
+  generalDiscussionMessages?: GeneralDiscussionMessage[];
   shiftReports: DailyShiftReport[];
   shiftReportPreferences?: ShiftReportPreferences;
   rosterVersion?: string;
@@ -490,6 +504,7 @@ export const createInternalDepartmentData = (): DepartmentData => applyWeeklyGro
     consultations: [],
   })),
   notifications: [],
+  generalDiscussionMessages: [],
   shiftReports: [],
   shiftReportPreferences: {},
   releaseVersion: INTERNAL_RELEASE_VERSION,

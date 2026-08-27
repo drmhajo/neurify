@@ -18,6 +18,7 @@ const MAPPING = {
   "doc.text.fill": "description",
   "calendar": "calendar-today",
   "person.3.fill": "groups",
+  "bubble.left.and.bubble.right.fill": "forum",
   "gearshape.fill": "admin-panel-settings",
 } as IconMapping;
 
