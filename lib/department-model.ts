@@ -156,10 +156,24 @@ export type GeneralDiscussionMessage = {
   senderId: string;
   senderName: string;
   sentAt: string;
+  sentAtIso?: string;
 };
 
 export function createGeneralDiscussionMessage(input: GeneralDiscussionMessage): GeneralDiscussionMessage {
   return { ...input, text: input.text.trim() };
+}
+
+export function getUnreadGeneralDiscussionCount(input: {
+  messages: GeneralDiscussionMessage[];
+  userId?: string;
+  lastReadAt?: string;
+}) {
+  if (!input.userId) return 0;
+  return input.messages.filter((message) =>
+    message.senderId !== input.userId
+    && Boolean(message.sentAtIso)
+    && (!input.lastReadAt || message.sentAtIso! > input.lastReadAt),
+  ).length;
 }
 
 export type Consultation = {
@@ -257,6 +271,7 @@ export type DepartmentData = {
   teams: CareTeam[];
   notifications: TeamNotification[];
   generalDiscussionMessages?: GeneralDiscussionMessage[];
+  generalDiscussionReadByUser?: Record<string, string>;
   shiftReports: DailyShiftReport[];
   shiftReportPreferences?: ShiftReportPreferences;
   rosterVersion?: string;
@@ -505,6 +520,7 @@ export const createInternalDepartmentData = (): DepartmentData => applyWeeklyGro
   })),
   notifications: [],
   generalDiscussionMessages: [],
+  generalDiscussionReadByUser: {},
   shiftReports: [],
   shiftReportPreferences: {},
   releaseVersion: INTERNAL_RELEASE_VERSION,

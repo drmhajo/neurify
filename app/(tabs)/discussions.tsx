@@ -1,5 +1,6 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useIsFocused } from "@react-navigation/native";
 import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { EmptyState, palette } from "@/components/neuro-ui";
@@ -8,10 +9,15 @@ import { useAppLanguage } from "@/lib/language";
 import type { GeneralDiscussionMessage } from "@/lib/department-model";
 
 export default function GeneralDiscussionsScreen() {
-  const { data, session, addGeneralDiscussionMessage } = useDepartment();
+  const { data, session, addGeneralDiscussionMessage, markGeneralDiscussionRead } = useDepartment();
   const { language, isRTL } = useAppLanguage();
   const [draft, setDraft] = useState("");
   const messages = useMemo(() => data.generalDiscussionMessages ?? [], [data.generalDiscussionMessages]);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) markGeneralDiscussionRead();
+  }, [isFocused, markGeneralDiscussionRead, messages.length]);
 
   const sendMessage = () => {
     if (!draft.trim()) return;
