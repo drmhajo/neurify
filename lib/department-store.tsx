@@ -230,7 +230,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     if (!targetTeam) return;
     const now = Date.now();
     const caseId = `c-${now}`;
-    const patientCase: PatientCase = { id: caseId, code: input.patient.code.trim(), fileNumber: input.patient.fileNumber.trim() || input.patient.code.trim(), fullName: input.patient.fullName.trim(), age: input.patient.age, medicalHistory: input.patient.medicalHistory.trim() || "غير موثّق بعد", clinicalTests: input.patient.clinicalTests.trim() || "غير موثّق بعد", diagnosis: input.patient.diagnosis.trim(), admittedSince: "الآن", status: input.disposition === "admit" ? "منوّم" : "متابعة", imaging: [], messages: [] };
+    const patientCase: PatientCase = { id: caseId, code: input.patient.code.trim(), fileNumber: input.patient.fileNumber.trim() || input.patient.code.trim(), fullName: input.patient.fullName.trim(), age: input.patient.age, medicalHistory: input.patient.medicalHistory.trim() || "غير موثّق بعد", clinicalTests: input.patient.clinicalTests.trim() || "غير موثّق بعد", diagnosis: input.patient.diagnosis.trim(), clinicalDecision: input.patient.clinicalDecision?.trim(), surgeryType: input.patient.surgeryType?.trim(), admittedSince: "الآن", status: input.disposition === "admit" ? "منوّم" : "متابعة", imaging: [], messages: [] };
     updateData((current) => ({
       ...current,
       teams: current.teams.map((team) => team.id === teamId ? {

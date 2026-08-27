@@ -81,6 +81,8 @@ export type PatientCase = {
   medicalHistory: string;
   clinicalTests: string;
   diagnosis: string;
+  clinicalDecision?: string;
+  surgeryType?: string;
   admittedSince: string;
   status: "منوّم" | "متابعة" | "جاهز للخروج";
   imaging: DiagnosticImaging[];
@@ -101,6 +103,8 @@ export type ConsultationPatient = {
   medicalHistory: string;
   clinicalTests: string;
   diagnosis: string;
+  clinicalDecision?: string;
+  surgeryType?: string;
 };
 
 export type ClinicalDisposition = "follow_up" | "admit" | "discharge";
