@@ -86,6 +86,9 @@ export type PatientCase = {
   clinicalTests: string;
   diagnosis: string;
   clinicalDecision?: string;
+  weekendPlan?: string;
+  weekendPlanUpdatedAt?: string;
+  weekendPlanUpdatedBy?: string;
   surgeryType?: string;
   surgeryTypeCode?: NeurosurgeryProcedureCode;
   admittedSince: string;
