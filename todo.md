@@ -345,3 +345,5 @@
 - [x] Use the supplied Neurosurgery Department emblem as the login-screen brand mark
 - [x] Align the login-screen palette with the supplied department emblem while retaining accessible contrast
 - [x] Use the same supplied department emblem in exported report headers and validate branding regressions
+- [x] Add a smooth post-login transition from central sign-in to the main dashboard
+- [x] Add regression coverage for the successful sign-in transition and validate Android export
