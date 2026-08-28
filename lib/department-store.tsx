@@ -37,6 +37,7 @@ import { buildDailyShiftReport } from "@/lib/shift-endorsement";
 import { createGeneralAnnouncement, validateGeneralAnnouncement } from "@/lib/general-announcement";
 import { isEligibleForOnCallSlot } from "@/lib/on-call-eligibility";
 import { canManageDischargedCases, deleteDischargedCase, type ArchivedCaseUpdate, updateDischargedCase } from "@/lib/discharged-case-admin";
+import { shouldLockLocalBootstrap } from "@/lib/local-bootstrap";
 
 type Session = {
   userId: string;
@@ -151,7 +152,19 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
             await AsyncStorage.setItem(DATA_KEY, JSON.stringify(parsedData));
           }
           initialSetupCompleted = Boolean(parsedData.initialSetupCompleted);
+          const localAdminPasswordExists = await hasDepartmentPassword("u-admin");
+          if (shouldLockLocalBootstrap(parsedData, localAdminPasswordExists)) {
+            parsedData = { ...parsedData, initialSetupCompleted: true };
+            initialSetupCompleted = true;
+            dirtyRef.current = true;
+            await AsyncStorage.setItem(DATA_KEY, JSON.stringify(parsedData));
+          }
           setData({ ...parsedData, shiftReportPreferences: parsedData.shiftReportPreferences ?? {}, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], generalDiscussionMessages: parsedData.generalDiscussionMessages ?? [], generalDiscussionReadByUser: parsedData.generalDiscussionReadByUser ?? {}, weeklyAssignments: parsedData.weeklyAssignments ?? [], scheduleDocuments: (parsedData.scheduleDocuments ?? []).map((document) => ({ ...document, mimeType: document.mimeType ?? (document.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/*") })), surgeries: parsedData.surgeries.map((surgery) => ({ ...surgery, date: surgery.date ?? "اليوم", notes: surgery.notes ?? "", patientLink: surgery.patientLink ?? parsedData.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.fileNumber === surgery.patientCode || patientCase.code === surgery.patientCode ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined })), teams: parsedData.teams.map((team) => ({ ...team, dischargedCases: team.dischargedCases ?? [], cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, weekendPlan: patientCase.weekendPlan ?? "", fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", ward: patientCase.ward ?? "", bed: patientCase.bed ?? "", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
+        } else {
+          const freshData = { ...createInternalDepartmentData(), initialSetupCompleted: true };
+          initialSetupCompleted = true;
+          setData(freshData);
+          await AsyncStorage.setItem(DATA_KEY, JSON.stringify(freshData));
         }
         if (restoredSession && (initialSetupCompleted || (JSON.parse(restoredSession) as Session).userId.startsWith("remote-"))) {
           setSession(JSON.parse(restoredSession) as Session);
