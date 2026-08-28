@@ -43,7 +43,7 @@ export function NotificationBell({ count, onPress }: { count: number; onPress: (
 
 export function SectionTitle({ title, action, onPress }: { title: string; action?: string; onPress?: () => void }) {
   const { localize, isRTL } = useAppLanguage();
-  return <View style={[styles.sectionTitle, { flexDirection: isRTL ? "row-reverse" : "row" }]}><Text style={[styles.sectionHeading, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(title)}</Text>{action && onPress ? <Pressable onPress={onPress}><Text style={[styles.sectionAction, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(action)}</Text></Pressable> : null}</View>;
+  return <View style={[styles.sectionTitle, { flexDirection: isRTL ? "row-reverse" : "row" }]}><Text style={[styles.sectionHeading, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(title)}</Text>{action && onPress ? <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.sectionActionButton, pressed && styles.pressed]}><Text style={[styles.sectionAction, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(action)}</Text></Pressable> : null}</View>;
 }
 
 export function StatusPill({ label, tone = "blue" }: { label: string; tone?: "blue" | "teal" | "red" | "gold" | "grey" }) {
@@ -67,20 +67,21 @@ export function EmptyState({ icon, text }: { icon: React.ComponentProps<typeof M
 
 const styles = StyleSheet.create({
   card: { backgroundColor: palette.card, borderWidth: 1, borderColor: palette.line, borderRadius: 18, padding: 16, shadowColor: "#123D63", shadowOpacity: 0.055, shadowRadius: 14, shadowOffset: { width: 0, height: 5 }, elevation: 2 },
-  primaryButton: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: palette.navy, minHeight: 46, paddingHorizontal: 16, borderRadius: 14 },
+  primaryButton: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: palette.navy, minHeight: 50, paddingHorizontal: 16, borderRadius: 15 },
   tealButton: { backgroundColor: palette.teal },
   lightButton: { backgroundColor: palette.paleBlue, borderWidth: 1, borderColor: "#C9DDED" },
   disabledButton: { opacity: 0.5 },
   pressed: { opacity: 0.84, transform: [{ scale: 0.98 }] },
   primaryText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800", writingDirection: "rtl" },
   lightButtonText: { color: palette.navy },
-  iconAction: { height: 40, width: 40, borderRadius: 20, backgroundColor: "#FFFFFF", borderColor: palette.line, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  iconAction: { height: 44, width: 44, borderRadius: 22, backgroundColor: "#FFFFFF", borderColor: palette.line, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   bellWrap: { position: "relative" },
   badge: { position: "absolute", top: -4, right: -4, minWidth: 18, height: 18, paddingHorizontal: 3, borderRadius: 9, backgroundColor: palette.urgent, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: palette.canvas },
   badgeText: { color: "#FFFFFF", fontSize: 9, fontWeight: "900" },
   sectionTitle: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "space-between", marginTop: 24, marginBottom: 12 },
   sectionHeading: { color: palette.ink, fontSize: 18, fontWeight: "800", writingDirection: "rtl" },
   sectionAction: { color: palette.navy, fontSize: 13, fontWeight: "700", writingDirection: "rtl" },
+  sectionActionButton: { minHeight: 36, paddingHorizontal: 6, alignItems: "center", justifyContent: "center" },
   pill: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
   pillText: { fontSize: 11, fontWeight: "800", writingDirection: "rtl" },
   pillBlue: { backgroundColor: palette.paleBlue }, pillBlueText: { color: palette.navy },

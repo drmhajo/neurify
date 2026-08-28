@@ -37,8 +37,8 @@ export default function GeneralDiscussionsScreen() {
     </View>;
   };
 
-  return <ScreenContainer edges={["top", "left", "right", "bottom"]} className="px-4">
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.page}>
+  return <ScreenContainer edges={["top", "left", "right"]} className="px-4">
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.page} keyboardVerticalOffset={0}>
       <View style={[styles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <View style={styles.headerIcon}><MaterialIcons name="forum" size={24} color="#FFFFFF" /></View>
         <View style={styles.headerCopy}>
@@ -51,11 +51,14 @@ export default function GeneralDiscussionsScreen() {
         <Text style={[styles.noticeText, { textAlign: isRTL ? "right" : "left", writingDirection: isRTL ? "rtl" : "ltr" }]}>{language === "en" ? "For operational discussion only. Do not include patient names, record numbers, or clinical details here." : "للنقاش التشغيلي فقط. لا تكتب أسماء المرضى أو أرقام ملفاتهم أو تفاصيلهم السريرية في هذه المساحة."}</Text>
       </View>
       <FlatList
+        style={styles.list}
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
         contentContainerStyle={messages.length ? styles.messageList : styles.emptyList}
         ListEmptyComponent={<EmptyState icon="forum" text={language === "en" ? "Start the department’s first general discussion." : "ابدأ أول نقاش عام للقسم."} />}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       />
       <View style={[styles.composer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <TextInput
@@ -79,16 +82,17 @@ export default function GeneralDiscussionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1 },
-  header: { alignItems: "center", gap: 11, paddingTop: 8, paddingBottom: 13 },
+  page: { flex: 1, minHeight: 0 },
+  header: { alignItems: "center", gap: 11, paddingTop: 10, paddingBottom: 14 },
   headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: palette.navy },
   headerCopy: { flex: 1 },
   title: { color: palette.ink, fontWeight: "900", fontSize: 20 },
   subtitle: { color: palette.muted, fontSize: 11, marginTop: 3, lineHeight: 16 },
   notice: { gap: 8, alignItems: "flex-start", padding: 12, borderRadius: 14, backgroundColor: palette.paleTeal, marginBottom: 12 },
   noticeText: { flex: 1, color: palette.teal, fontSize: 11, lineHeight: 17, fontWeight: "700" },
-  messageList: { paddingBottom: 12, gap: 9 },
-  emptyList: { flexGrow: 1, justifyContent: "center" },
+  list: { flex: 1, minHeight: 0 },
+  messageList: { flexGrow: 1, paddingTop: 4, paddingBottom: 16, gap: 9 },
+  emptyList: { flexGrow: 1, justifyContent: "center", paddingHorizontal: 20, paddingBottom: 28 },
   message: { maxWidth: "88%", padding: 12, borderRadius: 16 },
   ownMessage: { alignSelf: "flex-end", backgroundColor: palette.navy, borderBottomRightRadius: 5 },
   memberMessage: { alignSelf: "flex-start", backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: palette.line, borderBottomLeftRadius: 5 },
@@ -99,7 +103,7 @@ const styles = StyleSheet.create({
   ownText: { color: "#FFFFFF" },
   timestamp: { color: palette.muted, fontSize: 9, marginTop: 6 },
   ownTimestamp: { color: "#CEE6F3" },
-  composer: { alignItems: "flex-end", gap: 9, borderTopWidth: 1, borderTopColor: palette.line, paddingTop: 9, paddingBottom: 6 },
+  composer: { flexShrink: 0, alignItems: "flex-end", gap: 9, borderTopWidth: 1, borderTopColor: palette.line, paddingTop: 12, paddingBottom: 10, backgroundColor: palette.canvas },
   input: { flex: 1, minHeight: 46, maxHeight: 100, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: palette.line, borderRadius: 15, paddingHorizontal: 12, paddingVertical: 10, color: palette.ink, textAlignVertical: "top" },
   send: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: palette.navy },
   sendDisabled: { backgroundColor: "#9CB1C2" },

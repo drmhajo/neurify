@@ -277,3 +277,7 @@
 - [x] Extend the central notification function to register FCM tokens and send a protected test announcement
 - [x] Test FCM registration and direct delivery, then publish an Android build with the Firebase configuration
 - [x] Confirm receipt of the live Firebase test notification on the registered Android device
+- [x] Audit the general discussion screen for Android safe-area, keyboard, and tab-bar overlap
+- [x] Redesign the discussion composer and empty state for clear, stable small-screen layout
+- [x] Review profile command rows, especially sign-out, for contrast, hierarchy, and touch-target clarity
+- [ ] Run visual checks at Android portrait sizes and publish the layout-correction build
