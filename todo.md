@@ -342,3 +342,6 @@
 - [x] Add a calm fade-in for the approved Neurify wordmark during startup loading
 - [x] Ensure first launch and unauthenticated startup always open the central sign-in page
 - [x] Add regression coverage for startup routing and validate the Android-ready configuration
+- [x] Use the supplied Neurosurgery Department emblem as the login-screen brand mark
+- [x] Align the login-screen palette with the supplied department emblem while retaining accessible contrast
+- [x] Use the same supplied department emblem in exported report headers and validate branding regressions

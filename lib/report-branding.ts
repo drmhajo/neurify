@@ -1,5 +1,5 @@
 /** Department-approved visual identity used only in PDF and print report headers. */
-export const OFFICIAL_LOGO_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/ZiqiFPvQVxNKFyil.png";
+export const OFFICIAL_LOGO_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/faAuaUHZiRmxbDab.png";
 
 function escape(value: string) {
   return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character] ?? character);
