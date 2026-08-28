@@ -38,8 +38,8 @@ const env = {
   // App branding - update these values directly (do not use env vars)
   appName: "Neurify",
   appSlug: "ksmc-neurosurgery",
-  // The department-provided logo is bundled in assets/images/icon.png.
-  logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/ahrJsbBgALNiceSU.png",
+  // Stable CDN location of the approved Neurify neural-path launcher mark.
+  logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/OQPxQKDsJXSozxSt.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
@@ -48,7 +48,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.9",
+  version: "1.0.10",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -69,7 +69,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
+      backgroundColor: "#082B49",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -77,7 +77,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    versionCode: 10,
+    versionCode: 11,
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
     permissions: ["POST_NOTIFICATIONS"],
@@ -115,7 +115,7 @@ const config: ExpoConfig = {
       "expo-notifications",
       {
         "defaultChannel": "department-alerts",
-        "color": "#075985",
+        "color": "#00AFC1",
         "enableBackgroundRemoteNotifications": true
       }
     ],
@@ -132,9 +132,9 @@ const config: ExpoConfig = {
         image: "./assets/images/splash-icon.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#ffffff",
+        backgroundColor: "#082B49",
         dark: {
-          backgroundColor: "#000000",
+          backgroundColor: "#082B49",
         },
       },
     ],

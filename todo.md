@@ -336,3 +336,6 @@
 - [x] Deliver the revised visual identity guide as a shareable document
 - [x] Export the Arabic Neurify brand guidelines as a team-ready PDF
 - [x] Verify Arabic text, tables, and visual links in the exported PDF
+- [x] Apply the approved Neurify icon mark to the primary app, splash, web, and Android adaptive-icon assets
+- [x] Use the approved humanist Neurify wordmark on the splash experience without compromising launcher-icon clarity
+- [x] Update branding metadata and validate the new iOS/Android icon asset dimensions before publishing

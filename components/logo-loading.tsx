@@ -36,9 +36,10 @@ export function LogoLoading({ label, overlay = false }: LogoLoadingProps) {
   return <View style={[styles.container, overlay && styles.overlay]} accessibilityRole="progressbar" accessibilityLabel={text}>
     <View style={styles.content}>
       <Animated.View style={[styles.ring, { transform: [{ rotate: rotation }] }]} />
-      <Animated.View style={[styles.logoShell, { opacity, transform: [{ scale }] }]}>
+      <Animated.View style={[styles.logoShell, { opacity, transform: [{ scale }] }]}> 
         <Image source={require("../assets/images/icon.png")} style={styles.logo} resizeMode="contain" />
       </Animated.View>
+      <Image source={require("../assets/images/neurify-wordmark.png")} style={styles.wordmark} resizeMode="contain" accessibilityLabel="Neurify" />
       <Text style={[styles.label, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: "center" }]}>{text}</Text>
     </View>
   </View>;
@@ -49,7 +50,8 @@ const styles = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFillObject, zIndex: 20, backgroundColor: "#F3F7FBEF" },
   content: { minWidth: 210, alignItems: "center", justifyContent: "center" },
   ring: { position: "absolute", height: 132, width: 132, borderRadius: 66, borderWidth: 3, borderColor: "#BDE5DB", borderTopColor: palette.teal },
-  logoShell: { height: 104, width: 104, borderRadius: 30, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: palette.navy, shadowOpacity: 0.14, shadowRadius: 12, elevation: 3 },
+  logoShell: { height: 104, width: 104, borderRadius: 30, backgroundColor: palette.navy, alignItems: "center", justifyContent: "center", shadowColor: palette.navy, shadowOpacity: 0.2, shadowRadius: 12, elevation: 3 },
   logo: { height: 88, width: 88 },
-  label: { color: palette.navy, fontSize: 13, fontWeight: "800", marginTop: 28 },
+  wordmark: { height: 44, width: 196, marginTop: 18 },
+  label: { color: palette.navy, fontSize: 13, fontWeight: "800", marginTop: 16 },
 });
