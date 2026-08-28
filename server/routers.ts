@@ -68,6 +68,12 @@ export const appRouter = router({
       if (!account) throw new Error("Registration request cannot be approved");
       return account;
     }),
+    reject: publicProcedure.input(z.object({ id: z.string().min(8).max(64), rejectedBy: z.string().trim().min(2).max(120), approvalSecret: z.string().min(16).max(256) })).mutation(async ({ input }) => {
+      if (!db.isRegistrationApprovalAuthorized(input.approvalSecret)) throw new Error("Approval authorization failed");
+      const request = await db.rejectRegistrationRequest(input.id, input.rejectedBy);
+      if (!request) throw new Error("Registration request cannot be rejected");
+      return request;
+    }),
     signIn: publicProcedure.input(z.object({ email: z.string().trim().email().max(320), password: z.string().min(1).max(128) })).mutation(({ input }) => db.authenticateApprovedRegistration(input.email, input.password)),
   }),
   backup: router({

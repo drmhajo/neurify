@@ -163,6 +163,17 @@ export async function approveRegistrationRequest(id: string, approvedBy: string)
   return { id: request.id, name: request.name, email: request.email, phone: request.phone, jobTitle: request.jobTitle, approvedAt };
 }
 
+export async function rejectRegistrationRequest(id: string, rejectedBy: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Registration service is unavailable");
+  const rows = await db.select().from(registrationRequests).where(eq(registrationRequests.id, id)).limit(1);
+  const request = rows[0];
+  if (!request || request.status !== "pending") return undefined;
+  const reviewedAt = new Date();
+  await db.update(registrationRequests).set({ status: "rejected", approvedBy: rejectedBy.trim().slice(0, 120), approvedAt: reviewedAt }).where(eq(registrationRequests.id, id));
+  return { id: request.id, name: request.name, email: request.email, phone: request.phone, jobTitle: request.jobTitle, reviewedAt };
+}
+
 export async function authenticateApprovedRegistration(emailInput: string, password: string) {
   const db = await getDb();
   if (!db) throw new Error("Registration service is unavailable");

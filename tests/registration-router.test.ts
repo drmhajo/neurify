@@ -12,6 +12,11 @@ describe("مسار طلبات التسجيل المركزي", () => {
     await expect(caller.registrations.list({ approvalSecret: "invalid-registration-approval-code" })).rejects.toThrow("Approval authorization failed");
   });
 
+  it("يرفض رمز اعتماد غير صحيح قبل رفض الطلب", async () => {
+    const caller = appRouter.createCaller(createContext());
+    await expect(caller.registrations.reject({ id: "reg-0123456789", rejectedBy: "Approver", approvalSecret: "invalid-registration-approval-code" })).rejects.toThrow("Approval authorization failed");
+  });
+
   it("يتحقق من بيانات التسجيل قبل محاولة حفظها", async () => {
     const caller = appRouter.createCaller(createContext());
     await expect(caller.registrations.submit({ name: "A", email: "not-an-email", phone: "1", jobTitle: "X", password: "short" })).rejects.toBeTruthy();
