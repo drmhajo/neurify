@@ -36,6 +36,7 @@ import { canRemoveDepartmentUser, normalizeDemoUsername } from "@/lib/department
 import { buildDailyShiftReport } from "@/lib/shift-endorsement";
 import { createGeneralAnnouncement, validateGeneralAnnouncement } from "@/lib/general-announcement";
 import { isEligibleForOnCallSlot } from "@/lib/on-call-eligibility";
+import { canManageDischargedCases, deleteDischargedCase, type ArchivedCaseUpdate, updateDischargedCase } from "@/lib/discharged-case-admin";
 
 type Session = {
   userId: string;
@@ -60,6 +61,8 @@ type DepartmentStore = {
   addConsultation: (teamId: string, input: { title: string; subject: string; disposition: ClinicalDisposition; patient: ConsultationPatient }) => void;
   addCase: (teamId: string, input: { code: string; diagnosis: string }) => void;
   dischargePatient: (teamId: string, caseId: string, reason: string) => void;
+  updateDischargedPatient: (teamId: string, caseId: string, input: ArchivedCaseUpdate) => boolean;
+  deleteDischargedPatient: (teamId: string, caseId: string) => boolean;
   addUser: (input: { name: string; username: string; role: UserRole; teamId: string; jobTitle?: string }) => void;
   changeUserRole: (userId: string, role: UserRole) => void;
   updateUserAccess: (userId: string, input: { active: boolean; permissions: PermissionKey[]; teamIds: string[] }) => void;
@@ -405,6 +408,22 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     updateData((current) => ({ ...current, teams: current.teams.map((item) => item.id === teamId ? { ...item, cases: item.cases.filter((patientCase) => patientCase.id !== caseId), dischargedCases: [archived, ...(item.dischargedCases ?? [])] } : item) }));
   }, [data.teams, session?.name, updateData]);
 
+  const updateDischargedPatient = useCallback((teamId: string, caseId: string, input: ArchivedCaseUpdate) => {
+    if (!canManageDischargedCases(session?.role)) return false;
+    const exists = dataRef.current.teams.find((team) => team.id === teamId)?.dischargedCases?.some((patient) => patient.id === caseId);
+    if (!exists) return false;
+    updateData((current) => updateDischargedCase(current, teamId, caseId, input));
+    return true;
+  }, [session?.role, updateData]);
+
+  const deleteDischargedPatient = useCallback((teamId: string, caseId: string) => {
+    if (!canManageDischargedCases(session?.role)) return false;
+    const exists = dataRef.current.teams.find((team) => team.id === teamId)?.dischargedCases?.some((patient) => patient.id === caseId);
+    if (!exists) return false;
+    updateData((current) => deleteDischargedCase(current, teamId, caseId));
+    return true;
+  }, [session?.role, updateData]);
+
   const addUser = useCallback((input: { name: string; username: string; role: UserRole; teamId: string; jobTitle?: string }) => updateData((current) => {
     const id = `u-${Date.now()}`;
     const newUser: DepartmentUser = { id, username: normalizeDemoUsername(input.username), name: input.name.trim(), role: input.role, jobTitle: input.jobTitle?.trim() || "عضو القسم", teamIds: [input.teamId], active: true, permissions: rolePermissionDefaults[input.role], passwordRecoveryRequired: true };
@@ -584,7 +603,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, requestRegistration, importApprovedRegistration, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, data, dischargePatient, generateDailyShiftReport, hydrated, importApprovedRegistration, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, removeUser, requestRegistration, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
+  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, requestRegistration, importApprovedRegistration, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, updateDischargedPatient, deleteDischargedPatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, data, deleteDischargedPatient, dischargePatient, generateDailyShiftReport, hydrated, importApprovedRegistration, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, removeUser, requestRegistration, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateDischargedPatient, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }
