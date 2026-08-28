@@ -294,3 +294,7 @@
 - [x] Create and protect the requested central administrator account with full administrative permissions
 - [x] Allow the requested administrator username to authenticate through central sign-in without an email address
 - [x] Verify new-device onboarding, central administrator login, and administrative access before publishing
+- [x] Rename the app display name to NeuroLink while preserving the existing immutable app slug
+- [x] Add the supplied Neurosurgery Department logo as a dedicated print-report asset
+- [x] Replace the existing report header logo in PDF and print templates with the department logo
+- [x] Verify bilingual report headers and increment the Android build for the rebranded release

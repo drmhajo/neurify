@@ -12,8 +12,9 @@ describe("central registration Supabase migration", () => {
     expect(appConfig).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
     expect(appConfig).toContain("/functions/v1/central-registration");
     expect(client).toContain("centralRegistration");
-    expect(appConfig).toContain('version: "1.0.7"');
-    expect(appConfig).toContain("versionCode: 8");
+    expect(appConfig).toContain('appName: "NeuroLink"');
+    expect(appConfig).toContain('version: "1.0.8"');
+    expect(appConfig).toContain("versionCode: 9");
   });
 
   it("routes submit, sign-in, list, approve, and reject through the Edge Function", () => {

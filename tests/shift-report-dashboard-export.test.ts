@@ -23,7 +23,7 @@ describe("تصدير لوحة معلومات المناوبات الشهرية",
     expect(html).toContain('dir="rtl"');
     expect(html).toContain("لوحة معلومات المناوبات الشهرية");
     expect(html).toContain("مدينة الملك سعود الطبية");
-    expect(html).toContain("KSMC Neurosurgery logo");
+    expect(html).toContain("Neurosurgery Department logo");
     expect(html).toContain("2026-08-02");
     expect(html).toContain(">11<");
   });

@@ -36,7 +36,7 @@ const centralRegistrationUrl = supabaseProjectUrl
 
 const env = {
   // App branding - update these values directly (do not use env vars)
-  appName: "جراحة المخ والأعصاب",
+  appName: "NeuroLink",
   appSlug: "ksmc-neurosurgery",
   // The department-provided logo is bundled in assets/images/icon.png.
   logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/ahrJsbBgALNiceSU.png",
@@ -48,7 +48,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.7",
+  version: "1.0.8",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -77,7 +77,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    versionCode: 8,
+    versionCode: 9,
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
     permissions: ["POST_NOTIFICATIONS"],
