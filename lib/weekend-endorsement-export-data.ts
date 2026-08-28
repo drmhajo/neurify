@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import type { WeekendEndorsementReport } from "./weekend-endorsement";
+import { formatRiyadhDateTime } from "./riyadh-time";
 
 export type WeekendEndorsementExportLanguage = "ar" | "en";
 
@@ -25,7 +26,7 @@ export function weekendEndorsementExcelRows(report: WeekendEndorsementReport, la
       ["Weekend Endorsement"],
       [english ? "Scope" : "نطاق التقرير", scopeLabel(report, language)],
       [english ? "Prepared by" : "أعدّه", report.generatedBy],
-      [english ? "Generated" : "وقت الإنشاء", new Date(report.generatedAt).toLocaleString()],
+      [english ? "Generated (Riyadh)" : "وقت الإنشاء (الرياض)", formatRiyadhDateTime(report.generatedAt, english ? "en" : "ar")],
       [english ? "Inpatients" : "المرضى المنومون", report.entries.length],
     ],
     plans: [

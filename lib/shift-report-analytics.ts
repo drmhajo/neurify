@@ -42,5 +42,5 @@ export function buildMonthlyShiftReportAnalytics(reports: DailyShiftReport[], mo
 
 export function monthLabel(month: string, locale: "ar" | "en") {
   const date = new Date(`${month}-01T12:00:00.000Z`);
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(date);
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-US", { month: "long", year: "numeric", timeZone: "Asia/Riyadh" }).format(date);
 }
