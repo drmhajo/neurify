@@ -281,3 +281,7 @@
 - [x] Redesign the discussion composer and empty state for clear, stable small-screen layout
 - [x] Review profile command rows, especially sign-out, for contrast, hierarchy, and touch-target clarity
 - [ ] Run visual checks at Android portrait sizes and publish the layout-correction build
+- [x] Diagnose why the installed Android build shows an empty profile while preview remains populated
+- [x] Diagnose production-only discussion layout expansion and composer placement on Android
+- [x] Add Android-safe profile fallbacks and production layout regression coverage
+- [ ] Publish and validate the production-layout correction on the physical Android device

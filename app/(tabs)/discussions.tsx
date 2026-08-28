@@ -38,7 +38,7 @@ export default function GeneralDiscussionsScreen() {
   };
 
   return <ScreenContainer edges={["top", "left", "right"]} className="px-4">
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.page} keyboardVerticalOffset={0}>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.page} keyboardVerticalOffset={0}>
       <View style={[styles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <View style={styles.headerIcon}><MaterialIcons name="forum" size={24} color="#FFFFFF" /></View>
         <View style={styles.headerCopy}>
@@ -50,16 +50,18 @@ export default function GeneralDiscussionsScreen() {
         <MaterialIcons name="privacy-tip" size={19} color={palette.teal} />
         <Text style={[styles.noticeText, { textAlign: isRTL ? "right" : "left", writingDirection: isRTL ? "rtl" : "ltr" }]}>{language === "en" ? "For operational discussion only. Do not include patient names, record numbers, or clinical details here." : "للنقاش التشغيلي فقط. لا تكتب أسماء المرضى أو أرقام ملفاتهم أو تفاصيلهم السريرية في هذه المساحة."}</Text>
       </View>
-      <FlatList
-        style={styles.list}
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={messages.length ? styles.messageList : styles.emptyList}
-        ListEmptyComponent={<EmptyState icon="forum" text={language === "en" ? "Start the department’s first general discussion." : "ابدأ أول نقاش عام للقسم."} />}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      />
+      <View style={styles.messageArea}>
+        <FlatList
+          style={styles.list}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={messages.length ? styles.messageList : styles.emptyList}
+          ListEmptyComponent={<EmptyState icon="forum" text={language === "en" ? "Start the department’s first general discussion." : "ابدأ أول نقاش عام للقسم."} />}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        />
+      </View>
       <View style={[styles.composer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <TextInput
           value={draft}
@@ -90,6 +92,7 @@ const styles = StyleSheet.create({
   subtitle: { color: palette.muted, fontSize: 11, marginTop: 3, lineHeight: 16 },
   notice: { gap: 8, alignItems: "flex-start", padding: 12, borderRadius: 14, backgroundColor: palette.paleTeal, marginBottom: 12 },
   noticeText: { flex: 1, color: palette.teal, fontSize: 11, lineHeight: 17, fontWeight: "700" },
+  messageArea: { flex: 1, minHeight: 0 },
   list: { flex: 1, minHeight: 0 },
   messageList: { flexGrow: 1, paddingTop: 4, paddingBottom: 16, gap: 9 },
   emptyList: { flexGrow: 1, justifyContent: "center", paddingHorizontal: 20, paddingBottom: 28 },

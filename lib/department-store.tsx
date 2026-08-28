@@ -39,13 +39,9 @@ import { isEligibleForOnCallSlot } from "@/lib/on-call-eligibility";
 import { canManageDischargedCases, deleteDischargedCase, type ArchivedCaseUpdate, updateDischargedCase } from "@/lib/discharged-case-admin";
 import { shouldLockLocalBootstrap } from "@/lib/local-bootstrap";
 import { signInCentralRegistration, submitCentralRegistration } from "@/lib/central-registration-api";
+import { parseStoredDepartmentSession, type DepartmentSession } from "@/lib/department-session";
 
-type Session = {
-  userId: string;
-  name: string;
-  role: UserRole;
-  pushProof?: string;
-};
+type Session = DepartmentSession;
 
 type DepartmentStore = {
   hydrated: boolean;
@@ -168,10 +164,11 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
           setData(freshData);
           await AsyncStorage.setItem(DATA_KEY, JSON.stringify(freshData));
         }
-        if (restoredSession && (initialSetupCompleted || (JSON.parse(restoredSession) as Session).userId.startsWith("remote-"))) {
-          setSession(JSON.parse(restoredSession) as Session);
-          await AsyncStorage.setItem(SESSION_KEY, restoredSession);
-        } else if (!initialSetupCompleted) {
+        const parsedSession = restoredSession ? parseStoredDepartmentSession(restoredSession) : null;
+        if (parsedSession && (initialSetupCompleted || parsedSession.userId.startsWith("remote-"))) {
+          setSession(parsedSession);
+          await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(parsedSession));
+        } else if (restoredSession) {
           await AsyncStorage.removeItem(SESSION_KEY);
         }
         if (restoredSyncState) {

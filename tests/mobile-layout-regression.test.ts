@@ -9,7 +9,8 @@ describe("mobile layout regression", () => {
     const screen = fs.readFileSync(path.join(root, "app/(tabs)/discussions.tsx"), "utf8");
     expect(screen).toContain("style={styles.list}");
     expect(screen).toContain("list: { flex: 1, minHeight: 0 }");
-    expect(screen).toContain('behavior={Platform.OS === "ios" ? "padding" : "height"}');
+    expect(screen).toContain('behavior={Platform.OS === "ios" ? "padding" : undefined}');
+    expect(screen).toContain("messageArea: { flex: 1, minHeight: 0 }");
     expect(screen).toContain('edges={["top", "left", "right"]}');
     expect(screen).toContain('keyboardShouldPersistTaps="handled"');
   });
@@ -18,6 +19,8 @@ describe("mobile layout regression", () => {
     const screen = fs.readFileSync(path.join(root, "app/profile.tsx"), "utf8");
     expect(screen).toContain("<ScreenContainer edges={[\"top\", \"left\", \"right\", \"bottom\"]}>");
     expect(screen).toContain("Math.max(34, insets.bottom + 24)");
+    expect(screen).toContain("const displayName = session?.name?.trim()");
+    expect(screen).toContain("displayName.slice(0, 1)");
     expect(screen).toContain("Session control");
     expect(screen).toContain("Sign out?");
     expect(screen).toContain("signOutSection");
