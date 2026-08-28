@@ -206,7 +206,7 @@
 - [x] توسيع دليل الاستخدام بشرح وصور لكل صفحة وإضافة مخطط شامل لمسارات التطبيق.
 - [x] إضافة مساحة نقاشات عامة ثابتة منفصلة عن دردشة ملف المريض مع أيقونة وصول واضحة.
 - [x] إضافة شارة رسائل غير مقروءة للنقاشات العامة ومسحها عند فتح القناة.
-- [ ] إنشاء والتحقق من سجل أجهزة Push قبل إرسال الإشعار التجريبي المعتمد.
+- [x] إنشاء والتحقق من سجل أجهزة Push قبل إرسال الإشعار التجريبي المعتمد.
 - [x] فصل حالة إذن الإشعارات عن نجاح تسجيل جهاز Push لإتاحة إعادة التسجيل عند الحاجة.
 - [x] تشخيص وإصلاح خطأ تسجيل جهاز Android في خدمة Push قبل إعادة الاختبار.
 - [x] تضمين عنوان API المنشور في حزمة Android لتمكين تسجيل Push من الجهاز الفعلي.
@@ -249,20 +249,20 @@
 - [x] Review current central registration, approval, and sign-in flows for Supabase migration
 - [x] Implement stable Supabase-backed central authentication and registration endpoint
 - [x] Update the Android app API configuration to use the stable HTTPS endpoint
-- [ ] Test registration, approval, sign-in, and push notification flows end to end
+- [x] Test registration, approval, sign-in, and push notification flows end to end
 - [x] Document Android TLS/connectivity verification and cleanup temporary transition artifacts
 - [x] Add Supabase-backed Push-device registration so Android no longer relies on the temporary API
 - [x] Route central general Push delivery through the stable Supabase HTTPS function
-- [ ] Publish the updated Android build, register a physical device, and confirm receipt of a live Push test
+- [x] Publish the updated Android build, register a physical device, and confirm receipt of a live Push test
 - [x] Diagnose the physical Android `push_register` failure shown after publishing the Supabase migration
 - [x] Fix the device-session proof or request contract and add regression coverage
-- [ ] Republish, register the physical Android device in `push_devices`, and confirm a live Push receipt
+- [x] Republish, register the physical Android device in `push_devices`, and confirm a live Push receipt
 - [x] Diagnose the repeated Android Push registration failure after renewal of the central session proof
 - [x] Surface a safe, actionable device-registration error and fix the underlying request mismatch
-- [ ] Publish the corrective build and verify physical device registration before sending a live Push test
+- [x] Publish the corrective build and verify physical device registration before sending a live Push test
 - [x] Verify the Supabase public configuration is embedded in Android app config at build time
 - [x] Add safe in-app diagnostics for missing central configuration or non-central account routing
-- [ ] Increment the Android build version and publish a fresh binary for Push registration retest
+- [x] Increment the Android build version and publish a fresh binary for Push registration retest
 - [x] Diagnose why new central registration requests do not appear in the approver queue
 - [x] Diagnose why administrators cannot issue a temporary password for a user
 - [ ] Fix central approval visibility and temporary-password reset with regression tests
@@ -275,4 +275,5 @@
 - [x] Replace Expo token acquisition and delivery with native Firebase Cloud Messaging for Android
 - [x] Store the Firebase service-account credential only in Supabase Edge Function secrets
 - [x] Extend the central notification function to register FCM tokens and send a protected test announcement
-- [ ] Test FCM registration and direct delivery, then publish an Android build with the Firebase configuration
+- [x] Test FCM registration and direct delivery, then publish an Android build with the Firebase configuration
+- [x] Confirm receipt of the live Firebase test notification on the registered Android device
