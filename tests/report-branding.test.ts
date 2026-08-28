@@ -28,6 +28,8 @@ describe("ترويسة التقارير الرسمية", () => {
 
     expect(login).toContain('require("../assets/images/neurosurgery-department-logo.png")');
     expect(login).not.toContain('require("../assets/images/icon.png")');
+    expect(login).toContain('require("../assets/images/neurify-wordmark.png")');
+    expect(login).toContain("neurifyWordmark: { width: 106, height: 32");
     expect(login).toContain('navy: "#163F66"');
     expect(login).toContain('teal: "#168D93"');
     expect(login).toContain('gold: "#D4B62E"');

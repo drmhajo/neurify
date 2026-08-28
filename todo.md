@@ -347,3 +347,6 @@
 - [x] Use the same supplied department emblem in exported report headers and validate branding regressions
 - [x] Add a smooth post-login transition from central sign-in to the main dashboard
 - [x] Add regression coverage for the successful sign-in transition and validate Android export
+- [x] Export and adopt the approved transparent Neurify neural-path mark as the branding source
+- [x] Add a compact Neurify wordmark beneath the login-screen content while retaining the department emblem
+- [x] Add identity regression coverage and validate the Android-ready build

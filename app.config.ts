@@ -38,8 +38,8 @@ const env = {
   // App branding - update these values directly (do not use env vars)
   appName: "Neurify",
   appSlug: "ksmc-neurosurgery",
-  // Stable CDN location of the approved Neurify neural-path launcher mark.
-  logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/OQPxQKDsJXSozxSt.png",
+  // Stable CDN location of the approved transparent Neurify neural-path brand mark.
+  logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/uWLvJRjRIXTShrvS.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
@@ -48,7 +48,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.12",
+  version: "1.0.13",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -77,7 +77,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    versionCode: 13,
+    versionCode: 14,
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
     permissions: ["POST_NOTIFICATIONS"],

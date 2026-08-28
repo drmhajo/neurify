@@ -73,6 +73,11 @@ def make_wordmark(wordmark: Image.Image) -> Image.Image:
     return padded
 
 
+def save_transparent_mark(master: Image.Image, path: Path) -> None:
+    transparent_mark = alpha_mark(master).resize((1024, 1024), Image.Resampling.LANCZOS)
+    transparent_mark.save(path, "PNG", optimize=True)
+
+
 def main() -> None:
     if not ICON_MASTER.exists() or not WORDMARK_MASTER.exists():
         raise FileNotFoundError("Missing approved Neurify brand source artwork.")
@@ -85,6 +90,7 @@ def main() -> None:
     save_rgb(master, ASSETS / "icon.png", 1024)
     save_splash(master, ASSETS / "splash-icon.png")
     save_rgb(master, ASSETS / "favicon.png", 512)
+    save_transparent_mark(master, ASSETS / "neurify-mark-transparent.png")
     make_wordmark(wordmark).save(ASSETS / "neurify-wordmark.png", "PNG", optimize=True)
 
     foreground = make_adaptive_foreground(alpha_mark(master))
@@ -101,6 +107,7 @@ def main() -> None:
         "icon.png",
         "splash-icon.png",
         "favicon.png",
+        "neurify-mark-transparent.png",
         "neurify-wordmark.png",
         "android-icon-foreground.png",
         "android-icon-background.png",

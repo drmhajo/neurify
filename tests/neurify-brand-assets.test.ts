@@ -21,10 +21,10 @@ describe("هوية Neurify وأصول الأيقونات", () => {
     expect(config).toContain('appName: "Neurify"');
     expect(config).toContain('appSlug: "ksmc-neurosurgery"');
     expect(config).toContain('rawBundleId = "com.app.ksmcneurosurgery"');
-    expect(config).toContain('version: "1.0.12"');
-    expect(config).toContain("versionCode: 13");
+    expect(config).toContain('version: "1.0.13"');
+    expect(config).toContain("versionCode: 14");
     expect(config).toContain('backgroundColor: "#082B49"');
-    expect(config).toContain('logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/OQPxQKDsJXSozxSt.png"');
+    expect(config).toContain('logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/uWLvJRjRIXTShrvS.png"');
   });
 
   it("يصدر الرمز العصبي بمقاسات iOS وAndroid الصحيحة", () => {
@@ -34,6 +34,7 @@ describe("هوية Neurify وأصول الأيقونات", () => {
     expect(readPngInfo("assets/images/android-icon-background.png")).toMatchObject({ width: 1080, height: 1080, colorType: 2 });
     expect(readPngInfo("assets/images/android-icon-foreground.png")).toMatchObject({ width: 1080, height: 1080, colorType: 6 });
     expect(readPngInfo("assets/images/android-icon-monochrome.png")).toMatchObject({ width: 1080, height: 1080, colorType: 6 });
+    expect(readPngInfo("assets/images/neurify-mark-transparent.png")).toMatchObject({ width: 1024, height: 1024, colorType: 6 });
   });
 
   it("يستخدم العلامة النصية الإنسانية أثناء التحميل دون وضعها داخل أيقونة المشغل", () => {
@@ -42,6 +43,7 @@ describe("هوية Neurify وأصول الأيقونات", () => {
 
     expect(loader).toContain('require("../assets/images/neurify-wordmark.png")');
     expect(builder).toContain("WORDMARK_MASTER");
+    expect(builder).toContain("save_transparent_mark");
     expect(readPngInfo("assets/images/neurify-wordmark.png")).toMatchObject({ width: 1024, height: 291, colorType: 6 });
   });
 });
