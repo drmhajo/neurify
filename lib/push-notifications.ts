@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { createTRPCClient } from "@/lib/trpc";
-import { registerCentralPushDevice, sendCentralGeneralPush } from "@/lib/central-registration-api";
+import { registerCentralPushDevice, sendCentralConsultationPush, sendCentralGeneralPush } from "@/lib/central-registration-api";
 
 const PUSH_REGISTRATION_KEY_PREFIX = "ksmc.neuro.push-registration.";
 
@@ -105,21 +105,14 @@ export async function dispatchTeamPush(input: {
   teamId: string;
   recipientIds: string[];
   type: "consultation" | "admitted_case";
+  accountId?: string;
+  pushProof?: string;
 }): Promise<void> {
-  if (Platform.OS === "web") return;
-  const title = input.type === "consultation" ? "استشارة جديدة في غرفة الفريق" : "حالة منوّمة جديدة في غرفة الفريق";
-  const body = input.type === "consultation" ? "تمت إضافة استشارة جديدة. افتح غرفة الفريق للمتابعة." : "تمت إضافة حالة منوّمة جديدة. افتح غرفة الفريق للمتابعة.";
+  if (input.type !== "consultation" || !input.accountId?.startsWith("remote-") || !input.pushProof) return;
   try {
-    const client = createTRPCClient();
-    await client.push.sendTeam.mutate({
-      teamId: input.teamId,
-      recipientIds: input.recipientIds,
-      type: input.type,
-      title,
-      body,
-    });
+    await sendCentralConsultationPush({ accountId: input.accountId, pushProof: input.pushProof, teamId: input.teamId });
   } catch {
-    // يبقى التنبيه الداخلي متاحاً حتى تتم إعادة المحاولة في التحديث المؤسسي للخادم.
+    // يبقى التنبيه الداخلي متاحاً إذا تعذر إرسال التنبيه الخارجي.
   }
 }
 

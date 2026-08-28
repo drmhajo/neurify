@@ -285,3 +285,8 @@
 - [x] Diagnose production-only discussion layout expansion and composer placement on Android
 - [x] Add Android-safe profile fallbacks and production layout regression coverage
 - [ ] Publish and validate the production-layout correction on the physical Android device
+- [x] Add a selectable on-call day for Oncall Endorsement reports using a Riyadh 07:30-to-07:30 clinical window
+- [x] Filter Oncall Endorsement report cases to consultations created within the selected on-call window
+- [x] Send a protected automatic Push notification when a new consultation is created
+- [ ] Test report-window boundaries and live consultation notification delivery before publishing Android update
+- [x] Deploy consultation notification update to the existing central-registration function and remove the accidental duplicate function

@@ -6,18 +6,26 @@ export const SHIFT_TIME_ZONE = RIYADH_TIME_ZONE;
 export const SHIFT_START_HOUR = 7;
 export const SHIFT_START_MINUTE = 30;
 export const SHIFT_END_HOUR = 7;
-export const SHIFT_END_MINUTE = 20;
+export const SHIFT_END_MINUTE = 30;
 
 export type ShiftWindow = { startAt: string; endAt: string; reportDate: string };
+
+/** Creates one fixed 24-hour on-call window for a Riyadh calendar date. */
+export function getShiftWindowForReportDate(reportDate: string): ShiftWindow | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(reportDate)) return null;
+  const [year, month, day] = reportDate.split("-").map(Number);
+  const start = new Date(Date.UTC(year, month - 1, day, SHIFT_START_HOUR - 3, SHIFT_START_MINUTE));
+  if (start.getUTCFullYear() !== year || start.getUTCMonth() !== month - 1 || start.getUTCDate() !== day) return null;
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { startAt: start.toISOString(), endAt: end.toISOString(), reportDate };
+}
 
 /** Computes the active or most-recent 24-hour handover period on the device. */
 export function getShiftWindow(now = new Date()): ShiftWindow {
   const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: SHIFT_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
   const todayStart = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), SHIFT_START_HOUR - 3, SHIFT_START_MINUTE));
   const activeStart = now >= todayStart ? todayStart : new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-  const activeEnd = new Date(activeStart.getTime() + ((23 * 60 + 50) * 60 * 1000));
-  const reportDate = getRiyadhDateKey(activeStart);
-  return { startAt: activeStart.toISOString(), endAt: activeEnd.toISOString(), reportDate };
+  return getShiftWindowForReportDate(getRiyadhDateKey(activeStart))!;
 }
 
 export function isShiftClosed(now = new Date()) {
@@ -35,14 +43,15 @@ function periodFromLabel(value: string): "AM" | "PM" {
  * departmental snapshot. Legacy records without precise timestamps are kept
  * in a manual preview so existing pilot data remains reviewable.
  */
-export function buildDailyShiftReport(data: DepartmentData, generatedBy: string, now = new Date()): DailyShiftReport {
-  const window = getShiftWindow(now);
+export function buildDailyShiftReport(data: DepartmentData, generatedBy: string, now = new Date(), selectedReportDate?: string): DailyShiftReport {
+  const window = selectedReportDate ? getShiftWindowForReportDate(selectedReportDate) : getShiftWindow(now);
+  if (!window) throw new Error("Invalid on-call report date.");
   const startAt = new Date(window.startAt).getTime();
   const endAt = new Date(window.endAt).getTime();
   const happenedWithinShift = (value?: string) => {
-    if (!value) return true;
+    if (!value) return false;
     const timestamp = Date.parse(value);
-    return Number.isNaN(timestamp) || (timestamp >= startAt && timestamp <= endAt);
+    return !Number.isNaN(timestamp) && timestamp >= startAt && timestamp < endAt;
   };
   const onCall = data.shifts.slice(0, 3).map((shift) => shift.clinician);
   const selectedOnCall = (userId?: string) => userId

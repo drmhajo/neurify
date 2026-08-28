@@ -35,6 +35,20 @@ describe("central Push registration migration", () => {
     expect(announcementScreen).toContain("never saved on the device");
   });
 
+  it("routes every newly created consultation through the protected central FCM action without patient identifiers", () => {
+    const functionCode = fs.readFileSync(path.join(root, "supabase/functions/central-registration/index.ts"), "utf8");
+    const client = fs.readFileSync(path.join(root, "lib/central-registration-api.ts"), "utf8");
+    const pushClient = fs.readFileSync(path.join(root, "lib/push-notifications.ts"), "utf8");
+    const store = fs.readFileSync(path.join(root, "lib/department-store.tsx"), "utf8");
+    expect(functionCode).toContain('case "push_send_consultation"');
+    expect(functionCode).toContain("handleConsultationPush");
+    expect(functionCode).toContain("تم تسجيل استشارة جديدة. افتح التطبيق لمتابعة تفاصيل القسم.");
+    expect(client).toContain("sendCentralConsultationPush");
+    expect(pushClient).toContain("sendCentralConsultationPush");
+    expect(pushClient).not.toContain("client.push.sendTeam.mutate");
+    expect(store).toContain('type: "consultation", accountId: session?.userId, pushProof: session?.pushProof');
+  });
+
   it("keeps the Push proof usable beyond the old ten-minute window and requires central re-sign-in when absent", () => {
     const functionCode = fs.readFileSync(path.join(root, "supabase/functions/central-registration/index.ts"), "utf8");
     const pushClient = fs.readFileSync(path.join(root, "lib/push-notifications.ts"), "utf8");

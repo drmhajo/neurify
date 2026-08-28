@@ -55,7 +55,7 @@ type DepartmentStore = {
   advanceReport: (id: string) => void;
   addReport: (input: { patientCode: string; title: string; priority: ReportPriority }) => void;
   sendGeneralAnnouncement: (input: { title: string; message: string; approvalSecret?: string }) => Promise<{ ok: boolean; recipientCount: number; pushSubmitted: number; reason?: "permission" | "validation" }>;
-  generateDailyShiftReport: () => DailyShiftReport | null;
+  generateDailyShiftReport: (selectedReportDate?: string) => DailyShiftReport | null;
   setOnCallUserId: (slot: OnCallSlot, userId: string) => void;
   addConsultation: (teamId: string, input: { title: string; subject: string; disposition: ClinicalDisposition; patient: ConsultationPatient }) => void;
   addCase: (teamId: string, input: { code: string; diagnosis: string }) => void;
@@ -347,9 +347,9 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return { ok: true, recipientCount, pushSubmitted: push.submitted };
   }, [session, updateData]);
 
-  const generateDailyShiftReport = useCallback(() => {
+  const generateDailyShiftReport = useCallback((selectedReportDate?: string) => {
     if (!session || !data.users.find((user) => user.id === session.userId)?.permissions.includes("manage_reports")) return null;
-    const report = buildDailyShiftReport(dataRef.current, session.name);
+    const report = buildDailyShiftReport(dataRef.current, session.name, new Date(), selectedReportDate);
     updateData((current) => {
       const recipients = current.users.filter((user) => user.active && user.permissions.includes("manage_reports")).map((user) => user.id);
       const notificationId = `n-${report.id}`;
@@ -393,7 +393,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       } : team),
       notifications: [createTeamNotification({ id: `n-${now}`, type: "consultation", team: targetTeam, actorName: session?.name, consultationTitle: input.title.trim() }), ...(current.notifications ?? [])],
     }));
-    void dispatchTeamPush({ teamId, recipientIds: targetTeam.memberIds, type: "consultation" });
+    void dispatchTeamPush({ teamId, recipientIds: targetTeam.memberIds, type: "consultation", accountId: session?.userId, pushProof: session?.pushProof });
     if (input.disposition === "admit") void dispatchTeamPush({ teamId, recipientIds: targetTeam.memberIds, type: "admitted_case" });
   }, [data.teams, session?.name, updateData]);
 

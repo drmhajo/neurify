@@ -83,3 +83,7 @@ export function registerCentralPushDevice(input: { accountId: string; token: str
 export function sendCentralGeneralPush(input: { title: string; body: string; approvalSecret: string }) {
   return callCentralRegistration<{ submitted: number }>("push_send_general", input);
 }
+
+export function sendCentralConsultationPush(input: { accountId: string; pushProof: string; teamId: string }) {
+  return callCentralRegistration<{ submitted: number }>("push_send_consultation", input);
+}

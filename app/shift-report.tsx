@@ -6,7 +6,7 @@ import { AppCard, EmptyState, IconAction, palette, PrimaryButton, SectionTitle, 
 import type { DailyShiftReport } from "@/lib/department-model";
 import { useDepartment } from "@/lib/department-store";
 import { exportShiftReport } from "@/lib/shift-report-export";
-import { getShiftWindow } from "@/lib/shift-endorsement";
+import { getShiftWindow, getShiftWindowForReportDate } from "@/lib/shift-endorsement";
 import { useAppLanguage } from "@/lib/language";
 import { LogoLoading } from "@/components/logo-loading";
 import { eligibleOnCallUsers, searchOnCallUsers } from "@/lib/on-call-eligibility";
@@ -16,6 +16,7 @@ export default function ShiftReportScreen() {
   const { language, isRTL } = useAppLanguage();
   const [selected, setSelected] = useState<DailyShiftReport | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [reportDate, setReportDate] = useState(() => getShiftWindow().reportDate);
   const canManage = Boolean(session && data.users.find((user) => user.id === session.userId)?.permissions.includes("manage_reports"));
   const activeUsers = data.users.filter((user) => user.active);
   const onCallCandidates = {
@@ -28,9 +29,19 @@ export default function ShiftReportScreen() {
     second: onCallCandidates.second.find((user) => user.id === data.shiftReportPreferences?.secondOnCallUserId),
     third: onCallCandidates.third.find((user) => user.id === data.shiftReportPreferences?.thirdOnCallUserId),
   };
-  const window = getShiftWindow();
+  const window = getShiftWindowForReportDate(reportDate);
+  const moveReportDate = (days: number) => {
+    const date = new Date(`${reportDate}T12:00:00.000Z`);
+    if (Number.isNaN(date.getTime())) return setReportDate(getShiftWindow().reportDate);
+    date.setUTCDate(date.getUTCDate() + days);
+    setReportDate(date.toISOString().slice(0, 10));
+  };
 
   const generate = () => {
+    if (!window) {
+      Alert.alert(language === "en" ? "On-call day required" : "يوم المناوبة مطلوب", language === "en" ? "Enter a valid date in YYYY-MM-DD format." : "أدخل تاريخاً صحيحاً بصيغة YYYY-MM-DD.");
+      return;
+    }
     if (!selectedOnCall.first || !selectedOnCall.second || !selectedOnCall.third) {
       Alert.alert(
         language === "en" ? "On-call team required" : "فريق المناوبة مطلوب",
@@ -38,7 +49,7 @@ export default function ShiftReportScreen() {
       );
       return;
     }
-    const report = generateDailyShiftReport();
+    const report = generateDailyShiftReport(reportDate);
     if (!report) {
       Alert.alert(language === "en" ? "Permission required" : "الصلاحية مطلوبة", language === "en" ? "Only users with report-management permission can generate the shift report." : "يمكن للمستخدمين المخولين بإدارة التقارير فقط إنشاء تقرير المناوبة.");
       return;
@@ -99,8 +110,14 @@ export default function ShiftReportScreen() {
           <MaterialIcons name="schedule" size={22} color={palette.gold} />
           <Text style={[styles.windowTitle, align(isRTL)]}>{language === "en" ? "24-hour handover window" : "نافذة تسليم 24 ساعة"}</Text>
         </View>
-        <Text style={[styles.windowText, align(isRTL)]}>{language === "en" ? "07:30 on the report date to 07:20 the following day" : "من 07:30 صباحاً في تاريخ التقرير إلى 07:20 صباح اليوم التالي"}</Text>
-        <Text style={[styles.windowDate, align(isRTL)]}>{window.reportDate}</Text>
+        <Text style={[styles.windowText, align(isRTL)]}>{language === "en" ? "Choose the on-call day: cases created from 07:30 until 07:30 the next day are included." : "اختر يوم المناوبة: يشمل التقرير الحالات المضافة من 07:30 صباحاً حتى 07:30 صباح اليوم التالي."}</Text>
+        <View style={[styles.reportDateControls, direction(isRTL)]}>
+          <Pressable onPress={() => moveReportDate(-1)} style={styles.reportDateStep} accessibilityLabel={language === "en" ? "Previous on-call day" : "يوم المناوبة السابق"}><MaterialIcons name={isRTL ? "chevron-right" : "chevron-left"} size={20} color={palette.navy} /></Pressable>
+          <TextInput value={reportDate} onChangeText={setReportDate} placeholder="YYYY-MM-DD" placeholderTextColor="#8AA0B3" autoCapitalize="none" keyboardType="numbers-and-punctuation" maxLength={10} style={styles.reportDateInput} textAlign="center" accessibilityLabel={language === "en" ? "On-call day" : "يوم المناوبة"} />
+          <Pressable onPress={() => setReportDate(getShiftWindow().reportDate)} style={styles.reportDateToday}><Text style={styles.reportDateTodayText}>{language === "en" ? "Today" : "اليوم"}</Text></Pressable>
+          <Pressable onPress={() => moveReportDate(1)} style={styles.reportDateStep} accessibilityLabel={language === "en" ? "Next on-call day" : "يوم المناوبة التالي"}><MaterialIcons name={isRTL ? "chevron-left" : "chevron-right"} size={20} color={palette.navy} /></Pressable>
+        </View>
+        <Text style={[styles.windowDate, align(isRTL)]}>{window ? `${window.startAt.slice(0, 10)} · 07:30 → 07:30` : (language === "en" ? "Enter a valid on-call day" : "أدخل يوم مناوبة صحيحاً")}</Text>
       </AppCard>
 
       {canManage ? (
@@ -199,6 +216,11 @@ const styles = StyleSheet.create({
   windowTitle: { flex: 1, color: "#FFFFFF", fontSize: 14, fontWeight: "900" },
   windowText: { color: "#D8EEF9", fontSize: 11, lineHeight: 17, marginTop: 8 },
   windowDate: { color: "#FFFFFF", fontSize: 12, fontWeight: "800", marginTop: 9 },
+  reportDateControls: { gap: 7, alignItems: "center", marginTop: 12 },
+  reportDateStep: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#FFFFFF" },
+  reportDateInput: { flex: 1, minHeight: 40, borderRadius: 12, backgroundColor: "#FFFFFF", color: palette.navy, fontSize: 13, fontWeight: "900", paddingHorizontal: 8 },
+  reportDateToday: { minHeight: 38, borderRadius: 12, justifyContent: "center", paddingHorizontal: 11, backgroundColor: palette.paleGold },
+  reportDateTodayText: { color: palette.navy, fontSize: 10, fontWeight: "900" },
   onCallCard: { marginTop: 12, padding: 14, borderColor: "#BDE5DB" },
   onCallHead: { gap: 9, alignItems: "center" },
   onCallBadge: { height: 34, width: 34, borderRadius: 11, backgroundColor: palette.paleTeal, alignItems: "center", justifyContent: "center" },

@@ -154,13 +154,13 @@ async function fcmAccessToken(account: FirebaseServiceAccount) {
   return payload.access_token;
 }
 
-async function sendFirebasePush(token: string, title: string, body: string) {
+async function sendFirebasePush(token: string, title: string, body: string, data: { type: string; url: string }) {
   const account = fcmServiceAccount();
   const accessToken = await fcmAccessToken(account);
   const response = await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(account.project_id)}/messages:send`, {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json; charset=UTF-8" },
-    body: JSON.stringify({ message: { token, notification: { title, body }, data: { type: "general_announcement", url: "/notifications" }, android: { priority: "HIGH", notification: { channel_id: "department-alerts", sound: "default" } } } }),
+    body: JSON.stringify({ message: { token, notification: { title, body }, data, android: { priority: "HIGH", notification: { channel_id: "department-alerts", sound: "default" } } } }),
   });
   if (!response.ok) throw new Error(`Firebase push request failed (${response.status}).`);
 }
@@ -313,15 +313,44 @@ function isFirebaseDeviceToken(token: string) {
   return /^[A-Za-z0-9:_.-]{16,1024}$/.test(token);
 }
 
+async function sendToRegisteredDevices(title: string, body: string, data: { type: string; url: string }) {
+  const registered = await pushDeviceRequest("?active=is.true&select=expo_token") as Array<Pick<PushDeviceRow, "expo_token">>;
+  const tokens = [...new Set(registered.map((device) => device.expo_token).filter(isFirebaseDeviceToken))];
+  let submitted = 0;
+  for (const token of tokens) {
+    try {
+      await sendFirebasePush(token, title, body, data);
+      submitted += 1;
+    } catch (error) {
+      console.warn("Firebase Push delivery failed", error instanceof Error ? error.message : error);
+    }
+  }
+  return submitted;
+}
+
 async function handleGeneralPush(body: Record<string, unknown>) {
   if (!requireApprovalSecret(body.approvalSecret)) return json({ error: "push_dispatch_unauthorized" }, 403);
   const title = cleanText(body.title, 80);
   const message = cleanText(body.body, 280);
   if (!title || !message) return json({ error: "invalid_input" }, 400);
-  const registered = await pushDeviceRequest("?active=is.true&select=expo_token") as Array<Pick<PushDeviceRow, "expo_token">>;
-  const tokens = [...new Set(registered.map((device) => device.expo_token).filter(isFirebaseDeviceToken))];
-  for (const token of tokens) await sendFirebasePush(token, title, message);
-  return json({ submitted: tokens.length });
+  const submitted = await sendToRegisteredDevices(title, message, { type: "general_announcement", url: "/notifications" });
+  return json({ submitted });
+}
+
+async function handleConsultationPush(body: Record<string, unknown>) {
+  const accountId = cleanText(body.accountId, 64).replace(/^remote-/, "");
+  const teamId = cleanText(body.teamId, 120);
+  if (!/^[0-9a-f-]{36}$/i.test(accountId) || teamId.length < 2 || !await hasValidPushRegistrationProof(accountId, body.pushProof)) {
+    return json({ submitted: 0, error: "push_dispatch_unauthorized" }, 403);
+  }
+  const account = await findById(accountId);
+  if (!account || account.status !== "approved") return json({ submitted: 0, error: "account_not_approved" }, 403);
+  const submitted = await sendToRegisteredDevices(
+    "استشارة جديدة في قسم جراحة المخ والأعصاب",
+    "تم تسجيل استشارة جديدة. افتح التطبيق لمتابعة تفاصيل القسم.",
+    { type: "consultation", url: "/teams" },
+  );
+  return json({ submitted });
 }
 
 async function handleList(body: Record<string, unknown>) {
@@ -358,6 +387,7 @@ Deno.serve(async (request) => {
       case "reject": return await handleDecision(body, "rejected");
       case "push_register": return await handlePushRegister(body);
       case "push_send_general": return await handleGeneralPush(body);
+      case "push_send_consultation": return await handleConsultationPush(body);
       default: return json({ error: "unknown_action" }, 400);
     }
   } catch (error) {

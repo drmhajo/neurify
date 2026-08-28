@@ -12,8 +12,8 @@ describe("central registration Supabase migration", () => {
     expect(appConfig).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
     expect(appConfig).toContain("/functions/v1/central-registration");
     expect(client).toContain("centralRegistration");
-    expect(appConfig).toContain('version: "1.0.4"');
-    expect(appConfig).toContain("versionCode: 5");
+    expect(appConfig).toContain('version: "1.0.5"');
+    expect(appConfig).toContain("versionCode: 6");
   });
 
   it("routes submit, sign-in, list, approve, and reject through the Edge Function", () => {
