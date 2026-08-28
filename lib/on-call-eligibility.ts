@@ -15,3 +15,9 @@ export function isEligibleForOnCallSlot(user: Pick<DepartmentUser, "role" | "job
 export function eligibleOnCallUsers(users: DepartmentUser[], slot: OnCallSlot) {
   return users.filter((user) => isEligibleForOnCallSlot(user, slot));
 }
+
+export function searchOnCallUsers<T extends Pick<DepartmentUser, "name" | "jobTitle">>(users: T[], query: string): T[] {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  if (!normalizedQuery) return users;
+  return users.filter((user) => `${user.name} ${user.jobTitle}`.toLocaleLowerCase().includes(normalizedQuery));
+}

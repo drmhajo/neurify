@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialDepartmentData } from "../lib/department-model";
-import { eligibleOnCallUsers, isEligibleForOnCallSlot } from "../lib/on-call-eligibility";
+import { eligibleOnCallUsers, isEligibleForOnCallSlot, searchOnCallUsers } from "../lib/on-call-eligibility";
 
 describe("أهلية قوائم المناوبين", () => {
   it("تقصر كل دور على الفئة الوظيفية النشطة المطلوبة", () => {
@@ -18,5 +18,14 @@ describe("أهلية قوائم المناوبين", () => {
 
     expect(isEligibleForOnCallSlot(consultant, "first")).toBe(false);
     expect(isEligibleForOnCallSlot(specialist, "second")).toBe(false);
+  });
+
+  it("يبحث بالاسم أو المسمى ضمن قائمة المستخدمين المؤهلين فقط", () => {
+    const users = createInitialDepartmentData().users.map((user) => ({ ...user, active: ["u-roster-omer", "u-roster-tahir", "u-roster-shoaib"].includes(user.id) }));
+    const residents = eligibleOnCallUsers(users, "first");
+
+    expect(searchOnCallUsers(residents, "omer").map((user) => user.name)).toEqual(["Omer"]);
+    expect(searchOnCallUsers(residents, "مقيم").map((user) => user.name)).toEqual(["Omer", "Tahir"]);
+    expect(searchOnCallUsers(residents, "specialist")).toEqual([]);
   });
 });

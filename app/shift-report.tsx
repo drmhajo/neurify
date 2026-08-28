@@ -1,6 +1,6 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
-import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { AppCard, EmptyState, IconAction, palette, PrimaryButton, SectionTitle, StatusPill } from "@/components/neuro-ui";
 import type { DailyShiftReport } from "@/lib/department-model";
@@ -9,7 +9,7 @@ import { exportShiftReport } from "@/lib/shift-report-export";
 import { getShiftWindow } from "@/lib/shift-endorsement";
 import { useAppLanguage } from "@/lib/language";
 import { LogoLoading } from "@/components/logo-loading";
-import { eligibleOnCallUsers } from "@/lib/on-call-eligibility";
+import { eligibleOnCallUsers, searchOnCallUsers } from "@/lib/on-call-eligibility";
 
 export default function ShiftReportScreen() {
   const { data, session, generateDailyShiftReport, setOnCallUserId } = useDepartment();
@@ -165,12 +165,15 @@ function MiniStat({ value, label }: { value: number; label: string }) {
 }
 
 function OnCallUserPicker({ slot, selectedUser, users, language, isRTL, onSelect }: { slot: "first" | "second" | "third"; selectedUser?: { id: string; name: string; jobTitle: string }; users: { id: string; name: string; jobTitle: string }[]; language: "ar" | "en"; isRTL: boolean; onSelect: (slot: "first" | "second" | "third", userId: string) => void }) {
+  const [query, setQuery] = useState("");
   const labels = {
     first: language === "en" ? "1st on-call" : "المناوب الأول",
     second: language === "en" ? "2nd on-call" : "المناوب الثاني",
     third: language === "en" ? "3rd on-call" : "المناوب الثالث",
   };
-  return <View style={styles.onCallSection}><Text style={[styles.onCallSectionTitle, align(isRTL)]}>{labels[slot]}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.onCallChoices, direction(isRTL)]}>{users.map((user) => { const active = user.id === selectedUser?.id; return <Pressable key={user.id} accessibilityRole="radio" accessibilityState={{ selected: active }} onPress={() => onSelect(slot, user.id)} style={({ pressed }) => [styles.onCallChoice, active && styles.onCallChoiceActive, pressed && styles.pressed]}><MaterialIcons name={active ? "check-circle" : "account-circle"} size={19} color={active ? "#FFFFFF" : palette.teal} /><Text style={[styles.onCallName, active && styles.onCallNameActive, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{user.name}</Text><Text style={[styles.onCallRole, active && styles.onCallRoleActive, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{user.jobTitle}</Text></Pressable>; })}</ScrollView><Text style={[styles.onCallSelected, align(isRTL)]}>{selectedUser ? (language === "en" ? `Selected: ${selectedUser.name}` : `المختار: ${selectedUser.name}`) : (language === "en" ? "No clinician selected yet." : "لم يتم اختيار مستخدم بعد.")}</Text></View>;
+  const matchingUsers = searchOnCallUsers(users, query);
+  const placeholder = language === "en" ? "Search by name or title" : "ابحث بالاسم أو المسمى";
+  return <View style={styles.onCallSection}><Text style={[styles.onCallSectionTitle, align(isRTL)]}>{labels[slot]}</Text><View style={[styles.onCallSearch, direction(isRTL)]}><MaterialIcons name="search" size={18} color={palette.teal} /><TextInput value={query} onChangeText={setQuery} placeholder={placeholder} placeholderTextColor="#7890A2" returnKeyType="search" accessibilityLabel={placeholder} style={[styles.onCallSearchInput, align(isRTL)]} textAlign={isRTL ? "right" : "left"} />{query ? <Pressable accessibilityRole="button" accessibilityLabel={language === "en" ? "Clear search" : "مسح البحث"} onPress={() => setQuery("")} style={styles.clearOnCallSearch}><MaterialIcons name="close" size={16} color={palette.navy} /></Pressable> : null}</View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.onCallChoices, direction(isRTL)]}>{matchingUsers.map((user) => { const active = user.id === selectedUser?.id; return <Pressable key={user.id} accessibilityRole="radio" accessibilityState={{ selected: active }} onPress={() => onSelect(slot, user.id)} style={({ pressed }) => [styles.onCallChoice, active && styles.onCallChoiceActive, pressed && styles.pressed]}><MaterialIcons name={active ? "check-circle" : "account-circle"} size={19} color={active ? "#FFFFFF" : palette.teal} /><Text style={[styles.onCallName, active && styles.onCallNameActive, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{user.name}</Text><Text style={[styles.onCallRole, active && styles.onCallRoleActive, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{user.jobTitle}</Text></Pressable>; })}</ScrollView>{matchingUsers.length === 0 ? <Text style={[styles.noOnCallMatch, align(isRTL)]}>{language === "en" ? "No eligible clinician matches this search." : "لا يوجد طبيب مؤهل يطابق هذا البحث."}</Text> : null}<Text style={[styles.onCallSelected, align(isRTL)]}>{selectedUser ? (language === "en" ? `Selected: ${selectedUser.name}` : `المختار: ${selectedUser.name}`) : (language === "en" ? "No clinician selected yet." : "لم يتم اختيار مستخدم بعد.")}</Text></View>;
 }
 
 function InfoRow({ label, value, isRTL }: { label: string; value: string; isRTL: boolean }) {
@@ -203,6 +206,9 @@ const styles = StyleSheet.create({
   onCallHint: { color: palette.muted, fontSize: 10, marginTop: 2, lineHeight: 15 },
   onCallSection: { borderTopColor: palette.line, borderTopWidth: 1, marginTop: 12, paddingTop: 10 },
   onCallSectionTitle: { color: palette.navy, fontSize: 11, fontWeight: "900" },
+  onCallSearch: { minHeight: 42, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#BDE5DB", borderRadius: 12, alignItems: "center", paddingHorizontal: 10, gap: 7, marginTop: 8 },
+  onCallSearchInput: { flex: 1, minHeight: 40, color: palette.ink, fontSize: 11 },
+  clearOnCallSearch: { height: 27, width: 27, borderRadius: 8, backgroundColor: palette.paleBlue, alignItems: "center", justifyContent: "center" },
   onCallChoices: { gap: 8, paddingTop: 8, paddingBottom: 6 },
   onCallChoice: { width: 156, minHeight: 79, borderWidth: 1, borderColor: "#BDE5DB", backgroundColor: "#F4FBF9", borderRadius: 13, padding: 10, gap: 3 },
   onCallChoiceActive: { backgroundColor: palette.teal, borderColor: palette.teal },
@@ -210,6 +216,7 @@ const styles = StyleSheet.create({
   onCallNameActive: { color: "#FFFFFF" },
   onCallRole: { color: "#3D766F", fontSize: 9, lineHeight: 12 },
   onCallRoleActive: { color: "#D9F3EF" },
+  noOnCallMatch: { color: palette.muted, fontSize: 10, marginTop: 4 },
   onCallSelected: { color: palette.teal, fontSize: 10, fontWeight: "800", marginTop: 4 },
   createWrap: { marginTop: 13, marginBottom: 2 },
   permissionText: { color: palette.muted, fontSize: 12, textAlign: "center", paddingVertical: 11 },
