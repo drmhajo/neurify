@@ -32,6 +32,12 @@ type PushDeviceRow = {
   active: boolean;
 };
 
+type FirebaseServiceAccount = {
+  project_id: string;
+  client_email: string;
+  private_key: string;
+};
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -51,6 +57,10 @@ function bytesToBase64(bytes: Uint8Array) {
   let binary = "";
   bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
   return btoa(binary);
+}
+
+function bytesToBase64Url(bytes: Uint8Array) {
+  return bytesToBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 function base64ToBytes(value: string) {
@@ -106,6 +116,53 @@ function requireApprovalSecret(candidate: unknown) {
   const configured = Deno.env.get("REGISTRATION_APPROVAL_SECRET")?.trim() ?? "";
   const supplied = typeof candidate === "string" ? candidate.trim() : "";
   return configured.length >= 16 && constantTimeEqual(configured, supplied);
+}
+
+function fcmServiceAccount() {
+  const raw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON")?.trim() ?? "";
+  if (!raw) throw new Error("Firebase service account is unavailable.");
+  const account = JSON.parse(raw) as Partial<FirebaseServiceAccount>;
+  if (!account.project_id || !account.client_email || !account.private_key) throw new Error("Firebase service account is incomplete.");
+  return account as FirebaseServiceAccount;
+}
+
+function serviceAccountPrivateKey(value: string) {
+  const base64 = value.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, "");
+  return base64ToBytes(base64).buffer;
+}
+
+async function fcmAccessToken(account: FirebaseServiceAccount) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = bytesToBase64Url(encoder.encode(JSON.stringify({ alg: "RS256", typ: "JWT" })));
+  const claims = bytesToBase64Url(encoder.encode(JSON.stringify({
+    iss: account.client_email,
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+  })));
+  const signingInput = `${header}.${claims}`;
+  const key = await crypto.subtle.importKey("pkcs8", serviceAccountPrivateKey(account.private_key), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+  const signature = bytesToBase64Url(new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, encoder.encode(signingInput))));
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: `${signingInput}.${signature}` }),
+  });
+  const payload = await response.json() as { access_token?: string };
+  if (!response.ok || !payload.access_token) throw new Error("Unable to obtain Firebase access token.");
+  return payload.access_token;
+}
+
+async function sendFirebasePush(token: string, title: string, body: string) {
+  const account = fcmServiceAccount();
+  const accessToken = await fcmAccessToken(account);
+  const response = await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(account.project_id)}/messages:send`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json; charset=UTF-8" },
+    body: JSON.stringify({ message: { token, notification: { title, body }, data: { type: "general_announcement", url: "/notifications" }, android: { priority: "HIGH", notification: { channel_id: "department-alerts", sound: "default" } } } }),
+  });
+  if (!response.ok) throw new Error(`Firebase push request failed (${response.status}).`);
 }
 
 async function signPushRegistrationPayload(payload: string) {
@@ -239,7 +296,7 @@ async function handlePushRegister(body: Record<string, unknown>) {
   const accountId = cleanText(body.accountId, 64).replace(/^remote-/, "");
   const token = cleanText(body.token, 255);
   const platform = body.platform === "ios" ? "ios" : body.platform === "android" ? "android" : "";
-  if (!/^[0-9a-f-]{36}$/i.test(accountId) || !/^(?:ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_-]+\]$/.test(token) || !platform || !await hasValidPushRegistrationProof(accountId, body.pushProof)) {
+  if (!/^[0-9a-f-]{36}$/i.test(accountId) || !/^[A-Za-z0-9:_.-]{16,1024}$/.test(token) || platform !== "android" || !await hasValidPushRegistrationProof(accountId, body.pushProof)) {
     return json({ persisted: false, error: "push_registration_unauthorized" }, 403);
   }
   const account = await findById(accountId);
@@ -252,8 +309,8 @@ async function handlePushRegister(body: Record<string, unknown>) {
   return json({ persisted: Boolean(rows[0]) });
 }
 
-function isExpoPushToken(token: string) {
-  return /^(?:ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_-]+\]$/.test(token);
+function isFirebaseDeviceToken(token: string) {
+  return /^[A-Za-z0-9:_.-]{16,1024}$/.test(token);
 }
 
 async function handleGeneralPush(body: Record<string, unknown>) {
@@ -262,23 +319,8 @@ async function handleGeneralPush(body: Record<string, unknown>) {
   const message = cleanText(body.body, 280);
   if (!title || !message) return json({ error: "invalid_input" }, 400);
   const registered = await pushDeviceRequest("?active=is.true&select=expo_token") as Array<Pick<PushDeviceRow, "expo_token">>;
-  const tokens = [...new Set(registered.map((device) => device.expo_token).filter(isExpoPushToken))];
-  for (let index = 0; index < tokens.length; index += 100) {
-    const response = await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(tokens.slice(index, index + 100).map((to) => ({
-        to,
-        sound: "default",
-        priority: "high",
-        channelId: "department-alerts",
-        title,
-        body: message,
-        data: { type: "general_announcement", url: "/notifications" },
-      }))),
-    });
-    if (!response.ok) throw new Error(`Expo Push request failed (${response.status}).`);
-  }
+  const tokens = [...new Set(registered.map((device) => device.expo_token).filter(isFirebaseDeviceToken))];
+  for (const token of tokens) await sendFirebasePush(token, title, message);
   return json({ submitted: tokens.length });
 }
 

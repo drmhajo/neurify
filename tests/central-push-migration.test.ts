@@ -47,12 +47,17 @@ describe("central Push registration migration", () => {
     expect(pushClient).not.toContain('createTRPCClient().push.register.mutate');
   });
 
-  it("separates Expo-token acquisition errors from central registration errors without exposing sensitive data", () => {
+  it("uses Firebase device tokens rather than Expo tokens and preserves safe registration errors", () => {
     const pushClient = fs.readFileSync(path.join(root, "lib/push-notifications.ts"), "utf8");
-    expect(pushClient).toContain("تعذر الحصول على رمز الإشعارات من Expo");
+    const functionCode = fs.readFileSync(path.join(root, "supabase/functions/central-registration/index.ts"), "utf8");
+    expect(pushClient).toContain("Notifications.getDevicePushTokenAsync");
+    expect(pushClient).not.toContain("Notifications.getExpoPushTokenAsync");
+    expect(pushClient).toContain("تعذر الحصول على رمز Firebase للإشعارات");
     expect(pushClient).toContain("تعذر حفظ رمز الجهاز في الخدمة المركزية");
     expect(pushClient).toContain("إصدار التطبيق لا يتضمن إعدادات الخدمة المركزية");
     expect(pushClient).toContain("تعذر الاتصال بالخدمة المركزية");
-    expect(pushClient).toContain("Notifications.getExpoPushTokenAsync");
+    expect(functionCode).toContain("https://fcm.googleapis.com/v1/projects/");
+    expect(functionCode).toContain("FIREBASE_SERVICE_ACCOUNT_JSON");
+    expect(functionCode).not.toContain("https://exp.host/--/api/v2/push/send");
   });
 });

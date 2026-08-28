@@ -24,11 +24,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-function getProjectId(): string | undefined {
-  const extra = Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined;
-  return Constants.easConfig?.projectId ?? extra?.eas?.projectId;
-}
-
 export async function getPushPermissionState(): Promise<PushSetupState> {
   if (Platform.OS === "web") return "unavailable";
   const settings = await Notifications.getPermissionsAsync();
@@ -46,6 +41,10 @@ export async function enablePushNotifications(staffId: string, pushProof?: strin
 
   if (!staffId.startsWith("remote-")) {
     return { state: "needs_sign_in", message: "يلزم تسجيل الدخول بحساب القسم المركزي المعتمد لتسجيل هذا الجهاز. سجّل الخروج ثم ادخل ببريدك المعتمد." };
+  }
+
+  if (Platform.OS !== "android") {
+    return { state: "unavailable", message: "تتوفر التنبيهات الفورية في الإصدار الحالي لأجهزة Android المسجلة في القسم." };
   }
 
   if (Platform.OS === "android") {
@@ -68,24 +67,21 @@ export async function enablePushNotifications(staffId: string, pushProof?: strin
     return { state: "denied", message: "لم يتم منح إذن الإشعارات. يمكنك تفعيله لاحقاً من إعدادات الجهاز." };
   }
 
-  const projectId = getProjectId();
-  if (!projectId) {
-    return { state: "needs_build", message: "يلزم ربط الحزمة بمعرّف مشروع Expo ثم إصدار نسخة تطبيق جديدة لتسجيل هذا الجهاز للإشعارات الفورية." };
-  }
-
   if (staffId.startsWith("remote-") && !pushProof) {
     return { state: "needs_sign_in", message: "انتهت جلسة تسجيل الإشعارات. سجّل الخروج ثم ادخل مرة أخرى، وبعدها أعد تسجيل الجهاز." };
   }
 
   let token: string;
   try {
-    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    const nativeToken = await Notifications.getDevicePushTokenAsync();
+    token = typeof nativeToken.data === "string" ? nativeToken.data : "";
+    if (!token) throw new Error("FCM token unavailable");
   } catch {
-    return { state: "error", message: "تعذر الحصول على رمز الإشعارات من Expo. تحقق من اتصال الإنترنت ومن أن حزمة Android محدثة ثم أعد المحاولة." };
+    return { state: "error", message: "تعذر الحصول على رمز Firebase للإشعارات. تحقق من اتصال الإنترنت ومن تثبيت أحدث حزمة Android ثم أعد المحاولة." };
   }
 
   try {
-    const platform = Platform.OS === "ios" ? "ios" : "android";
+    const platform = "android" as const;
     const registration = await registerCentralPushDevice({ accountId: staffId, token, platform, pushProof: pushProof! });
     if (!registration.persisted) return { state: "error", message: "تعذر حفظ تسجيل الجهاز في خدمة الإشعارات. حاول مرة أخرى لاحقاً." };
     await AsyncStorage.setItem(`${PUSH_REGISTRATION_KEY_PREFIX}${staffId}`, "registered");

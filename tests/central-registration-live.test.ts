@@ -82,7 +82,7 @@ describe.skipIf(!enabled)("live Supabase central registration", () => {
     const pushRegistration = await callFunction({
       action: "push_register",
       accountId: account.id,
-      token: `ExponentPushToken[central_live_${Date.now()}]`,
+      token: `fcm-central-live-${Date.now()}-verification-token`,
       platform: "android",
       pushProof: account.pushProof,
     });

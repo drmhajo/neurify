@@ -263,3 +263,16 @@
 - [x] Verify the Supabase public configuration is embedded in Android app config at build time
 - [x] Add safe in-app diagnostics for missing central configuration or non-central account routing
 - [ ] Increment the Android build version and publish a fresh binary for Push registration retest
+- [x] Diagnose why new central registration requests do not appear in the approver queue
+- [x] Diagnose why administrators cannot issue a temporary password for a user
+- [ ] Fix central approval visibility and temporary-password reset with regression tests
+- [ ] Support central users changing a temporary password through the same Supabase service
+- [ ] Publish and verify the repaired account-administration flow on Android
+- [ ] Replace the lost central approval code securely and validate central approval access
+- [x] Diagnose Android failure to obtain an Expo Push token before the Supabase registration step
+- [x] Configure the Expo/FCM credentials required for production Android Push delivery
+- [ ] Publish a new Android build and verify Expo token acquisition, Supabase registration, and a live Push receipt
+- [x] Replace Expo token acquisition and delivery with native Firebase Cloud Messaging for Android
+- [x] Store the Firebase service-account credential only in Supabase Edge Function secrets
+- [x] Extend the central notification function to register FCM tokens and send a protected test announcement
+- [ ] Test FCM registration and direct delivery, then publish an Android build with the Firebase configuration

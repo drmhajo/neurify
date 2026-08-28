@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1010244463641",
+    "project_id": "ksmc-neurosurgery-push",
+    "storage_bucket": "ksmc-neurosurgery-push.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1010244463641:android:66cc503630fad3c6794e88",
+        "android_client_info": {
+          "package_name": "com.app.ksmcneurosurgery"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIUj5l5-aaqDIsI2vf7oTEr2Sh4ZG2Mls"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -79,4 +79,4 @@ before update on public.push_devices
 for each row execute function public.set_push_device_updated_at();
 
 comment on table public.push_devices is
-  'Expo Push tokens for approved central accounts. Access is restricted to the service role through the central-registration Edge Function.';
+  'Firebase Cloud Messaging registration tokens for approved central accounts. Access is restricted to the service role through the central-registration Edge Function.';
