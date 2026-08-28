@@ -49,6 +49,8 @@ type DepartmentStore = {
   data: DepartmentData;
   completeInitialSetup: (password: string) => Promise<{ ok: boolean; message?: string }>;
   signIn: (username: string, password: string) => Promise<{ ok: boolean; message?: string; recoveryRequired?: boolean }>;
+  requestRegistration: (input: { name: string; email: string; phone: string; jobTitle: string; password: string }) => Promise<{ ok: boolean; reason?: "pending" | "existing" | "service" }>;
+  importApprovedRegistration: (input: { id: string; name: string; email: string; phone: string; jobTitle: string }) => void;
   signOut: () => Promise<void>;
   advanceReport: (id: string) => void;
   addReport: (input: { patientCode: string; title: string; priority: ReportPriority }) => void;
@@ -148,7 +150,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
           initialSetupCompleted = Boolean(parsedData.initialSetupCompleted);
           setData({ ...parsedData, shiftReportPreferences: parsedData.shiftReportPreferences ?? {}, users: parsedData.users.map((user) => ({ ...user, jobTitle: user.jobTitle ?? "عضو القسم", permissions: user.permissions ?? rolePermissionDefaults[user.role] })), notifications: parsedData.notifications ?? [], generalDiscussionMessages: parsedData.generalDiscussionMessages ?? [], generalDiscussionReadByUser: parsedData.generalDiscussionReadByUser ?? {}, weeklyAssignments: parsedData.weeklyAssignments ?? [], scheduleDocuments: (parsedData.scheduleDocuments ?? []).map((document) => ({ ...document, mimeType: document.mimeType ?? (document.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/*") })), surgeries: parsedData.surgeries.map((surgery) => ({ ...surgery, date: surgery.date ?? "اليوم", notes: surgery.notes ?? "", patientLink: surgery.patientLink ?? parsedData.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.fileNumber === surgery.patientCode || patientCase.code === surgery.patientCode ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined })), teams: parsedData.teams.map((team) => ({ ...team, dischargedCases: team.dischargedCases ?? [], cases: team.cases.map((patientCase) => ({ ...patientCase, fileNumber: patientCase.fileNumber ?? patientCase.code, weekendPlan: patientCase.weekendPlan ?? "", fullName: patientCase.fullName ?? `حالة ${patientCase.code}`, age: patientCase.age ?? null, medicalHistory: patientCase.medicalHistory ?? "غير موثّق بعد", clinicalTests: patientCase.clinicalTests ?? "غير موثّق بعد", ward: patientCase.ward ?? "", bed: patientCase.bed ?? "", imaging: patientCase.imaging ?? [], messages: patientCase.messages ?? [] })) })) });
         }
-        if (restoredSession && initialSetupCompleted) {
+        if (restoredSession && (initialSetupCompleted || (JSON.parse(restoredSession) as Session).userId.startsWith("remote-"))) {
           setSession(JSON.parse(restoredSession) as Session);
           await AsyncStorage.setItem(SESSION_KEY, restoredSession);
         } else if (!initialSetupCompleted) {
@@ -232,17 +234,48 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     void syncNow();
   }, [hydrated, session?.role, session?.userId, syncNow]);
 
+  const importApprovedRegistration = useCallback((input: { id: string; name: string; email: string; phone: string; jobTitle: string }) => updateData((current) => {
+    const userId = `remote-${input.id}`;
+    const registeredUser: DepartmentUser = { id: userId, username: input.email.trim().toLowerCase(), name: input.name.trim(), email: input.email.trim().toLowerCase(), phone: input.phone.trim(), jobTitle: input.jobTitle.trim(), role: "team_member", teamIds: [], active: true, permissions: rolePermissionDefaults.team_member, passwordRecoveryRequired: false };
+    const existing = current.users.find((user) => user.id === userId || user.email?.toLowerCase() === registeredUser.email);
+    return { ...current, users: existing ? current.users.map((user) => user.id === existing.id ? { ...user, ...registeredUser, id: existing.id, permissions: user.permissions.length ? user.permissions : registeredUser.permissions } : user) : [...current.users, registeredUser] };
+  }), [updateData]);
+
+  const requestRegistration = useCallback(async (input: { name: string; email: string; phone: string; jobTitle: string; password: string }) => {
+    try {
+      const result = await trpcClient.registrations.submit.mutate(input);
+      return result.accepted ? { ok: true } : { ok: false, reason: result.reason };
+    } catch {
+      return { ok: false, reason: "service" as const };
+    }
+  }, [trpcClient]);
+
   const signIn = useCallback(async (username: string, password: string) => {
-    if (!data.initialSetupCompleted) return { ok: false, message: "يلزم إكمال إعداد حساب المشرف أولاً." };
     if (!username.trim() || !password.trim()) return { ok: false, message: "أدخل اسم المستخدم وكلمة المرور." };
     const user = data.users.find((item) => item.active && normalizeDemoUsername(item.username ?? "") === normalizeDemoUsername(username));
-    if (user?.passwordRecoveryRequired && !await hasDepartmentPassword(user.id)) return { ok: false, message: "يلزم أن يعيّن المشرف كلمة مرور مؤقتة لهذا الحساب أولاً." };
-    if (!user || password !== await readDepartmentPassword(user.id)) return { ok: false, message: "تحقق من بيانات الدخول." };
-    const nextSession: Session = { userId: user.id, name: user.name, role: user.role };
-    setSession(nextSession);
-    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
-    return { ok: true, recoveryRequired: user.passwordRecoveryRequired };
-  }, [data.initialSetupCompleted, data.users]);
+    if (user && !user.id.startsWith("remote-")) {
+      if (!data.initialSetupCompleted) return { ok: false, message: "يلزم إكمال إعداد حساب المشرف أولاً." };
+      if (user.passwordRecoveryRequired && !await hasDepartmentPassword(user.id)) return { ok: false, message: "يلزم أن يعيّن المشرف كلمة مرور مؤقتة لهذا الحساب أولاً." };
+      if (password !== await readDepartmentPassword(user.id)) return { ok: false, message: "تحقق من بيانات الدخول." };
+      const nextSession: Session = { userId: user.id, name: user.name, role: user.role };
+      setSession(nextSession);
+      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
+      return { ok: true, recoveryRequired: user.passwordRecoveryRequired };
+    }
+    if (!username.includes("@")) return { ok: false, message: data.initialSetupCompleted ? "تحقق من بيانات الدخول." : "أكمل إعداد حساب المشرف أو سجّل الدخول باستخدام بريد إلكتروني معتمد." };
+    try {
+      const remote = await trpcClient.registrations.signIn.mutate({ email: username.trim().toLowerCase(), password });
+      if (!remote.ok) return { ok: false, message: remote.status === "pending" ? "طلب التسجيل ما زال بانتظار الموافقة." : remote.status === "rejected" ? "تم رفض طلب التسجيل. تواصل مع مشرف القسم." : "تحقق من بيانات الدخول." };
+      const remoteUser: DepartmentUser = { id: remote.account.id, username: remote.account.email, name: remote.account.name, email: remote.account.email, phone: remote.account.phone, jobTitle: remote.account.jobTitle, role: "team_member", teamIds: [], active: true, permissions: rolePermissionDefaults.team_member, passwordRecoveryRequired: false };
+      updateData((current) => ({ ...current, users: current.users.some((item) => item.id === remoteUser.id) ? current.users : [...current.users, remoteUser] }));
+      const nextSession: Session = { userId: remoteUser.id, name: remoteUser.name, role: remoteUser.role };
+      setSession(nextSession);
+      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
+      return { ok: true, recoveryRequired: false };
+    } catch {
+      return { ok: false, message: "تعذر الاتصال بخدمة تسجيل المستخدمين. تحقق من الاتصال بالشبكة وحاول مرة أخرى." };
+    }
+  }, [data.initialSetupCompleted, data.users, trpcClient, updateData]);
 
   const completeInitialSetup = useCallback(async (password: string) => {
     if (data.initialSetupCompleted) return { ok: false, message: "تم إعداد التطبيق بالفعل." };
@@ -454,7 +487,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const updateWeekendPlan = useCallback((teamId: string, caseId: string, plan: string) => {
     const team = data.teams.find((item) => item.id === teamId);
-    const allowed = Boolean(team && (session?.role === "admin" || team.memberIds.includes(session?.userId ?? "")));
+    const allowed = Boolean(team && session);
     if (!allowed) return false;
     updateData((current) => ({
       ...current,
@@ -551,7 +584,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, data, dischargePatient, generateDailyShiftReport, hydrated, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, removeUser, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
+  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, requestRegistration, importApprovedRegistration, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, data, dischargePatient, generateDailyShiftReport, hydrated, importApprovedRegistration, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, removeUser, requestRegistration, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }

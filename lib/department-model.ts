@@ -1,7 +1,7 @@
 import type { NeurosurgeryProcedureCode } from "./neurosurgery-procedure-catalog";
 
 export type UserRole = "admin" | "consultant" | "coordinator" | "team_member";
-export type PermissionKey = "manage_users" | "manage_permissions" | "manage_teams" | "manage_schedules" | "manage_reports" | "view_all_patients" | "edit_medical_files" | "add_imaging" | "patient_chat" | "view_audit" | "send_general_announcement";
+export type PermissionKey = "manage_users" | "manage_permissions" | "manage_teams" | "manage_schedules" | "manage_reports" | "view_all_patients" | "edit_medical_files" | "add_imaging" | "patient_chat" | "view_audit" | "send_general_announcement" | "approve_registration_requests";
 export type ReportPriority = "عاجل" | "عادي" | "متابعة";
 export type ReportStatus = "جديد" | "قيد الإعداد" | "مكتمل";
 
@@ -300,10 +300,11 @@ export const permissionLabels: Record<PermissionKey, string> = {
   patient_chat: "الدردشة الخاصة بالحالات",
   view_audit: "عرض سجل التدقيق",
   send_general_announcement: "إرسال إشعار عام",
+  approve_registration_requests: "اعتماد طلبات التسجيل",
 };
 
 export const rolePermissionDefaults: Record<UserRole, PermissionKey[]> = {
-  admin: ["manage_users", "manage_permissions", "manage_teams", "manage_schedules", "manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat", "view_audit", "send_general_announcement"],
+  admin: ["manage_users", "manage_permissions", "manage_teams", "manage_schedules", "manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat", "view_audit", "send_general_announcement", "approve_registration_requests"],
   consultant: ["manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat"],
   coordinator: ["manage_schedules", "manage_reports", "view_all_patients", "patient_chat"],
   team_member: ["edit_medical_files", "add_imaging", "patient_chat"],

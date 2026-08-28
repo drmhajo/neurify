@@ -1,5 +1,4 @@
 import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
-
 /**
  * Core user table backing auth flow.
  * Extend this file with additional tables as your product grows.
@@ -38,4 +37,19 @@ export const devicePushTokens = mysqlTable("devicePushTokens", {
 export type DevicePushToken = typeof devicePushTokens.$inferSelect;
 export type InsertDevicePushToken = typeof devicePushTokens.$inferInsert;
 
-// TODO: Add your tables here
+export const registrationRequests = mysqlTable("registrationRequests", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  name: varchar("name", { length: 160 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  phone: varchar("phone", { length: 32 }).notNull(),
+  jobTitle: varchar("jobTitle", { length: 160 }).notNull(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  approvedBy: varchar("approvedBy", { length: 120 }),
+  approvedAt: timestamp("approvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RegistrationRequest = typeof registrationRequests.$inferSelect;
+export type InsertRegistrationRequest = typeof registrationRequests.$inferInsert;

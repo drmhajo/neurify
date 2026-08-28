@@ -15,6 +15,13 @@
       "when": 1787706826060,
       "tag": "0001_windy_king_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787877185787,
+      "tag": "0002_funny_dreaming_celestial",
+      "breakpoints": true
     }
   ]
 }

@@ -20,7 +20,7 @@ export default function TeamDetailScreen() {
   const [form, setForm] = useState(blankForm);
   useEffect(() => { if (requestedSection === "inpatients" || requestedSection === "discharged" || requestedSection === "consultations") setSection(requestedSection); }, [requestedSection]);
   if (!team) return <View style={styles.page}><View style={styles.notFound}><Text style={[styles.notFoundText, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{language === "en" ? "Team not found." : "لم يتم العثور على الفريق."}</Text><PrimaryButton label="العودة للفرق" icon="arrow-back" onPress={() => router.back()} /></View></View>;
-  const canEdit = session?.role === "admin" || team.memberIds.includes(session?.userId ?? "");
+  const canEdit = Boolean(session);
   const inpatients = team.cases.filter((item) => item.status === "منوّم");
   const dischargeList = team.dischargedCases ?? [];
 

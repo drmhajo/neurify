@@ -1,6 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { devicePushTokens, InsertDevicePushToken, InsertUser, users } from "../drizzle/schema";
+import { devicePushTokens, InsertDevicePushToken, InsertUser, InsertRegistrationRequest, registrationRequests, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -113,4 +114,61 @@ export async function deactivatePushTokens(tokens: string[]) {
   await db.update(devicePushTokens).set({ active: false }).where(inArray(devicePushTokens.token, tokens));
 }
 
-// TODO: add feature queries here as your schema grows.
+export type RegistrationSubmission = Pick<InsertRegistrationRequest, "name" | "email" | "phone" | "jobTitle"> & { password: string };
+
+export function hashRegistrationPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+export function verifyRegistrationPassword(password: string, storedHash: string) {
+  const [salt, expectedHash] = storedHash.split(":");
+  if (!salt || !expectedHash) return false;
+  const actualHash = scryptSync(password, salt, 64).toString("hex");
+  return actualHash.length === expectedHash.length && timingSafeEqual(Buffer.from(actualHash), Buffer.from(expectedHash));
+}
+
+export function isRegistrationApprovalAuthorized(candidate: string) {
+  const secret = process.env.REGISTRATION_APPROVAL_SECRET?.trim();
+  const supplied = candidate.trim();
+  return Boolean(secret && supplied && secret.length === supplied.length && timingSafeEqual(Buffer.from(secret), Buffer.from(supplied)));
+}
+
+export async function submitRegistrationRequest(input: RegistrationSubmission) {
+  const db = await getDb();
+  if (!db) throw new Error("Registration service is unavailable");
+  const email = input.email.trim().toLowerCase();
+  const existing = await db.select({ id: registrationRequests.id, status: registrationRequests.status }).from(registrationRequests).where(eq(registrationRequests.email, email)).limit(1);
+  if (existing.length) return { accepted: false as const, reason: existing[0].status === "pending" ? "pending" as const : "existing" as const };
+  const id = `reg-${randomBytes(12).toString("hex")}`;
+  await db.insert(registrationRequests).values({ id, name: input.name.trim(), email, phone: input.phone.trim(), jobTitle: input.jobTitle.trim(), passwordHash: hashRegistrationPassword(input.password), status: "pending" });
+  return { accepted: true as const, id };
+}
+
+export async function listRegistrationRequests() {
+  const db = await getDb();
+  if (!db) throw new Error("Registration service is unavailable");
+  return db.select({ id: registrationRequests.id, name: registrationRequests.name, email: registrationRequests.email, phone: registrationRequests.phone, jobTitle: registrationRequests.jobTitle, status: registrationRequests.status, approvedBy: registrationRequests.approvedBy, approvedAt: registrationRequests.approvedAt, createdAt: registrationRequests.createdAt }).from(registrationRequests);
+}
+
+export async function approveRegistrationRequest(id: string, approvedBy: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Registration service is unavailable");
+  const rows = await db.select().from(registrationRequests).where(eq(registrationRequests.id, id)).limit(1);
+  const request = rows[0];
+  if (!request || request.status !== "pending") return undefined;
+  const approvedAt = new Date();
+  await db.update(registrationRequests).set({ status: "approved", approvedBy: approvedBy.trim().slice(0, 120), approvedAt }).where(eq(registrationRequests.id, id));
+  return { id: request.id, name: request.name, email: request.email, phone: request.phone, jobTitle: request.jobTitle, approvedAt };
+}
+
+export async function authenticateApprovedRegistration(emailInput: string, password: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Registration service is unavailable");
+  const rows = await db.select().from(registrationRequests).where(eq(registrationRequests.email, emailInput.trim().toLowerCase())).limit(1);
+  const request = rows[0];
+  if (!request || !verifyRegistrationPassword(password, request.passwordHash)) return { ok: false as const, status: "invalid" as const };
+  if (request.status !== "approved") return { ok: false as const, status: request.status };
+  return { ok: true as const, account: { id: `remote-${request.id}`, name: request.name, email: request.email, phone: request.phone, jobTitle: request.jobTitle } };
+}

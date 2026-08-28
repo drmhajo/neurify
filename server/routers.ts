@@ -56,6 +56,20 @@ export const appRouter = router({
       return { recipients: tokens.length, sent: result.sent };
     }),
   }),
+  registrations: router({
+    submit: publicProcedure.input(z.object({ name: z.string().trim().min(3).max(160), email: z.string().trim().email().max(320), phone: z.string().trim().min(7).max(32), jobTitle: z.string().trim().min(2).max(160), password: z.string().min(12).max(128) })).mutation(({ input }) => db.submitRegistrationRequest(input)),
+    list: publicProcedure.input(z.object({ approvalSecret: z.string().min(16).max(256) })).query(async ({ input }) => {
+      if (!db.isRegistrationApprovalAuthorized(input.approvalSecret)) throw new Error("Approval authorization failed");
+      return db.listRegistrationRequests();
+    }),
+    approve: publicProcedure.input(z.object({ id: z.string().min(8).max(64), approvedBy: z.string().trim().min(2).max(120), approvalSecret: z.string().min(16).max(256) })).mutation(async ({ input }) => {
+      if (!db.isRegistrationApprovalAuthorized(input.approvalSecret)) throw new Error("Approval authorization failed");
+      const account = await db.approveRegistrationRequest(input.id, input.approvedBy);
+      if (!account) throw new Error("Registration request cannot be approved");
+      return account;
+    }),
+    signIn: publicProcedure.input(z.object({ email: z.string().trim().email().max(320), password: z.string().min(1).max(128) })).mutation(({ input }) => db.authenticateApprovedRegistration(input.email, input.password)),
+  }),
   backup: router({
     validate: adminProcedure.input(z.object({ payload: z.string().min(40).max(8_000_000) })).mutation(({ input }) => {
       try {
