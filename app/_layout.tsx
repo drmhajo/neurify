@@ -7,6 +7,9 @@ import { PushNotificationBootstrap } from "@/components/push-notification-bootst
 import { LanguageProvider } from "@/lib/language";
 import { LanguageTransition } from "@/components/language-transition";
 import { LogoLoading } from "@/components/logo-loading";
+import * as SplashScreen from "expo-splash-screen";
+
+SplashScreen.setOptions({ duration: 260, fade: true });
 
 export default function RootLayout() {
   return <GestureHandlerRootView style={{ flex: 1 }}><ThemeProvider><LanguageProvider><LanguageTransition><DepartmentProvider><AppNavigator /></DepartmentProvider></LanguageTransition></LanguageProvider></ThemeProvider></GestureHandlerRootView>;

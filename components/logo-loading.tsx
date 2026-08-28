@@ -13,6 +13,7 @@ export function LogoLoading({ label, overlay = false }: LogoLoadingProps) {
   const scale = useRef(new Animated.Value(0.94)).current;
   const opacity = useRef(new Animated.Value(0.72)).current;
   const ringRotation = useRef(new Animated.Value(0)).current;
+  const wordmarkOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const pulse = Animated.loop(Animated.sequence([
@@ -26,10 +27,12 @@ export function LogoLoading({ label, overlay = false }: LogoLoadingProps) {
       ]),
     ]));
     const spin = Animated.loop(Animated.timing(ringRotation, { toValue: 1, duration: 2200, easing: Easing.linear, useNativeDriver: true }));
+    const fadeInWordmark = Animated.timing(wordmarkOpacity, { toValue: 1, duration: 360, easing: Easing.out(Easing.cubic), useNativeDriver: true });
     pulse.start();
     spin.start();
-    return () => { pulse.stop(); spin.stop(); };
-  }, [opacity, ringRotation, scale]);
+    fadeInWordmark.start();
+    return () => { pulse.stop(); spin.stop(); fadeInWordmark.stop(); };
+  }, [opacity, ringRotation, scale, wordmarkOpacity]);
 
   const text = label ?? (language === "en" ? "Preparing securely…" : "جارٍ التجهيز بأمان…");
   const rotation = ringRotation.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
@@ -39,7 +42,9 @@ export function LogoLoading({ label, overlay = false }: LogoLoadingProps) {
       <Animated.View style={[styles.logoShell, { opacity, transform: [{ scale }] }]}> 
         <Image source={require("../assets/images/icon.png")} style={styles.logo} resizeMode="contain" />
       </Animated.View>
-      <Image source={require("../assets/images/neurify-wordmark.png")} style={styles.wordmark} resizeMode="contain" accessibilityLabel="Neurify" />
+      <Animated.View style={{ opacity: wordmarkOpacity }}>
+        <Image source={require("../assets/images/neurify-wordmark.png")} style={styles.wordmark} resizeMode="contain" accessibilityLabel="Neurify" />
+      </Animated.View>
       <Text style={[styles.label, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: "center" }]}>{text}</Text>
     </View>
   </View>;

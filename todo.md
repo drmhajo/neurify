@@ -339,3 +339,6 @@
 - [x] Apply the approved Neurify icon mark to the primary app, splash, web, and Android adaptive-icon assets
 - [x] Use the approved humanist Neurify wordmark on the splash experience without compromising launcher-icon clarity
 - [x] Update branding metadata and validate the new iOS/Android icon asset dimensions before publishing
+- [x] Add a calm fade-in for the approved Neurify wordmark during startup loading
+- [x] Ensure first launch and unauthenticated startup always open the central sign-in page
+- [x] Add regression coverage for startup routing and validate the Android-ready configuration
