@@ -330,4 +330,7 @@
 - [x] Create a compact Neurify brand-guidelines document covering logo, colors, type, spacing, and store assets
 - [x] Package and validate the final identity files for delivery
 - [x] Replace project-committed large Neurify identity images with storage references and keep the deliverable archive external
-- [ ] Verify the checkpoint can be saved after identity-asset cleanup without losing the delivered files
+- [x] Verify the checkpoint can be saved after identity-asset cleanup without losing the delivered files
+- [x] Replace the Neurify wordmark typeface while preserving the approved neural-path icon
+- [x] Update the compact Neurify brand guidelines with the approved humanist wordmark, typography, and color palette
+- [x] Deliver the revised visual identity guide as a shareable document

@@ -9,7 +9,7 @@
 | Asset | Primary use | File |
 | --- | --- | --- |
 | App icon | Launcher, social avatar, favicon, compact spaces | [PNG master](https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/YXXIihcgMrZwtzzK.png) |
-| Horizontal wordmark | App headers, posters, reports, presentations | [PNG master](https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/uezfDKtMPvgrVcpw.png) |
+| Horizontal wordmark | App headers, posters, reports, presentations | [Approved humanist PNG master](https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/qflgvWRFuLWVioHc.png) |
 | Pilot-launch flyer | Internal announcements and WhatsApp distribution | [PNG poster](https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/kOpQOrZAiOTiIiUQ.png) |
 
 The **Neurify icon** represents coordinated clinical pathways: three connected routes form an abstract “N”, while the contrasting nodes suggest secure handoff and shared visibility across the care team. Use the symbol alone only when the application name is already visible nearby; otherwise use the complete horizontal wordmark.
@@ -31,11 +31,12 @@ The **Neurify icon** represents coordinated clinical pathways: three connected r
 
 | Context | Preferred family | Fallback | Weight and guidance |
 | --- | --- | --- | --- |
-| English UI and wordmark support | Manrope | Inter, Arial | SemiBold for headings; Regular for body text |
+| Approved Neurify wordmark | Custom humanist sans letterform | Not applicable | Always use the supplied master asset; do not retype or substitute the brand name. |
+| English UI support | Manrope | Inter, Arial | SemiBold for headings; Regular for body text. |
 | Arabic UI and communications | IBM Plex Sans Arabic | Noto Sans Arabic, Arial | SemiBold for headings; Regular for body text |
 | Reports | IBM Plex Sans Arabic + Manrope | System sans-serif | Keep clinical fields at 11pt or larger in print |
 
-Use sentence case for English labels and clear, short Arabic phrases. Do not typeset the wordmark using a substitute font; use the supplied wordmark asset.
+Use sentence case for English labels and clear, short Arabic phrases. The Neurify wordmark uses a calm, humanist letterform with softened terminals and a clinical-teal dot above the `i`; do not typeset the name with a substitute font. Use the supplied wordmark asset.
 
 ## 4. Logo use and spacing
 
