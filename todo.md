@@ -288,7 +288,7 @@
 - [x] Add a selectable on-call day for Oncall Endorsement reports using a Riyadh 07:30-to-07:30 clinical window
 - [x] Filter Oncall Endorsement report cases to consultations created within the selected on-call window
 - [x] Send a protected automatic Push notification when a new consultation is created
-- [ ] Test report-window boundaries and live consultation notification delivery before publishing Android update
+- [x] Test report-window boundaries and live consultation notification delivery before publishing Android update
 - [x] Deploy consultation notification update to the existing central-registration function and remove the accidental duplicate function
 - [x] Remove all first-run local administrator password setup from new devices
 - [x] Create and protect the requested central administrator account with full administrative permissions
@@ -300,3 +300,12 @@
 - [x] Verify bilingual report headers and increment the Android build for the rebranded release
 - [x] Change the display name from NeuroLink to Neurify while retaining immutable identifiers
 - [x] Increment and validate the Android build for the Neurify rename
+- [x] Perform a production-readiness review of startup, navigation, local persistence, and Android configuration
+- [x] Verify central authentication, registration approval, administrator access, and password recovery workflows
+- [x] Verify consultation, patient-file, on-call report, weekend report, export, and timezone workflows
+- [x] Verify FCM registration, automatic consultation notifications, manual general notifications, and failure handling
+- [x] Review authorization boundaries, secrets exposure, and safe handling of clinical data
+- [x] Fix reproducible operational defects and add focused regression tests
+- [x] Run a full release validation and document the go-live checklist for today
+- [x] Install the required expo-asset peer dependency identified by Expo Doctor
+- [x] Re-run Expo Doctor and the Android production export after resolving the missing native peer dependency
