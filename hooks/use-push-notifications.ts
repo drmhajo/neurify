@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { enablePushNotifications, getPushPermissionState, isPushDeviceRegistered, type PushSetupState } from "@/lib/push-notifications";
 
-export function usePushNotifications(staffId?: string) {
+export function usePushNotifications(staffId?: string, pushProof?: string) {
   const [state, setState] = useState<PushSetupState>("idle");
   const [message, setMessage] = useState("فعّل التنبيهات لتصلك التحديثات حتى خارج التطبيق.");
   const [loading, setLoading] = useState(false);
@@ -24,11 +24,11 @@ export function usePushNotifications(staffId?: string) {
   const enable = useCallback(async () => {
     if (!staffId) return;
     setLoading(true);
-    const result = await enablePushNotifications(staffId);
+    const result = await enablePushNotifications(staffId, pushProof);
     setState(result.state);
     setMessage(result.message);
     setLoading(false);
-  }, [staffId]);
+  }, [pushProof, staffId]);
 
   return { state, message, loading, enable };
 }

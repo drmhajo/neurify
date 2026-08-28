@@ -237,3 +237,20 @@
 - [x] منع إنشاء مشرف محلي مستقل عند أول تشغيل على كل جهاز.
 - [x] ربط تهيئة الحساب والدخول بصلاحية مشرف مركزية موثقة.
 - [x] اختبار عدم قدرة الجهاز الجديد على امتلاك صلاحيات المشرف دون اعتماد مركزي.
+- [x] تشخيص سبب فشل HTTPS/TLS في اختبار عنوان API المنشور.
+- [x] توحيد عنوان API الآمن بين الحزمة والاختبارات والتحقق من مسار التسجيل.
+- [x] توفير نقطة API إنتاجية ثابتة تعمل عبر HTTPS بدل نطاق المعاينة المؤقت.
+- [x] تحديث الحزمة واختبار تسجيل المستخدم بعد تثبيت نقطة API الإنتاجية.
+- [x] نقل مسارات التسجيل والموافقة إلى Supabase Edge Function عبر HTTPS ثابت.
+- [x] تحديث عميل التطبيق إلى نقطة Supabase العامة دون تضمين مفتاح الخدمة.
+- [x] اختبار TLS والتسجيل والموافقة مركزيًا دون بيانات مرضى.
+
+- [x] Validate Supabase project URL and credentials through a lightweight HTTPS endpoint
+- [x] Review current central registration, approval, and sign-in flows for Supabase migration
+- [x] Implement stable Supabase-backed central authentication and registration endpoint
+- [x] Update the Android app API configuration to use the stable HTTPS endpoint
+- [ ] Test registration, approval, sign-in, and push notification flows end to end
+- [x] Document Android TLS/connectivity verification and cleanup temporary transition artifacts
+- [x] Add Supabase-backed Push-device registration so Android no longer relies on the temporary API
+- [x] Route central general Push delivery through the stable Supabase HTTPS function
+- [ ] Publish the updated Android build, register a physical device, and confirm receipt of a live Push test

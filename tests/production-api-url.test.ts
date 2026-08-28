@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 describe("عنوان API المنشور", () => {
-  it("يصل إلى مسار عام من الخادم لتسجيل جهاز Android", async () => {
-    const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-    expect(apiBaseUrl).toBeTruthy();
-    const response = await fetch(`${apiBaseUrl}/api/trpc/auth.me?batch=1&input=%7B%220%22%3A%7B%7D%7D`);
-    expect(response.ok).toBe(true);
-  });
+  it("يصل إلى وظيفة Supabase HTTPS الثابتة لتسجيل المستخدم وأجهزة Android", async () => {
+    const projectUrl = process.env.SUPABASE_URL?.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
+    const anonKey = process.env.SUPABASE_ANON_KEY;
+    expect(projectUrl).toMatch(/^https:\/\/[^/]+\.supabase\.co$/);
+    expect(anonKey).toBeTruthy();
+    const response = await fetch(`${projectUrl}/functions/v1/central-registration`, {
+      method: "POST",
+      headers: { apikey: anonKey!, Authorization: `Bearer ${anonKey!}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "health_probe" }),
+    });
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "unknown_action" });
+  }, 15_000);
 });

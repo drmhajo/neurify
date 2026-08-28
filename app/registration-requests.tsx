@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -7,8 +7,8 @@ import { AppCard, EmptyState, IconAction, palette, PrimaryButton, StatusPill } f
 import { RequireSession } from "@/components/require-session";
 import { useDepartment } from "@/lib/department-store";
 import { useAppLanguage } from "@/lib/language";
-import { createTRPCClient } from "@/lib/trpc";
 import { formatRiyadhDate } from "@/lib/riyadh-time";
+import { approveCentralRegistration, listCentralRegistrationRequests, rejectCentralRegistration } from "@/lib/central-registration-api";
 
 type RegistrationRequestItem = { id: string; name: string; email: string; phone: string; jobTitle: string; status: "pending" | "approved" | "rejected"; createdAt: Date | string };
 
@@ -21,7 +21,6 @@ function RegistrationRequestsContent() {
   const { language, isRTL } = useAppLanguage();
   const currentUser = data.users.find((user) => user.id === session?.userId);
   const allowed = Boolean(currentUser?.active && (currentUser.role === "admin" || currentUser.permissions.includes("approve_registration_requests")));
-  const trpcClient = useMemo(() => createTRPCClient(), []);
   const [approvalSecret, setApprovalSecret] = useState("");
   const [requests, setRequests] = useState<RegistrationRequestItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,7 +33,7 @@ function RegistrationRequestsContent() {
     }
     setLoading(true);
     try {
-      const results = await trpcClient.registrations.list.query({ approvalSecret: approvalSecret.trim() });
+      const results = await listCentralRegistrationRequests(approvalSecret.trim());
       setRequests((results as RegistrationRequestItem[]).filter((item) => item.status === "pending"));
     } catch {
       Alert.alert(language === "en" ? "Requests unavailable" : "تعذر جلب الطلبات", language === "en" ? "The code was not accepted or the central service is unavailable." : "لم يُقبل الرمز أو أن الخدمة المركزية غير متاحة.");
@@ -60,10 +59,10 @@ function RegistrationRequestsContent() {
     setActingId(request.id);
     try {
       if (action === "approve") {
-        const account = await trpcClient.registrations.approve.mutate({ id: request.id, approvedBy: session.name, approvalSecret: approvalSecret.trim() });
+        const account = await approveCentralRegistration({ id: request.id, approvedBy: session.name, approvalSecret: approvalSecret.trim() });
         importApprovedRegistration(account);
       } else {
-        await trpcClient.registrations.reject.mutate({ id: request.id, rejectedBy: session.name, approvalSecret: approvalSecret.trim() });
+        await rejectCentralRegistration({ id: request.id, rejectedBy: session.name, approvalSecret: approvalSecret.trim() });
       }
       setRequests((current) => current.filter((item) => item.id !== request.id));
     } catch {

@@ -12,7 +12,7 @@ export default function ProfileScreen() {
   const { session, data, signOut, updateOwnProfile, changeOwnPassword } = useDepartment();
   const { language, setLanguage, t, isRTL, localize } = useAppLanguage();
   const user = data.users.find((item) => item.id === session?.userId);
-  const push = usePushNotifications(session?.userId);
+  const push = usePushNotifications(session?.userId, session?.pushProof);
   const [profileOpen, setProfileOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);

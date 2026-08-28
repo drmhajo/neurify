@@ -26,6 +26,14 @@ const bundleId =
 const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
 const schemeFromBundleId = `manus${timestamp}`;
 
+const supabaseProjectUrl = process.env.SUPABASE_URL
+  ?.trim()
+  .replace(/\/rest\/v1\/?$/, "")
+  .replace(/\/$/, "");
+const centralRegistrationUrl = supabaseProjectUrl
+  ? `${supabaseProjectUrl}/functions/v1/central-registration`
+  : "";
+
 const env = {
   // App branding - update these values directly (do not use env vars)
   appName: "جراحة المخ والأعصاب",
@@ -46,6 +54,12 @@ const config: ExpoConfig = {
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
+  extra: {
+    centralRegistration: {
+      url: centralRegistrationUrl,
+      anonKey: process.env.SUPABASE_ANON_KEY?.trim() ?? "",
+    },
+  },
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,

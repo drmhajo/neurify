@@ -38,11 +38,13 @@ import { createGeneralAnnouncement, validateGeneralAnnouncement } from "@/lib/ge
 import { isEligibleForOnCallSlot } from "@/lib/on-call-eligibility";
 import { canManageDischargedCases, deleteDischargedCase, type ArchivedCaseUpdate, updateDischargedCase } from "@/lib/discharged-case-admin";
 import { shouldLockLocalBootstrap } from "@/lib/local-bootstrap";
+import { signInCentralRegistration, submitCentralRegistration } from "@/lib/central-registration-api";
 
 type Session = {
   userId: string;
   name: string;
   role: UserRole;
+  pushProof?: string;
 };
 
 type DepartmentStore = {
@@ -56,7 +58,7 @@ type DepartmentStore = {
   signOut: () => Promise<void>;
   advanceReport: (id: string) => void;
   addReport: (input: { patientCode: string; title: string; priority: ReportPriority }) => void;
-  sendGeneralAnnouncement: (input: { title: string; message: string }) => { ok: boolean; recipientCount: number; reason?: "permission" | "validation" };
+  sendGeneralAnnouncement: (input: { title: string; message: string; approvalSecret?: string }) => Promise<{ ok: boolean; recipientCount: number; pushSubmitted: number; reason?: "permission" | "validation" }>;
   generateDailyShiftReport: () => DailyShiftReport | null;
   setOnCallUserId: (slot: OnCallSlot, userId: string) => void;
   addConsultation: (teamId: string, input: { title: string; subject: string; disposition: ClinicalDisposition; patient: ConsultationPatient }) => void;
@@ -259,12 +261,12 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const requestRegistration = useCallback(async (input: { name: string; email: string; phone: string; jobTitle: string; password: string }) => {
     try {
-      const result = await trpcClient.registrations.submit.mutate(input);
+      const result = await submitCentralRegistration(input);
       return result.accepted ? { ok: true } : { ok: false, reason: result.reason };
     } catch {
       return { ok: false, reason: "service" as const };
     }
-  }, [trpcClient]);
+  }, []);
 
   const signIn = useCallback(async (username: string, password: string) => {
     if (!username.trim() || !password.trim()) return { ok: false, message: "أدخل اسم المستخدم وكلمة المرور." };
@@ -280,18 +282,18 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     }
     if (!username.includes("@")) return { ok: false, message: data.initialSetupCompleted ? "تحقق من بيانات الدخول." : "أكمل إعداد حساب المشرف أو سجّل الدخول باستخدام بريد إلكتروني معتمد." };
     try {
-      const remote = await trpcClient.registrations.signIn.mutate({ email: username.trim().toLowerCase(), password });
+      const remote = await signInCentralRegistration({ email: username.trim().toLowerCase(), password });
       if (!remote.ok) return { ok: false, message: remote.status === "pending" ? "طلب التسجيل ما زال بانتظار الموافقة." : remote.status === "rejected" ? "تم رفض طلب التسجيل. تواصل مع مشرف القسم." : "تحقق من بيانات الدخول." };
       const remoteUser: DepartmentUser = { id: remote.account.id, username: remote.account.email, name: remote.account.name, email: remote.account.email, phone: remote.account.phone, jobTitle: remote.account.jobTitle, role: "team_member", teamIds: [], active: true, permissions: rolePermissionDefaults.team_member, passwordRecoveryRequired: false };
       updateData((current) => ({ ...current, users: current.users.some((item) => item.id === remoteUser.id) ? current.users : [...current.users, remoteUser] }));
-      const nextSession: Session = { userId: remoteUser.id, name: remoteUser.name, role: remoteUser.role };
+      const nextSession: Session = { userId: remoteUser.id, name: remoteUser.name, role: remoteUser.role, pushProof: remote.account.pushProof };
       setSession(nextSession);
       await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
       return { ok: true, recoveryRequired: false };
     } catch {
       return { ok: false, message: "تعذر الاتصال بخدمة تسجيل المستخدمين. تحقق من الاتصال بالشبكة وحاول مرة أخرى." };
     }
-  }, [data.initialSetupCompleted, data.users, trpcClient, updateData]);
+  }, [data.initialSetupCompleted, data.users, updateData]);
 
   const completeInitialSetup = useCallback(async (password: string) => {
     if (data.initialSetupCompleted) return { ok: false, message: "تم إعداد التطبيق بالفعل." };
@@ -333,19 +335,19 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     }, ...current.reports],
   })), [session?.name, updateData]);
 
-  const sendGeneralAnnouncement = useCallback((input: { title: string; message: string }) => {
+  const sendGeneralAnnouncement = useCallback(async (input: { title: string; message: string; approvalSecret?: string }) => {
     const currentUser = session ? dataRef.current.users.find((user) => user.id === session.userId) : undefined;
-    if (!currentUser?.active || !currentUser.permissions.includes("send_general_announcement")) return { ok: false, recipientCount: 0, reason: "permission" as const };
+    if (!currentUser?.active || !currentUser.permissions.includes("send_general_announcement")) return { ok: false, recipientCount: 0, pushSubmitted: 0, reason: "permission" as const };
     const validated = validateGeneralAnnouncement(input);
-    if (!validated.ok) return { ok: false, recipientCount: 0, reason: "validation" as const };
+    if (!validated.ok) return { ok: false, recipientCount: 0, pushSubmitted: 0, reason: "validation" as const };
     const now = Date.now();
     const recipientCount = dataRef.current.users.filter((user) => user.active).length;
     updateData((current) => {
       const recipientIds = current.users.filter((user) => user.active).map((user) => user.id);
       return { ...current, notifications: [createGeneralAnnouncement({ id: `n-general-${now}`, title: validated.title, message: validated.message, recipientIds }), ...(current.notifications ?? [])] };
     });
-    void dispatchGeneralPush({ recipientIds: dataRef.current.users.filter((user) => user.active).map((user) => user.id), title: validated.title, body: validated.message });
-    return { ok: true, recipientCount };
+    const push = await dispatchGeneralPush({ recipientIds: dataRef.current.users.filter((user) => user.active).map((user) => user.id), title: validated.title, body: validated.message, approvalSecret: input.approvalSecret });
+    return { ok: true, recipientCount, pushSubmitted: push.submitted };
   }, [session, updateData]);
 
   const generateDailyShiftReport = useCallback(() => {
