@@ -314,3 +314,20 @@
 - [x] Verify the selected on-call report window and official print header with synthetic data only
 - [x] Verify registered-device availability and protected notification dispatch without exposing device tokens
 - [x] Update the go-live checklist with the completed launch checks and remaining device actions
+- [x] Design an Arabic professional teaser poster for the Neurify pilot launch
+- [x] Prepare bilingual supporting copy and department-aligned visual direction for internal sharing
+- [x] Generate and review a portrait poster suitable for WhatsApp and internal noticeboards
+- [x] Prepare Neurify logo, selected in-app screen previews, and official-style store badges for the teaser poster
+- [x] Generate a revised portrait teaser poster with app visual previews and App Store/Google Play availability cues
+- [x] Design an original Neurify logo that communicates neurosurgery coordination and works as an app icon
+- [x] Generate and review a square Neurify logo with a clean, scalable medical-tech mark
+- [x] Create a horizontal Neurify wordmark combining the new symbol and app name
+- [x] Review the wordmark for clear use in the app header and promotional materials
+- [x] Redesign the Neurify wordmark with a distinct, simpler visual direction
+- [x] Extract a square Neurify app-icon mark from the new wordmark direction
+- [x] Export required iOS and Android store icon sizes with correct alpha/background treatment
+- [x] Update the Neurify pilot-launch flyer with the new icon and wordmark
+- [x] Create a compact Neurify brand-guidelines document covering logo, colors, type, spacing, and store assets
+- [x] Package and validate the final identity files for delivery
+- [x] Replace project-committed large Neurify identity images with storage references and keep the deliverable archive external
+- [ ] Verify the checkpoint can be saved after identity-asset cleanup without losing the delivered files
