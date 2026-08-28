@@ -12,7 +12,11 @@ export type CentralRegistrationRequest = {
   createdAt: string;
 };
 
-export type CentralApprovedAccount = Pick<CentralRegistrationRequest, "id" | "name" | "email" | "phone" | "jobTitle"> & { pushProof?: string };
+export type CentralApprovedAccount = Pick<CentralRegistrationRequest, "id" | "name" | "email" | "phone" | "jobTitle"> & {
+  username?: string;
+  role: "admin" | "team_member";
+  pushProof?: string;
+};
 
 type CentralRegistrationConfig = {
   url?: string;
@@ -57,7 +61,7 @@ export function submitCentralRegistration(input: { name: string; email: string; 
   return callCentralRegistration<{ accepted: boolean; id?: string; reason?: "pending" | "existing" }>("submit", input);
 }
 
-export function signInCentralRegistration(input: { email: string; password: string }) {
+export function signInCentralRegistration(input: { identifier: string; password: string }) {
   return callCentralRegistration<
     | { ok: true; account: CentralApprovedAccount }
     | { ok: false; status: "pending" | "rejected" | "invalid" }
@@ -70,6 +74,14 @@ export function listCentralRegistrationRequests(approvalSecret: string) {
 
 export function approveCentralRegistration(input: { id: string; approvedBy: string; approvalSecret: string }) {
   return callCentralRegistration<CentralApprovedAccount>("approve", input);
+}
+
+export function resetCentralPassword(input: { accountId: string; approvalSecret: string }) {
+  return callCentralRegistration<{ ok: boolean; temporaryPassword: string }>("reset_password", input);
+}
+
+export function changeCentralPassword(input: { accountId: string; pushProof: string; currentPassword: string; newPassword: string }) {
+  return callCentralRegistration<{ ok: boolean }>("change_password", input);
 }
 
 export function rejectCentralRegistration(input: { id: string; rejectedBy: string; approvalSecret: string }) {

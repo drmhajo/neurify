@@ -34,7 +34,9 @@ function RegistrationRequestsContent() {
     setLoading(true);
     try {
       const results = await listCentralRegistrationRequests(approvalSecret.trim());
-      setRequests((results as RegistrationRequestItem[]).filter((item) => item.status === "pending"));
+      const allRequests = results as RegistrationRequestItem[];
+      allRequests.filter((item) => item.status === "approved").forEach((item) => importApprovedRegistration(item));
+      setRequests(allRequests.filter((item) => item.status === "pending"));
     } catch {
       Alert.alert(language === "en" ? "Requests unavailable" : "تعذر جلب الطلبات", language === "en" ? "The code was not accepted or the central service is unavailable." : "لم يُقبل الرمز أو أن الخدمة المركزية غير متاحة.");
     } finally {

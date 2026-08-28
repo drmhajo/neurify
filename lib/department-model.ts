@@ -312,7 +312,7 @@ export const rolePermissionDefaults: Record<UserRole, PermissionKey[]> = {
 
 /** Roster transcribed from the provided Neurosurgery groups Distribution, 19–24 July 2026. */
 export const WEEKLY_GROUPS_ROSTER_VERSION = "ns-weekly-groups-2026-07-19-consultant-leads";
-export const INTERNAL_RELEASE_VERSION = "internal-release-v1";
+export const INTERNAL_RELEASE_VERSION = "internal-release-v2";
 
 type WeeklyRosterMember = Pick<DepartmentUser, "username" | "name" | "role" | "jobTitle">;
 
@@ -496,15 +496,12 @@ export const createInitialDepartmentData = (): DepartmentData => applyWeeklyGrou
 });
 
 /**
- * Empty internal workspace for new installations.  Clinical records, schedules, reports,
+ * Empty internal workspace for new installations. Clinical records, schedules, reports,
  * conversations, and attachments are intentionally never bundled with a release build.
- * The department administrator signs in once, changes the bootstrap password, then activates
- * and provisions staff accounts from the administration screen.
+ * Accounts, including the department administrator, authenticate centrally.
  */
-export const createInternalDepartmentData = (): DepartmentData => applyWeeklyGroupsRoster({
-  users: [
-    { id: "u-admin", username: "admin", name: "د. عبدالله السالم", role: "admin", jobTitle: "رئيس القسم", teamIds: [], active: true, permissions: rolePermissionDefaults.admin, passwordRecoveryRequired: true },
-  ],
+export const createInternalDepartmentData = (): DepartmentData => ({
+  users: [],
   reports: [],
   shifts: [],
   surgeries: [],
@@ -527,7 +524,7 @@ export const createInternalDepartmentData = (): DepartmentData => applyWeeklyGro
   shiftReports: [],
   shiftReportPreferences: {},
   releaseVersion: INTERNAL_RELEASE_VERSION,
-  initialSetupCompleted: false,
+  initialSetupCompleted: true,
 });
 
 /** Removes only known bundled demonstration records, preserving department-created records. */
@@ -535,6 +532,7 @@ export function prepareInternalReleaseData(current: DepartmentData): DepartmentD
   if (current.releaseVersion === INTERNAL_RELEASE_VERSION && typeof current.initialSetupCompleted === "boolean") return current;
   return {
     ...current,
+    users: current.users.filter((user) => user.id !== "u-admin"),
     reports: current.reports.filter((item) => !initialSampleReportIds.has(item.id)),
     shifts: current.shifts.filter((item) => !initialSampleShiftIds.has(item.id)),
     weeklyAssignments: current.weeklyAssignments.filter((item) => !initialSampleWeeklyAssignmentIds.has(item.id)),
@@ -542,12 +540,13 @@ export function prepareInternalReleaseData(current: DepartmentData): DepartmentD
     surgeries: current.surgeries.filter((item) => !initialSampleSurgeryIds.has(item.id)),
     teams: current.teams.map((team) => ({
       ...team,
+      memberIds: team.memberIds.filter((userId) => userId !== "u-admin"),
       cases: team.cases.filter((item) => !initialSampleCaseIds.has(item.id)),
       dischargedCases: (team.dischargedCases ?? []).filter((item) => !initialSampleCaseIds.has(item.id)),
       consultations: team.consultations.filter((item) => !initialSampleConsultationIds.has(item.id)),
     })),
     releaseVersion: INTERNAL_RELEASE_VERSION,
-    initialSetupCompleted: false,
+    initialSetupCompleted: true,
   };
 }
 

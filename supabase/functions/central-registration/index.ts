@@ -8,6 +8,8 @@ const encoder = new TextEncoder();
 const PBKDF2_ITERATIONS = 210_000;
 const PUSH_PROOF_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const PUSH_PROOF_CLOCK_SKEW_MS = 5 * 60 * 1000;
+const CENTRAL_ADMIN_USERNAME = "admin";
+const CENTRAL_ADMIN_EMAIL = "admin@ksmc.local";
 
 type RegistrationRow = {
   id: string;
@@ -46,6 +48,10 @@ function json(body: unknown, status = 200) {
 }
 
 function normalizeEmail(value: unknown) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function normalizeIdentifier(value: unknown) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
@@ -201,6 +207,19 @@ function mapRequest(row: RegistrationRow) {
   };
 }
 
+function mapApprovedAccount(row: RegistrationRow) {
+  const administrator = row.email === CENTRAL_ADMIN_EMAIL;
+  return {
+    id: `remote-${row.id}`,
+    username: administrator ? CENTRAL_ADMIN_USERNAME : row.email,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    jobTitle: row.job_title,
+    role: administrator ? "admin" : "team_member",
+  };
+}
+
 function projectRestConfiguration() {
   const projectUrl = Deno.env.get("SUPABASE_URL")?.replace(/\/$/, "");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -273,8 +292,9 @@ async function handleSubmit(body: Record<string, unknown>) {
 }
 
 async function handleSignIn(body: Record<string, unknown>) {
-  const email = normalizeEmail(body.email);
+  const identifier = normalizeIdentifier(body.identifier ?? body.email);
   const password = typeof body.password === "string" ? body.password : "";
+  const email = identifier === CENTRAL_ADMIN_USERNAME ? CENTRAL_ADMIN_EMAIL : normalizeEmail(identifier);
   if (!email || !password) return json({ ok: false, status: "invalid" });
   const request = await findByEmail(email);
   if (!request || !await verifyPassword(password, request)) return json({ ok: false, status: "invalid" });
@@ -282,14 +302,72 @@ async function handleSignIn(body: Record<string, unknown>) {
   return json({
     ok: true,
     account: {
-      id: `remote-${request.id}`,
-      name: request.name,
-      email: request.email,
-      phone: request.phone,
-      jobTitle: request.job_title,
+      ...mapApprovedAccount(request),
       pushProof: await createPushRegistrationProof(request.id),
     },
   });
+}
+
+async function handleBootstrapAdministrator(body: Record<string, unknown>) {
+  if (!requireApprovalSecret(body.approvalSecret)) return json({ error: "approval_unauthorized" }, 403);
+  const username = normalizeIdentifier(body.username);
+  const password = typeof body.password === "string" ? body.password : "";
+  if (username !== CENTRAL_ADMIN_USERNAME || password.length < 8 || password.length > 128) return json({ error: "invalid_input" }, 400);
+  const passwordFields = await hashPassword(password);
+  const accountFields = {
+    name: "قسم جراحة المخ والأعصاب — المشرف",
+    phone: "0000000000",
+    job_title: "Department Administrator",
+    ...passwordFields,
+    status: "approved",
+    approved_by: "central_bootstrap",
+    approved_at: new Date().toISOString(),
+  };
+  const existing = await findByEmail(CENTRAL_ADMIN_EMAIL);
+  const rows = existing
+    ? await restRequest(`?id=eq.${encodeURIComponent(existing.id)}`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(accountFields) }) as RegistrationRow[]
+    : await restRequest("", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ email: CENTRAL_ADMIN_EMAIL, ...accountFields }) }) as RegistrationRow[];
+  if (!rows[0]) throw new Error("Unable to provision central administrator.");
+  return json({ ok: true, account: mapApprovedAccount(rows[0]) });
+}
+
+function createTemporaryPassword() {
+  const digits = crypto.getRandomValues(new Uint32Array(1))[0] % 900_000 + 100_000;
+  return `KSMC-${digits}!`;
+}
+
+async function handleResetPassword(body: Record<string, unknown>) {
+  if (!requireApprovalSecret(body.approvalSecret)) return json({ error: "approval_unauthorized" }, 403);
+  const accountId = cleanText(body.accountId, 64).replace(/^remote-/, "");
+  if (!/^[0-9a-f-]{36}$/i.test(accountId)) return json({ error: "invalid_input" }, 400);
+  const account = await findById(accountId);
+  if (!account || account.status !== "approved") return json({ error: "account_not_approved" }, 403);
+  const temporaryPassword = createTemporaryPassword();
+  const passwordFields = await hashPassword(temporaryPassword);
+  const rows = await restRequest(`?id=eq.${encodeURIComponent(accountId)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(passwordFields),
+  }) as RegistrationRow[];
+  if (!rows[0]) throw new Error("Unable to reset the account password.");
+  return json({ ok: true, temporaryPassword });
+}
+
+async function handleChangePassword(body: Record<string, unknown>) {
+  const accountId = cleanText(body.accountId, 64).replace(/^remote-/, "");
+  const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
+  const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
+  if (!/^[0-9a-f-]{36}$/i.test(accountId) || newPassword.length < 8 || newPassword.length > 128 || !await hasValidPushRegistrationProof(accountId, body.pushProof)) return json({ ok: false, error: "password_change_unauthorized" }, 403);
+  const account = await findById(accountId);
+  if (!account || account.status !== "approved" || !await verifyPassword(currentPassword, account)) return json({ ok: false, error: "invalid_credentials" }, 403);
+  const passwordFields = await hashPassword(newPassword);
+  const rows = await restRequest(`?id=eq.${encodeURIComponent(accountId)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(passwordFields),
+  }) as RegistrationRow[];
+  if (!rows[0]) throw new Error("Unable to change the account password.");
+  return json({ ok: true });
 }
 
 async function handlePushRegister(body: Record<string, unknown>) {
@@ -382,6 +460,9 @@ Deno.serve(async (request) => {
     switch (body.action) {
       case "submit": return await handleSubmit(body);
       case "sign_in": return await handleSignIn(body);
+      case "bootstrap_admin": return await handleBootstrapAdministrator(body);
+      case "reset_password": return await handleResetPassword(body);
+      case "change_password": return await handleChangePassword(body);
       case "list": return await handleList(body);
       case "approve": return await handleDecision(body, "approved");
       case "reject": return await handleDecision(body, "rejected");

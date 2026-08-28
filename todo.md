@@ -265,10 +265,10 @@
 - [x] Increment the Android build version and publish a fresh binary for Push registration retest
 - [x] Diagnose why new central registration requests do not appear in the approver queue
 - [x] Diagnose why administrators cannot issue a temporary password for a user
-- [ ] Fix central approval visibility and temporary-password reset with regression tests
-- [ ] Support central users changing a temporary password through the same Supabase service
+- [x] Fix central approval visibility and temporary-password reset with regression tests
+- [x] Support central users changing a temporary password through the same Supabase service
 - [ ] Publish and verify the repaired account-administration flow on Android
-- [ ] Replace the lost central approval code securely and validate central approval access
+- [x] Replace the lost central approval code securely and validate central approval access
 - [x] Diagnose Android failure to obtain an Expo Push token before the Supabase registration step
 - [x] Configure the Expo/FCM credentials required for production Android Push delivery
 - [ ] Publish a new Android build and verify Expo token acquisition, Supabase registration, and a live Push receipt
@@ -290,3 +290,7 @@
 - [x] Send a protected automatic Push notification when a new consultation is created
 - [ ] Test report-window boundaries and live consultation notification delivery before publishing Android update
 - [x] Deploy consultation notification update to the existing central-registration function and remove the accidental duplicate function
+- [x] Remove all first-run local administrator password setup from new devices
+- [x] Create and protect the requested central administrator account with full administrative permissions
+- [x] Allow the requested administrator username to authenticate through central sign-in without an email address
+- [x] Verify new-device onboarding, central administrator login, and administrative access before publishing

@@ -28,16 +28,15 @@ describe("نموذج بيانات قسم جراحة المخ والأعصاب", 
     expect(data.teams.flatMap((team) => team.dischargedCases)).toHaveLength(0);
   });
 
-  it("يهيئ إصداراً داخلياً خالياً من بيانات المرضى التشغيلية ويطلب تهيئة المشرف", () => {
+  it("يهيئ إصداراً داخلياً خالياً من بيانات المرضى التشغيلية ويعتمد الدخول المركزي", () => {
     const data = createInternalDepartmentData();
 
-    expect(data.initialSetupCompleted).toBe(false);
+    expect(data.initialSetupCompleted).toBe(true);
     expect(data.reports).toEqual([]);
     expect(data.shifts).toEqual([]);
     expect(data.surgeries).toEqual([]);
     expect(data.teams.flatMap((team) => team.cases)).toEqual([]);
-    expect(data.users.find((user) => user.id === "u-admin")?.active).toBe(true);
-    expect(data.users.filter((user) => user.id !== "u-admin").every((user) => !user.active)).toBe(true);
+    expect(data.users).toEqual([]);
   });
 
   it("يتدرج طلب التقرير من جديد إلى قيد الإعداد ثم مكتمل", () => {

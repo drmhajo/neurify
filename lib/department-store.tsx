@@ -38,7 +38,7 @@ import { createGeneralAnnouncement, validateGeneralAnnouncement } from "@/lib/ge
 import { isEligibleForOnCallSlot } from "@/lib/on-call-eligibility";
 import { canManageDischargedCases, deleteDischargedCase, type ArchivedCaseUpdate, updateDischargedCase } from "@/lib/discharged-case-admin";
 import { shouldLockLocalBootstrap } from "@/lib/local-bootstrap";
-import { signInCentralRegistration, submitCentralRegistration } from "@/lib/central-registration-api";
+import { changeCentralPassword, resetCentralPassword, signInCentralRegistration, submitCentralRegistration } from "@/lib/central-registration-api";
 import { parseStoredDepartmentSession, type DepartmentSession } from "@/lib/department-session";
 
 type Session = DepartmentSession;
@@ -66,7 +66,7 @@ type DepartmentStore = {
   changeUserRole: (userId: string, role: UserRole) => void;
   updateUserAccess: (userId: string, input: { active: boolean; permissions: PermissionKey[]; teamIds: string[] }) => void;
   removeUser: (userId: string) => Promise<boolean>;
-  resetUserPassword: (userId: string) => Promise<{ ok: boolean; temporaryPassword?: string }>;
+  resetUserPassword: (userId: string, approvalSecret?: string) => Promise<{ ok: boolean; temporaryPassword?: string; message?: string }>;
   addShift: (input: { clinician: string; period: "صباحي" | "مسائي" | "ليلي"; team: string }) => void;
   addSurgery: (input: Omit<Surgery, "id">) => void;
   updateSurgery: (surgeryId: string, input: Omit<Surgery, "id">) => void;
@@ -251,7 +251,9 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const importApprovedRegistration = useCallback((input: { id: string; name: string; email: string; phone: string; jobTitle: string }) => updateData((current) => {
     const userId = `remote-${input.id}`;
-    const registeredUser: DepartmentUser = { id: userId, username: input.email.trim().toLowerCase(), name: input.name.trim(), email: input.email.trim().toLowerCase(), phone: input.phone.trim(), jobTitle: input.jobTitle.trim(), role: "team_member", teamIds: [], active: true, permissions: rolePermissionDefaults.team_member, passwordRecoveryRequired: false };
+    const administrator = input.email.trim().toLowerCase() === "admin@ksmc.local";
+    const role: UserRole = administrator ? "admin" : "team_member";
+    const registeredUser: DepartmentUser = { id: userId, username: administrator ? "admin" : input.email.trim().toLowerCase(), name: input.name.trim(), email: input.email.trim().toLowerCase(), phone: input.phone.trim(), jobTitle: input.jobTitle.trim(), role, teamIds: [], active: true, permissions: rolePermissionDefaults[role], passwordRecoveryRequired: false };
     const existing = current.users.find((user) => user.id === userId || user.email?.toLowerCase() === registeredUser.email);
     return { ...current, users: existing ? current.users.map((user) => user.id === existing.id ? { ...user, ...registeredUser, id: existing.id, permissions: user.permissions.length ? user.permissions : registeredUser.permissions } : user) : [...current.users, registeredUser] };
   }), [updateData]);
@@ -267,9 +269,10 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (username: string, password: string) => {
     if (!username.trim() || !password.trim()) return { ok: false, message: "أدخل اسم المستخدم وكلمة المرور." };
-    const user = data.users.find((item) => item.active && normalizeDemoUsername(item.username ?? "") === normalizeDemoUsername(username));
+    const normalizedUsername = normalizeDemoUsername(username);
+    const isCentralAdministrator = normalizedUsername === "admin";
+    const user = isCentralAdministrator ? undefined : data.users.find((item) => item.active && item.id !== "u-admin" && normalizeDemoUsername(item.username ?? "") === normalizedUsername);
     if (user && !user.id.startsWith("remote-")) {
-      if (!data.initialSetupCompleted) return { ok: false, message: "يلزم إكمال إعداد حساب المشرف أولاً." };
       if (user.passwordRecoveryRequired && !await hasDepartmentPassword(user.id)) return { ok: false, message: "يلزم أن يعيّن المشرف كلمة مرور مؤقتة لهذا الحساب أولاً." };
       if (password !== await readDepartmentPassword(user.id)) return { ok: false, message: "تحقق من بيانات الدخول." };
       const nextSession: Session = { userId: user.id, name: user.name, role: user.role };
@@ -277,12 +280,12 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
       return { ok: true, recoveryRequired: user.passwordRecoveryRequired };
     }
-    if (!username.includes("@")) return { ok: false, message: data.initialSetupCompleted ? "تحقق من بيانات الدخول." : "أكمل إعداد حساب المشرف أو سجّل الدخول باستخدام بريد إلكتروني معتمد." };
+    if (!username.includes("@") && !isCentralAdministrator) return { ok: false, message: "استخدم اسم المشرف المركزي أو البريد الإلكتروني المعتمد." };
     try {
-      const remote = await signInCentralRegistration({ email: username.trim().toLowerCase(), password });
+      const remote = await signInCentralRegistration({ identifier: username.trim().toLowerCase(), password });
       if (!remote.ok) return { ok: false, message: remote.status === "pending" ? "طلب التسجيل ما زال بانتظار الموافقة." : remote.status === "rejected" ? "تم رفض طلب التسجيل. تواصل مع مشرف القسم." : "تحقق من بيانات الدخول." };
-      const remoteUser: DepartmentUser = { id: remote.account.id, username: remote.account.email, name: remote.account.name, email: remote.account.email, phone: remote.account.phone, jobTitle: remote.account.jobTitle, role: "team_member", teamIds: [], active: true, permissions: rolePermissionDefaults.team_member, passwordRecoveryRequired: false };
-      updateData((current) => ({ ...current, users: current.users.some((item) => item.id === remoteUser.id) ? current.users : [...current.users, remoteUser] }));
+      const remoteUser: DepartmentUser = { id: remote.account.id, username: remote.account.username ?? remote.account.email, name: remote.account.name, email: remote.account.email, phone: remote.account.phone, jobTitle: remote.account.jobTitle, role: remote.account.role, teamIds: [], active: true, permissions: rolePermissionDefaults[remote.account.role], passwordRecoveryRequired: false };
+      updateData((current) => ({ ...current, users: current.users.some((item) => item.id === remoteUser.id) ? current.users.map((item) => item.id === remoteUser.id ? { ...item, ...remoteUser } : item) : [...current.users.filter((item) => item.id !== "u-admin"), remoteUser] }));
       const nextSession: Session = { userId: remoteUser.id, name: remoteUser.name, role: remoteUser.role, pushProof: remote.account.pushProof };
       setSession(nextSession);
       await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
@@ -290,20 +293,12 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     } catch {
       return { ok: false, message: "تعذر الاتصال بخدمة تسجيل المستخدمين. تحقق من الاتصال بالشبكة وحاول مرة أخرى." };
     }
-  }, [data.initialSetupCompleted, data.users, updateData]);
+  }, [data.users, updateData]);
 
   const completeInitialSetup = useCallback(async (password: string) => {
-    if (data.initialSetupCompleted) return { ok: false, message: "تم إعداد التطبيق بالفعل." };
-    if (password.length < 12) return { ok: false, message: "استخدم كلمة مرور من 12 حرفاً على الأقل." };
-    const admin = data.users.find((user) => user.id === "u-admin" && user.active);
-    if (!admin) return { ok: false, message: "تعذر العثور على حساب المشرف." };
-    await writeDepartmentPassword(admin.id, password);
-    const nextSession: Session = { userId: admin.id, name: admin.name, role: admin.role };
-    updateData((current) => ({ ...current, initialSetupCompleted: true, users: current.users.map((user) => user.id === admin.id ? { ...user, passwordRecoveryRequired: false, lastPasswordChangeAt: "الآن" } : user) }));
-    setSession(nextSession);
-    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
-    return { ok: true };
-  }, [data.initialSetupCompleted, data.users, updateData]);
+    void password;
+    return { ok: false, message: "تم إلغاء الإعداد المحلي. سجّل الدخول بحساب المشرف المركزي." };
+  }, []);
 
   const signOut = useCallback(async () => {
     setSession(null);
@@ -453,8 +448,18 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [data.users, session?.role, session?.userId, updateData]);
 
-  const resetUserPassword = useCallback(async (userId: string) => {
+  const resetUserPassword = useCallback(async (userId: string, approvalSecret?: string) => {
     if (session?.role !== "admin" || !data.users.some((user) => user.id === userId)) return { ok: false };
+    if (userId.startsWith("remote-")) {
+      if (!approvalSecret?.trim()) return { ok: false, message: "أدخل رمز الاعتماد المركزي لإصدار كلمة مرور مؤقتة." };
+      try {
+        const result = await resetCentralPassword({ accountId: userId, approvalSecret: approvalSecret.trim() });
+        updateData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, passwordRecoveryRequired: true, lastPasswordChangeAt: "الآن" } : user) }));
+        return result;
+      } catch {
+        return { ok: false, message: "تعذر استعادة كلمة المرور المركزية. تحقق من رمز الاعتماد والاتصال." };
+      }
+    }
     const temporaryPassword = createTemporaryPassword();
     await writeDepartmentPassword(userId, temporaryPassword);
     updateData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, passwordRecoveryRequired: true, lastPasswordChangeAt: "الآن" } : user) }));
@@ -581,6 +586,16 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     if (!currentPassword || newPassword.length < 8) return { ok: false, message: "أدخل كلمة المرور الحالية وكلمة جديدة من 8 أحرف على الأقل." };
     const userId = session?.userId;
     if (!userId) return { ok: false, message: "انتهت جلسة المستخدم." };
+    if (userId.startsWith("remote-")) {
+      if (!session?.pushProof) return { ok: false, message: "أعد تسجيل الدخول لتأكيد جلسة الحساب المركزي قبل تغيير كلمة المرور." };
+      try {
+        await changeCentralPassword({ accountId: userId, pushProof: session.pushProof, currentPassword, newPassword });
+        updateData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, lastPasswordChangeAt: "الآن", passwordRecoveryRequired: false } : user) }));
+        return { ok: true };
+      } catch {
+        return { ok: false, message: "تعذر تغيير كلمة المرور المركزية. تحقق من كلمة المرور الحالية والاتصال." };
+      }
+    }
     if (currentPassword !== await readDepartmentPassword(userId)) return { ok: false, message: "كلمة المرور الحالية غير صحيحة." };
     await writeDepartmentPassword(userId, newPassword);
     updateData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, lastPasswordChangeAt: "الآن", passwordRecoveryRequired: false } : user) }));
