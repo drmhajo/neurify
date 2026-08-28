@@ -1,0 +1,11 @@
+{
+  "task_kind": "markdown-to-pdf",
+  "output": "pdf",
+  "signals": ["brand-guidelines", "arabic"],
+  "hard_constraints": ["Arabic text must render correctly", "Include the approved Neurify wordmark", "Preserve tables and references"],
+  "content_features": {
+    "code_blocks": 0,
+    "defined_terms": 1,
+    "portrait_images": 1
+  }
+}

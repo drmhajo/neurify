@@ -1,0 +1,31 @@
+{
+  "base": {
+    "auto_apply": true,
+    "conflict_group": "document-base",
+    "id": "markdown-entry",
+    "kind": "asset",
+    "ownership": "global",
+    "path": "assets/markdown-entry.typ",
+    "reason": "Existing Markdown source.",
+    "status": "ready"
+  },
+  "catalog_version": "2026-07-17-affiliated-formats-v3",
+  "channel": "typst-pdf",
+  "confirmation_candidates": [],
+  "enhancements": [],
+  "exclusions": [],
+  "fingerprint": "sha256:0209524cb30f2ef8ece57dc93ee05b93c01a7ff416efcd171c3609028c19d660",
+  "next_action": "minimal-compile-preflight",
+  "optional_idea": null,
+  "question": null,
+  "reused": false,
+  "schema_version": 1,
+  "state": "ready",
+  "style_owner": "markdown-entry",
+  "typst_version": "typst 0.15.1 (9dfd3a08)",
+  "preflight": {
+    "status": "pass",
+    "entry": "/home/ubuntu/neurify-brand-guidelines-pdf/main.typ",
+    "output": "/home/ubuntu/neurify-brand-guidelines-pdf/main.pdf"
+  }
+}

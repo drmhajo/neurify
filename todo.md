@@ -334,3 +334,5 @@
 - [x] Replace the Neurify wordmark typeface while preserving the approved neural-path icon
 - [x] Update the compact Neurify brand guidelines with the approved humanist wordmark, typography, and color palette
 - [x] Deliver the revised visual identity guide as a shareable document
+- [x] Export the Arabic Neurify brand guidelines as a team-ready PDF
+- [x] Verify Arabic text, tables, and visual links in the exported PDF
