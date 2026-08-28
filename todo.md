@@ -254,3 +254,12 @@
 - [x] Add Supabase-backed Push-device registration so Android no longer relies on the temporary API
 - [x] Route central general Push delivery through the stable Supabase HTTPS function
 - [ ] Publish the updated Android build, register a physical device, and confirm receipt of a live Push test
+- [x] Diagnose the physical Android `push_register` failure shown after publishing the Supabase migration
+- [x] Fix the device-session proof or request contract and add regression coverage
+- [ ] Republish, register the physical Android device in `push_devices`, and confirm a live Push receipt
+- [x] Diagnose the repeated Android Push registration failure after renewal of the central session proof
+- [x] Surface a safe, actionable device-registration error and fix the underlying request mismatch
+- [ ] Publish the corrective build and verify physical device registration before sending a live Push test
+- [x] Verify the Supabase public configuration is embedded in Android app config at build time
+- [x] Add safe in-app diagnostics for missing central configuration or non-central account routing
+- [ ] Increment the Android build version and publish a fresh binary for Push registration retest

@@ -7,7 +7,7 @@ import { registerCentralPushDevice, sendCentralGeneralPush } from "@/lib/central
 
 const PUSH_REGISTRATION_KEY_PREFIX = "ksmc.neuro.push-registration.";
 
-export type PushSetupState = "idle" | "enabled" | "denied" | "unavailable" | "needs_build" | "error";
+export type PushSetupState = "idle" | "enabled" | "denied" | "unavailable" | "needs_build" | "needs_sign_in" | "error";
 
 export type PushSetupResult = {
   state: PushSetupState;
@@ -44,6 +44,10 @@ export async function enablePushNotifications(staffId: string, pushProof?: strin
     return { state: "unavailable", message: "تتطلب الإشعارات الفورية تثبيت التطبيق على جهاز iPhone أو Android فعلي." };
   }
 
+  if (!staffId.startsWith("remote-")) {
+    return { state: "needs_sign_in", message: "يلزم تسجيل الدخول بحساب القسم المركزي المعتمد لتسجيل هذا الجهاز. سجّل الخروج ثم ادخل ببريدك المعتمد." };
+  }
+
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("department-alerts", {
       name: "تنبيهات قسم جراحة المخ والأعصاب",
@@ -69,17 +73,35 @@ export async function enablePushNotifications(staffId: string, pushProof?: strin
     return { state: "needs_build", message: "يلزم ربط الحزمة بمعرّف مشروع Expo ثم إصدار نسخة تطبيق جديدة لتسجيل هذا الجهاز للإشعارات الفورية." };
   }
 
+  if (staffId.startsWith("remote-") && !pushProof) {
+    return { state: "needs_sign_in", message: "انتهت جلسة تسجيل الإشعارات. سجّل الخروج ثم ادخل مرة أخرى، وبعدها أعد تسجيل الجهاز." };
+  }
+
+  let token: string;
   try {
-    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  } catch {
+    return { state: "error", message: "تعذر الحصول على رمز الإشعارات من Expo. تحقق من اتصال الإنترنت ومن أن حزمة Android محدثة ثم أعد المحاولة." };
+  }
+
+  try {
     const platform = Platform.OS === "ios" ? "ios" : "android";
-    const registration = staffId.startsWith("remote-") && pushProof
-      ? await registerCentralPushDevice({ accountId: staffId, token, platform, pushProof })
-      : await createTRPCClient().push.register.mutate({ staffId, token, platform });
+    const registration = await registerCentralPushDevice({ accountId: staffId, token, platform, pushProof: pushProof! });
     if (!registration.persisted) return { state: "error", message: "تعذر حفظ تسجيل الجهاز في خدمة الإشعارات. حاول مرة أخرى لاحقاً." };
     await AsyncStorage.setItem(`${PUSH_REGISTRATION_KEY_PREFIX}${staffId}`, "registered");
     return { state: "enabled", message: "تم تفعيل التنبيهات الفورية على هذا الجهاز.", token };
-  } catch {
-    return { state: "error", message: "تعذر تسجيل الجهاز حالياً. تحقق من الاتصال بالشبكة وحاول مرة أخرى." };
+  } catch (error) {
+    const failure = error instanceof Error ? error.message : "";
+    if (failure.includes("Central registration is not configured") || failure.includes("Central registration URL is invalid")) {
+      return { state: "needs_build", message: "إصدار التطبيق لا يتضمن إعدادات الخدمة المركزية. نزّل أحدث حزمة Android ثم أعد تسجيل الدخول." };
+    }
+    if (failure.includes("push_registration_unauthorized") || failure.includes("account_not_approved")) {
+      return { state: "needs_sign_in", message: "انتهت جلسة تسجيل الإشعارات. سجّل الخروج ثم ادخل مرة أخرى، وبعدها أعد تسجيل الجهاز." };
+    }
+    if (failure.includes("Network request failed") || failure.includes("aborted")) {
+      return { state: "error", message: "تعذر الاتصال بالخدمة المركزية. تحقق من الإنترنت ثم أعد المحاولة." };
+    }
+    return { state: "error", message: "تعذر حفظ رمز الجهاز في الخدمة المركزية. تحقق من اتصال الإنترنت، ثم سجّل الخروج وادخل مجددًا قبل إعادة المحاولة." };
   }
 }
 

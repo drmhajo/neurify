@@ -12,7 +12,7 @@ describe("central Push registration migration", () => {
     expect(migration).toContain("revoke all on table public.push_devices from anon, authenticated");
   });
 
-  it("routes remote-device registration through the HTTPS central function with a short-lived proof", () => {
+  it("routes remote-device registration through the HTTPS central function with a signed proof", () => {
     const functionCode = fs.readFileSync(path.join(root, "supabase/functions/central-registration/index.ts"), "utf8");
     const client = fs.readFileSync(path.join(root, "lib/central-registration-api.ts"), "utf8");
     const pushClient = fs.readFileSync(path.join(root, "lib/push-notifications.ts"), "utf8");
@@ -21,7 +21,8 @@ describe("central Push registration migration", () => {
     expect(functionCode).toContain("hasValidPushRegistrationProof");
     expect(client).toContain("registerCentralPushDevice");
     expect(pushClient).toContain("registerCentralPushDevice");
-    expect(pushClient).toContain('staffId.startsWith("remote-") && pushProof');
+    expect(pushClient).toContain('staffId.startsWith("remote-")');
+    expect(pushClient).toContain("pushProof: pushProof!");
   });
 
   it("protects general Push dispatch with the central approval secret and sends no patient details", () => {
@@ -32,5 +33,26 @@ describe("central Push registration migration", () => {
     expect(functionCode).toContain('url: "/notifications"');
     expect(announcementScreen).toContain("secureTextEntry");
     expect(announcementScreen).toContain("never saved on the device");
+  });
+
+  it("keeps the Push proof usable beyond the old ten-minute window and requires central re-sign-in when absent", () => {
+    const functionCode = fs.readFileSync(path.join(root, "supabase/functions/central-registration/index.ts"), "utf8");
+    const pushClient = fs.readFileSync(path.join(root, "lib/push-notifications.ts"), "utf8");
+    expect(functionCode).toContain("30 * 24 * 60 * 60 * 1000");
+    expect(functionCode).not.toContain("Date.now() + 10 * 60 * 1000");
+    expect(pushClient).toContain('staffId.startsWith("remote-") && !pushProof');
+    expect(pushClient).toContain('state: "needs_sign_in"');
+    expect(pushClient).toContain("سجّل الخروج ثم ادخل مرة أخرى");
+    expect(pushClient).toContain('if (!staffId.startsWith("remote-"))');
+    expect(pushClient).not.toContain('createTRPCClient().push.register.mutate');
+  });
+
+  it("separates Expo-token acquisition errors from central registration errors without exposing sensitive data", () => {
+    const pushClient = fs.readFileSync(path.join(root, "lib/push-notifications.ts"), "utf8");
+    expect(pushClient).toContain("تعذر الحصول على رمز الإشعارات من Expo");
+    expect(pushClient).toContain("تعذر حفظ رمز الجهاز في الخدمة المركزية");
+    expect(pushClient).toContain("إصدار التطبيق لا يتضمن إعدادات الخدمة المركزية");
+    expect(pushClient).toContain("تعذر الاتصال بالخدمة المركزية");
+    expect(pushClient).toContain("Notifications.getExpoPushTokenAsync");
   });
 });

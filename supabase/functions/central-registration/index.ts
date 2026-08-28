@@ -6,6 +6,8 @@ const corsHeaders = {
 
 const encoder = new TextEncoder();
 const PBKDF2_ITERATIONS = 210_000;
+const PUSH_PROOF_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const PUSH_PROOF_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 type RegistrationRow = {
   id: string;
@@ -114,7 +116,7 @@ async function signPushRegistrationPayload(payload: string) {
 }
 
 async function createPushRegistrationProof(accountId: string) {
-  const expiresAt = Date.now() + 10 * 60 * 1000;
+  const expiresAt = Date.now() + PUSH_PROOF_TTL_MS;
   const signature = await signPushRegistrationPayload(`push:${accountId}:${expiresAt}`);
   return `${expiresAt}.${signature}`;
 }
@@ -123,7 +125,7 @@ async function hasValidPushRegistrationProof(accountId: string, candidate: unkno
   if (typeof candidate !== "string") return false;
   const [expiryText, suppliedSignature, ...rest] = candidate.split(".");
   const expiresAt = Number(expiryText);
-  if (rest.length || !Number.isSafeInteger(expiresAt) || expiresAt < Date.now() || expiresAt > Date.now() + 11 * 60 * 1000 || !suppliedSignature) return false;
+  if (rest.length || !Number.isSafeInteger(expiresAt) || expiresAt < Date.now() || expiresAt > Date.now() + PUSH_PROOF_TTL_MS + PUSH_PROOF_CLOCK_SKEW_MS || !suppliedSignature) return false;
   const expectedSignature = await signPushRegistrationPayload(`push:${accountId}:${expiresAt}`);
   return constantTimeEqual(expectedSignature, suppliedSignature);
 }
