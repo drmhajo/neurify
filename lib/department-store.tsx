@@ -35,6 +35,7 @@ import { syncFailureStatus, type DepartmentSyncState, parseCloudDepartmentData, 
 import { canRemoveDepartmentUser, normalizeDemoUsername } from "@/lib/department-user-admin";
 import { buildDailyShiftReport } from "@/lib/shift-endorsement";
 import { createGeneralAnnouncement, validateGeneralAnnouncement } from "@/lib/general-announcement";
+import { isEligibleForOnCallSlot } from "@/lib/on-call-eligibility";
 
 type Session = {
   userId: string;
@@ -314,6 +315,8 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   }, [data.users, session, updateData]);
 
   const setOnCallUserId = useCallback((slot: OnCallSlot, userId: string) => updateData((current) => {
+    const selectedUser = current.users.find((user) => user.id === userId);
+    if (!selectedUser || !isEligibleForOnCallSlot(selectedUser, slot)) return current;
     const preferenceKey: Record<OnCallSlot, "firstOnCallUserId" | "secondOnCallUserId" | "thirdOnCallUserId"> = {
       first: "firstOnCallUserId",
       second: "secondOnCallUserId",

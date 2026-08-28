@@ -1,0 +1,49 @@
+{
+  "id": "shift-2026-08-25",
+  "reportDate": "2026-08-25",
+  "shiftStartAt": "2026-08-25T04:30:00.000Z",
+  "shiftEndAt": "2026-08-26T04:20:00.000Z",
+  "generatedAt": "2026-08-25T07:00:00.000Z",
+  "generatedBy": "Verification user",
+  "onCall": {
+    "first": "د. نورة الحربي",
+    "second": "د. سارة العتيبي",
+    "third": "د. عبدالله السالم"
+  },
+  "consultations": [
+    {
+      "id": "verification-consultation",
+      "period": "AM",
+      "mrn": "TEST-0001",
+      "age": "—",
+      "diagnosis": "Verification diagnosis only",
+      "consultingSpecialty": "Verification consultation",
+      "plan": "Verification only",
+      "requiresFollowUp": false
+    }
+  ],
+  "admissions": [
+    {
+      "id": "verification-patient",
+      "mrn": "TEST-0001",
+      "diagnosis": "Verification diagnosis only",
+      "admissionType": "Unspecified",
+      "plan": "—",
+      "admittingConsultant": "Dr. Hashmi"
+    }
+  ],
+  "emergencySurgeries": [
+    {
+      "id": "consultation-verification-consultation",
+      "mrn": "TEST-0001",
+      "diagnosis": "Verification diagnosis only",
+      "surgery": "Verification emergency procedure"
+    }
+  ],
+  "statistics": {
+    "consultations": 1,
+    "requiringFollowUp": 0,
+    "admissions": 1,
+    "emergencySurgeries": 1
+  }
+}

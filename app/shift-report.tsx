@@ -9,6 +9,7 @@ import { exportShiftReport } from "@/lib/shift-report-export";
 import { getShiftWindow } from "@/lib/shift-endorsement";
 import { useAppLanguage } from "@/lib/language";
 import { LogoLoading } from "@/components/logo-loading";
+import { eligibleOnCallUsers } from "@/lib/on-call-eligibility";
 
 export default function ShiftReportScreen() {
   const { data, session, generateDailyShiftReport, setOnCallUserId } = useDepartment();
@@ -17,10 +18,15 @@ export default function ShiftReportScreen() {
   const [downloading, setDownloading] = useState(false);
   const canManage = Boolean(session && data.users.find((user) => user.id === session.userId)?.permissions.includes("manage_reports"));
   const activeUsers = data.users.filter((user) => user.active);
+  const onCallCandidates = {
+    first: eligibleOnCallUsers(activeUsers, "first"),
+    second: eligibleOnCallUsers(activeUsers, "second"),
+    third: eligibleOnCallUsers(activeUsers, "third"),
+  };
   const selectedOnCall = {
-    first: activeUsers.find((user) => user.id === data.shiftReportPreferences?.firstOnCallUserId),
-    second: activeUsers.find((user) => user.id === data.shiftReportPreferences?.secondOnCallUserId),
-    third: activeUsers.find((user) => user.id === data.shiftReportPreferences?.thirdOnCallUserId),
+    first: onCallCandidates.first.find((user) => user.id === data.shiftReportPreferences?.firstOnCallUserId),
+    second: onCallCandidates.second.find((user) => user.id === data.shiftReportPreferences?.secondOnCallUserId),
+    third: onCallCandidates.third.find((user) => user.id === data.shiftReportPreferences?.thirdOnCallUserId),
   };
   const window = getShiftWindow();
 
@@ -103,12 +109,12 @@ export default function ShiftReportScreen() {
             <View style={styles.onCallBadge}><MaterialIcons name="groups" size={18} color={palette.teal} /></View>
             <View style={styles.headerCopy}>
               <Text style={[styles.onCallTitle, align(isRTL)]}>{language === "en" ? "On-call team" : "فريق المناوبة"}</Text>
-              <Text style={[styles.onCallHint, align(isRTL)]}>{language === "en" ? "Choose active registered users for all three on-call roles." : "اختر المستخدمين المسجلين والنشطين للأدوار الثلاثة في المناوبة."}</Text>
+              <Text style={[styles.onCallHint, align(isRTL)]}>{language === "en" ? "1st: resident · 2nd: specialist · 3rd: consultant. Active users only." : "الأول: مقيم · الثاني: أخصائي · الثالث: استشاري. تظهر الحسابات النشطة فقط."}</Text>
             </View>
           </View>
-          <OnCallUserPicker slot="first" selectedUser={selectedOnCall.first} users={activeUsers} language={language} isRTL={isRTL} onSelect={setOnCallUserId} />
-          <OnCallUserPicker slot="second" selectedUser={selectedOnCall.second} users={activeUsers} language={language} isRTL={isRTL} onSelect={setOnCallUserId} />
-          <OnCallUserPicker slot="third" selectedUser={selectedOnCall.third} users={activeUsers} language={language} isRTL={isRTL} onSelect={setOnCallUserId} />
+          <OnCallUserPicker slot="first" selectedUser={selectedOnCall.first} users={onCallCandidates.first} language={language} isRTL={isRTL} onSelect={setOnCallUserId} />
+          <OnCallUserPicker slot="second" selectedUser={selectedOnCall.second} users={onCallCandidates.second} language={language} isRTL={isRTL} onSelect={setOnCallUserId} />
+          <OnCallUserPicker slot="third" selectedUser={selectedOnCall.third} users={onCallCandidates.third} language={language} isRTL={isRTL} onSelect={setOnCallUserId} />
         </AppCard>
       ) : null}
 
