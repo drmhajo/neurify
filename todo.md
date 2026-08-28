@@ -309,3 +309,8 @@
 - [x] Run a full release validation and document the go-live checklist for today
 - [x] Install the required expo-asset peer dependency identified by Expo Doctor
 - [x] Re-run Expo Doctor and the Android production export after resolving the missing native peer dependency
+- [x] Review the go-live checklist and classify automated versus device-dependent steps
+- [x] Execute a non-clinical central-account approval and password-recovery readiness check
+- [x] Verify the selected on-call report window and official print header with synthetic data only
+- [x] Verify registered-device availability and protected notification dispatch without exposing device tokens
+- [x] Update the go-live checklist with the completed launch checks and remaining device actions
