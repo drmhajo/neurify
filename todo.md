@@ -298,3 +298,5 @@
 - [x] Add the supplied Neurosurgery Department logo as a dedicated print-report asset
 - [x] Replace the existing report header logo in PDF and print templates with the department logo
 - [x] Verify bilingual report headers and increment the Android build for the rebranded release
+- [x] Change the display name from NeuroLink to Neurify while retaining immutable identifiers
+- [x] Increment and validate the Android build for the Neurify rename
