@@ -2,6 +2,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ReactNode } from "react";
 import { useAppLanguage } from "@/lib/language";
+import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
 
 export const palette = {
   navy: "#123D63",
@@ -19,13 +20,15 @@ export const palette = {
 };
 
 export function AppCard({ children, style }: { children: ReactNode; style?: object }) {
-  return <View style={[styles.card, style]}>{children}</View>;
+  const { isCompact } = useResponsiveLayout();
+  return <View style={[styles.card, isCompact && styles.compactCard, style]}>{children}</View>;
 }
 
 export function PrimaryButton({ label, onPress, icon = "add", tone = "navy", disabled = false }: { label: string; onPress: () => void; icon?: React.ComponentProps<typeof MaterialIcons>["name"]; tone?: "navy" | "teal" | "light"; disabled?: boolean }) {
   const { localize, isRTL } = useAppLanguage();
+  const { isCompact } = useResponsiveLayout();
   const dark = tone !== "light";
-  return <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.primaryButton, { flexDirection: isRTL ? "row-reverse" : "row" }, tone === "teal" && styles.tealButton, tone === "light" && styles.lightButton, disabled && styles.disabledButton, pressed && !disabled && styles.pressed]}>
+  return <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.primaryButton, isCompact && styles.compactPrimaryButton, { flexDirection: isRTL ? "row-reverse" : "row" }, tone === "teal" && styles.tealButton, tone === "light" && styles.lightButton, disabled && styles.disabledButton, pressed && !disabled && styles.pressed]}>
     <MaterialIcons name={icon} size={18} color={dark ? "#FFFFFF" : palette.navy} />
     <Text style={[styles.primaryText, !dark && styles.lightButtonText, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(label)}</Text>
   </Pressable>;
@@ -55,9 +58,10 @@ export function StatusPill({ label, tone = "blue" }: { label: string; tone?: "bl
 
 export function MetricCard({ icon, value, label, tone = "blue" }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; value: number | string; label: string; tone?: "blue" | "teal" | "gold" | "red" }) {
   const { localize, isRTL } = useAppLanguage();
+  const { isCompact } = useResponsiveLayout();
   const background = tone === "teal" ? palette.paleTeal : tone === "gold" ? "#FEF3C7" : tone === "red" ? "#FEE2E2" : palette.paleBlue;
   const color = tone === "teal" ? palette.teal : tone === "gold" ? palette.gold : tone === "red" ? palette.urgent : palette.navy;
-  return <View style={[styles.metricCard, { backgroundColor: background, flexDirection: isRTL ? "row-reverse" : "row" }]}><View style={[styles.metricIcon, { backgroundColor: "#FFFFFFAA" }]}><MaterialIcons name={icon} size={20} color={color} /></View><View><Text style={[styles.metricValue, { color }]}>{value}</Text><Text style={[styles.metricLabel, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(label)}</Text></View></View>;
+  return <View style={[styles.metricCard, isCompact && styles.compactMetricCard, { backgroundColor: background, flexDirection: isRTL ? "row-reverse" : "row" }]}><View style={[styles.metricIcon, isCompact && styles.compactMetricIcon, { backgroundColor: "#FFFFFFAA" }]}><MaterialIcons name={icon} size={isCompact ? 18 : 20} color={color} /></View><View style={styles.metricCopy}><Text style={[styles.metricValue, isCompact && styles.compactMetricValue, { color }]}>{value}</Text><Text style={[styles.metricLabel, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{localize(label)}</Text></View></View>;
 }
 
 export function EmptyState({ icon, text }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; text: string }) {
@@ -66,8 +70,9 @@ export function EmptyState({ icon, text }: { icon: React.ComponentProps<typeof M
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: palette.card, borderWidth: 1, borderColor: palette.line, borderRadius: 18, padding: 16, shadowColor: "#123D63", shadowOpacity: 0.055, shadowRadius: 14, shadowOffset: { width: 0, height: 5 }, elevation: 2 },
+  card: { backgroundColor: palette.card, borderWidth: 1, borderColor: palette.line, borderRadius: 18, padding: 16, shadowColor: "#123D63", shadowOpacity: 0.055, shadowRadius: 14, shadowOffset: { width: 0, height: 5 }, elevation: 2 }, compactCard: { borderRadius: 16, padding: 14 },
   primaryButton: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: palette.navy, minHeight: 50, paddingHorizontal: 16, borderRadius: 15 },
+  compactPrimaryButton: { minHeight: 48, paddingHorizontal: 14, borderRadius: 14 },
   tealButton: { backgroundColor: palette.teal },
   lightButton: { backgroundColor: palette.paleBlue, borderWidth: 1, borderColor: "#C9DDED" },
   disabledButton: { opacity: 0.5 },
@@ -89,9 +94,10 @@ const styles = StyleSheet.create({
   pillRed: { backgroundColor: "#FEE2E2" }, pillRedText: { color: palette.urgent },
   pillGold: { backgroundColor: "#FEF3C7" }, pillGoldText: { color: palette.gold },
   pillGrey: { backgroundColor: "#E9EFF5" }, pillGreyText: { color: palette.muted },
-  metricCard: { flexDirection: "row-reverse", gap: 10, alignItems: "center", flex: 1, borderRadius: 18, padding: 12, minHeight: 82 },
+  metricCard: { flexDirection: "row-reverse", gap: 10, alignItems: "center", flex: 1, minWidth: 0, borderRadius: 18, padding: 12, minHeight: 82 }, compactMetricCard: { gap: 8, borderRadius: 16, padding: 10, minHeight: 76 },
   metricIcon: { height: 36, width: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  metricValue: { fontSize: 22, fontWeight: "900", textAlign: "right" },
+  compactMetricIcon: { height: 32, width: 32, borderRadius: 11 }, metricCopy: { flex: 1, minWidth: 0 },
+  metricValue: { fontSize: 22, fontWeight: "900", textAlign: "right" }, compactMetricValue: { fontSize: 20 },
   metricLabel: { color: palette.muted, fontSize: 11, fontWeight: "600", writingDirection: "rtl", marginTop: 1 },
   empty: { alignItems: "center", paddingVertical: 28, gap: 8 },
   emptyText: { color: palette.muted, fontSize: 13, writingDirection: "rtl", textAlign: "center" },

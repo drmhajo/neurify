@@ -350,3 +350,7 @@
 - [x] Export and adopt the approved transparent Neurify neural-path mark as the branding source
 - [x] Add a compact Neurify wordmark beneath the login-screen content while retaining the department emblem
 - [x] Add identity regression coverage and validate the Android-ready build
+- [x] Audit core phone layouts for safe areas, narrow widths, and keyboard overlap
+- [x] Introduce shared responsive spacing and sizing helpers for Neurify mobile screens
+- [x] Apply responsive rules to login, dashboard, and tab navigation with focused regression coverage
+- [x] Validate responsive behavior through the Android production export

@@ -5,6 +5,8 @@ import { router } from "expo-router";
 import { useDepartment } from "@/lib/department-store";
 import { palette, PrimaryButton } from "@/components/neuro-ui";
 import { useAppLanguage } from "@/lib/language";
+import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const loginColors = {
   navy: "#163F66",
@@ -22,6 +24,10 @@ const loginColors = {
 export default function LoginScreen() {
   const { signIn, requestRegistration } = useDepartment();
   const { language, setLanguage, isRTL, t, localize } = useAppLanguage();
+  const layout = useResponsiveLayout();
+  const insets = useSafeAreaInsets();
+  const contentTopPadding = Math.max(layout.loginTopPadding, insets.top + 18);
+  const contentBottomPadding = Math.max(layout.contentBottomPadding, insets.bottom + 16);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [registrationOpen, setRegistrationOpen] = useState(false);
@@ -76,14 +82,14 @@ export default function LoginScreen() {
   };
 
   return <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.page}>
-    <View style={styles.topDecoration} />
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <View style={styles.languageToggle}><Pressable onPress={() => setLanguage("ar")} style={[styles.languageButton, language === "ar" && styles.languageButtonActive]}><Text style={[styles.languageText, language === "ar" && styles.languageTextActive]}>{t("arabic")}</Text></Pressable><Pressable onPress={() => setLanguage("en")} style={[styles.languageButton, language === "en" && styles.languageButtonActive]}><Text style={[styles.languageText, language === "en" && styles.languageTextActive]}>{t("english")}</Text></Pressable></View>
-      <View style={styles.mark}><Image source={require("../assets/images/neurosurgery-department-logo.png")} style={styles.logo} resizeMode="contain" accessibilityLabel="Neurosurgery Department, King Saud Medical City" /></View>
-      <Text style={[styles.title, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("department")}</Text>
+    <View style={[styles.topDecoration, { height: layout.loginHeaderHeight }]} />
+    <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: layout.screenPadding, paddingTop: contentTopPadding, paddingBottom: contentBottomPadding }]} keyboardShouldPersistTaps="handled">
+      <View style={[styles.languageToggle, { top: insets.top + 10 }]}><Pressable onPress={() => setLanguage("ar")} style={[styles.languageButton, language === "ar" && styles.languageButtonActive]}><Text style={[styles.languageText, language === "ar" && styles.languageTextActive]}>{t("arabic")}</Text></Pressable><Pressable onPress={() => setLanguage("en")} style={[styles.languageButton, language === "en" && styles.languageButtonActive]}><Text style={[styles.languageText, language === "en" && styles.languageTextActive]}>{t("english")}</Text></Pressable></View>
+      <View style={[styles.mark, { width: layout.loginLogoSize, height: layout.loginLogoSize, borderRadius: layout.loginLogoRadius }]}><Image source={require("../assets/images/neurosurgery-department-logo.png")} style={{ width: layout.loginLogoSize - 8, height: layout.loginLogoSize - 8 }} resizeMode="contain" accessibilityLabel="Neurosurgery Department, King Saud Medical City" /></View>
+      <Text style={[styles.title, { fontSize: layout.loginTitleSize, writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("department")}</Text>
       <Text style={[styles.subtitle, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("hospital")}</Text>
       <Text style={[styles.description, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("workspace")}</Text>
-      <View style={styles.form}>
+      <View style={[styles.form, { padding: layout.cardPadding }]}>
         <Text style={[styles.formTitle, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{t("signIn")}</Text>
         <Text style={[styles.label, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{language === "en" ? "Administrator username or approved email" : "اسم مستخدم المشرف أو البريد الإلكتروني المعتمد"}</Text>
         <View style={styles.inputShell}><MaterialIcons name="person-outline" size={20} color={palette.muted} /><TextInput value={identifier} onChangeText={setIdentifier} placeholder={language === "en" ? "Enter admin or approved email" : "أدخل admin أو البريد المعتمد"} placeholderTextColor="#9FB3C8" autoCapitalize="none" autoCorrect={false} textAlign={isRTL ? "right" : "left"} style={[styles.input, { writingDirection: isRTL ? "rtl" : "ltr" }]} returnKeyType="next" /></View>
@@ -93,7 +99,7 @@ export default function LoginScreen() {
         <Pressable onPress={() => setRegistrationOpen(true)} style={({ pressed }) => [styles.registrationButton, pressed && { opacity: 0.76 }]}><MaterialIcons name="person-add-alt-1" size={18} color={palette.teal} /><Text style={styles.registrationButtonText}>{language === "en" ? "New user? Request an account" : "مستخدم جديد؟ اطلب إنشاء حساب"}</Text></Pressable>
         <View style={styles.centralInfo}><MaterialIcons name="verified-user" size={17} color={palette.teal} /><Text style={[styles.centralInfoText, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{language === "en" ? "All accounts are verified centrally. New devices never create a local administrator." : "تُتحقق جميع الحسابات مركزيًا. لا يمكن لأي جهاز جديد إنشاء مشرف محلي."}</Text></View>
       </View>
-      <Image source={require("../assets/images/neurify-wordmark.png")} style={styles.neurifyWordmark} resizeMode="contain" accessibilityLabel="Neurify" />
+      <Image source={require("../assets/images/neurify-wordmark.png")} style={[styles.neurifyWordmark, { width: layout.loginWordmarkWidth, height: layout.loginWordmarkHeight }]} resizeMode="contain" accessibilityLabel="Neurify" />
       <Text style={[styles.footnote, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("training")}</Text>
     </ScrollView>
     <Modal visible={registrationOpen} transparent animationType="slide" onRequestClose={() => setRegistrationOpen(false)}><View style={styles.modalShade}><ScrollView style={styles.sheet} contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled"><View style={styles.handle} /><Text style={[styles.sheetTitle, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{language === "en" ? "Request a new account" : "طلب تسجيل مستخدم جديد"}</Text><Text style={[styles.sheetText, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{language === "en" ? "Your request is held centrally until a department administrator or authorized approver confirms it." : "يُحفظ طلبك مركزيًا بانتظار اعتماد مشرف القسم أو المستخدم المفوض بالموافقات."}</Text><RegisterField label={language === "en" ? "Full name" : "الاسم الكامل"} value={registration.name} onChangeText={(value) => setRegistration({ ...registration, name: value })} placeholder={language === "en" ? "Your full name" : "اكتب الاسم الكامل"} isRTL={isRTL} /><RegisterField label={language === "en" ? "Phone number" : "رقم الهاتف"} value={registration.phone} onChangeText={(value) => setRegistration({ ...registration, phone: value })} placeholder="05XXXXXXXX" isRTL={isRTL} keyboardType="phone-pad" /><RegisterField label={language === "en" ? "Job title" : "المسمى الوظيفي"} value={registration.jobTitle} onChangeText={(value) => setRegistration({ ...registration, jobTitle: value })} placeholder={language === "en" ? "e.g. Resident" : "مثال: طبيب مقيم"} isRTL={isRTL} /><RegisterField label={language === "en" ? "Email" : "البريد الإلكتروني"} value={registration.email} onChangeText={(value) => setRegistration({ ...registration, email: value })} placeholder="name@hospital.sa" isRTL={isRTL} keyboardType="email-address" autoCapitalize="none" /><RegisterField label={language === "en" ? "Password" : "كلمة المرور"} value={registration.password} onChangeText={(value) => setRegistration({ ...registration, password: value })} placeholder={language === "en" ? "At least 12 characters" : "12 حرفًا على الأقل"} isRTL={isRTL} secureTextEntry /><RegisterField label={language === "en" ? "Confirm password" : "تأكيد كلمة المرور"} value={registration.confirmation} onChangeText={(value) => setRegistration({ ...registration, confirmation: value })} placeholder={language === "en" ? "Enter it again" : "أدخلها مرة أخرى"} isRTL={isRTL} secureTextEntry /><PrimaryButton label={submitting ? (language === "en" ? "Submitting…" : "جارٍ الإرسال...") : (language === "en" ? "Submit registration request" : "إرسال طلب التسجيل")} icon="how-to-reg" onPress={handleRegistration} disabled={submitting} /><Pressable onPress={() => setRegistrationOpen(false)} style={styles.cancelRegistration}><Text style={styles.cancelRegistrationText}>{language === "en" ? "Cancel" : "إلغاء"}</Text></Pressable></ScrollView></View></Modal>
