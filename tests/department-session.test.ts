@@ -11,11 +11,12 @@ describe("stored department session migration", () => {
   });
 
   it("keeps valid central-session data and uses a safe role when old data is invalid", () => {
-    expect(parseStoredDepartmentSession(JSON.stringify({ userId: "remote-1", name: "Dr. Amal", role: "consultant", pushProof: "proof" }))).toEqual({
+    expect(parseStoredDepartmentSession(JSON.stringify({ userId: "remote-1", name: "Dr. Amal", role: "consultant", pushProof: "proof", dataProof: "data-proof" }))).toEqual({
       userId: "remote-1",
       name: "Dr. Amal",
       role: "consultant",
       pushProof: "proof",
+      dataProof: "data-proof",
     });
     expect(parseStoredDepartmentSession(JSON.stringify({ userId: "u-old", name: "", role: "former_role" }))).toEqual({
       userId: "u-old",

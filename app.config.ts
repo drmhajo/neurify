@@ -48,7 +48,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.14",
+  version: "1.0.15",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -58,6 +58,7 @@ const config: ExpoConfig = {
     centralRegistration: {
       url: centralRegistrationUrl,
       anonKey: process.env.SUPABASE_ANON_KEY?.trim() ?? "",
+      centralDataEnabled: true,
     },
   },
   ios: {
@@ -77,7 +78,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    versionCode: 15,
+    versionCode: 16,
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
     permissions: ["POST_NOTIFICATIONS"],

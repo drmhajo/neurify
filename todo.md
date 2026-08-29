@@ -354,3 +354,15 @@
 - [x] Introduce shared responsive spacing and sizing helpers for Neurify mobile screens
 - [x] Apply responsive rules to login, dashboard, and tab navigation with focused regression coverage
 - [x] Validate responsive behavior through the Android production export
+- [x] Prepare and deliver a comprehensive Arabic Neurify user-guide booklet for the department team
+- [x] Prepare bilingual Arabic and English Neurify user-guide booklets with privacy-safe screenshots for each major topic
+- [x] Prepare printable PDF examples of the main Neurify reports using clearly fictional training data
+- [x] Prepare a staff-training slide deck explaining Neurify's fictional printable report samples
+- [x] Prepare English printable PDF versions of Neurify's fictional report samples
+- [x] Prepare an English staff-training slide deck explaining Neurify's fictional report samples
+- [x] Create a set of professional Neurify flyers announcing the upcoming pilot launch
+- [x] Create English-language versions of the Neurify pilot-launch flyer set for international partners
+- [x] Replace device-local clinical data with an authenticated central Neurify data source shared by approved users
+- [x] Enforce central access checks, optimistic conflict protection, and an auditable change history for departmental data
+- [x] Migrate existing local department data safely without overwriting the central source
+- [ ] Validate authorized multi-device data visibility and preserve local fallback on connectivity failure

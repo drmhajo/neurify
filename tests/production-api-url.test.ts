@@ -9,6 +9,7 @@ describe("عنوان API المنشور", () => {
     const response = await fetch(`${projectUrl}/functions/v1/central-registration`, {
       method: "POST",
       headers: { apikey: anonKey!, Authorization: `Bearer ${anonKey!}`, "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(10_000),
       body: JSON.stringify({ action: "health_probe" }),
     });
     expect(response.status).toBe(400);

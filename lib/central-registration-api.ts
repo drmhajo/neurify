@@ -16,6 +16,14 @@ export type CentralApprovedAccount = Pick<CentralRegistrationRequest, "id" | "na
   username?: string;
   role: "admin" | "team_member";
   pushProof?: string;
+  dataProof?: string;
+};
+
+export type CentralDepartmentSnapshot = {
+  data: unknown;
+  version: number;
+  updatedAt: string;
+  updatedBy: string;
 };
 
 type CentralRegistrationConfig = {
@@ -98,4 +106,15 @@ export function sendCentralGeneralPush(input: { title: string; body: string; app
 
 export function sendCentralConsultationPush(input: { accountId: string; pushProof: string; teamId: string }) {
   return callCentralRegistration<{ submitted: number }>("push_send_consultation", input);
+}
+
+export function pullCentralDepartmentData(input: { accountId: string; dataProof: string }) {
+  return callCentralRegistration<{ ok: true; snapshot: CentralDepartmentSnapshot | null }>("data_pull", input);
+}
+
+export function saveCentralDepartmentData(input: { accountId: string; dataProof: string; expectedVersion: number; data: unknown }) {
+  return callCentralRegistration<
+    | { ok: true; snapshot: CentralDepartmentSnapshot }
+    | { ok: false; reason: "conflict"; latestVersion: number }
+  >("data_push", input);
 }

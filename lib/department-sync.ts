@@ -7,7 +7,7 @@ import type { DepartmentData } from "./department-model";
 
 export const PILOT_WORKSPACE_KEY = "ksmc-neurosurgery-pilot";
 
-export type DepartmentSyncStatus = "local" | "syncing" | "synced" | "offline" | "error";
+export type DepartmentSyncStatus = "local" | "syncing" | "synced" | "awaiting_initialization" | "conflict" | "offline" | "error";
 
 export type DepartmentSyncState = {
   status: DepartmentSyncStatus;

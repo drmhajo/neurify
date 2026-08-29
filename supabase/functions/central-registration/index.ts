@@ -8,6 +8,7 @@ const encoder = new TextEncoder();
 const PBKDF2_ITERATIONS = 210_000;
 const PUSH_PROOF_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const PUSH_PROOF_CLOCK_SKEW_MS = 5 * 60 * 1000;
+const DATA_PROOF_TTL_MS = 12 * 60 * 60 * 1000;
 const CENTRAL_ADMIN_USERNAME = "admin";
 const CENTRAL_ADMIN_EMAIL = "admin@ksmc.local";
 
@@ -38,6 +39,20 @@ type FirebaseServiceAccount = {
   project_id: string;
   client_email: string;
   private_key: string;
+};
+
+type DepartmentSnapshotRow = {
+  data: unknown;
+  version: number;
+  updated_at: string;
+  updated_by: string;
+};
+
+type DepartmentSnapshotWriteRow = {
+  accepted: boolean;
+  version: number;
+  updated_at: string | null;
+  updated_by: string | null;
 };
 
 function json(body: unknown, status = 200) {
@@ -193,6 +208,21 @@ async function hasValidPushRegistrationProof(accountId: string, candidate: unkno
   return constantTimeEqual(expectedSignature, suppliedSignature);
 }
 
+async function createDataAccessProof(accountId: string) {
+  const expiresAt = Date.now() + DATA_PROOF_TTL_MS;
+  const signature = await signPushRegistrationPayload(`data:${accountId}:${expiresAt}`);
+  return `${expiresAt}.${signature}`;
+}
+
+async function hasValidDataAccessProof(accountId: string, candidate: unknown) {
+  if (typeof candidate !== "string") return false;
+  const [expiryText, suppliedSignature, ...rest] = candidate.split(".");
+  const expiresAt = Number(expiryText);
+  if (rest.length || !Number.isSafeInteger(expiresAt) || expiresAt < Date.now() || expiresAt > Date.now() + DATA_PROOF_TTL_MS + PUSH_PROOF_CLOCK_SKEW_MS || !suppliedSignature) return false;
+  const expectedSignature = await signPushRegistrationPayload(`data:${accountId}:${expiresAt}`);
+  return constantTimeEqual(expectedSignature, suppliedSignature);
+}
+
 function mapRequest(row: RegistrationRow) {
   return {
     id: row.id,
@@ -261,6 +291,53 @@ async function pushDeviceRequest(path: string, init: RequestInit = {}) {
   return payload;
 }
 
+async function snapshotRequest(path: string, init: RequestInit = {}) {
+  const { restUrl, serviceRoleKey } = projectRestConfiguration();
+  const response = await fetch(`${restUrl.replace(/\/registration_requests$/, "/department_snapshots")}${path}`, {
+    ...init,
+    headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json", ...init.headers },
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) throw new Error(typeof payload?.message === "string" ? payload.message : `Supabase snapshot request failed (${response.status}).`);
+  return payload;
+}
+
+async function snapshotRpcRequest(init: RequestInit = {}) {
+  const { restUrl, serviceRoleKey } = projectRestConfiguration();
+  const response = await fetch(restUrl.replace(/\/registration_requests$/, "/rpc/write_department_snapshot"), {
+    ...init,
+    headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json", ...init.headers },
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) throw new Error(typeof payload?.message === "string" ? payload.message : `Supabase snapshot write failed (${response.status}).`);
+  return payload;
+}
+
+function snapshotResponse(row: DepartmentSnapshotRow) {
+  return { data: row.data, version: Number(row.version), updatedAt: row.updated_at, updatedBy: row.updated_by };
+}
+
+function departmentChangeSummary(value: unknown) {
+  const data = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const teams = Array.isArray(data.teams) ? data.teams as Array<Record<string, unknown>> : [];
+  return {
+    users: Array.isArray(data.users) ? data.users.length : 0,
+    teams: teams.length,
+    active_cases: teams.reduce((total, team) => total + (Array.isArray(team.cases) ? team.cases.length : 0), 0),
+    discharged_cases: teams.reduce((total, team) => total + (Array.isArray(team.dischargedCases) ? team.dischargedCases.length : 0), 0),
+    consultations: teams.reduce((total, team) => total + (Array.isArray(team.consultations) ? team.consultations.length : 0), 0),
+  };
+}
+
+async function approvedDataAccount(body: Record<string, unknown>) {
+  const accountId = cleanText(body.accountId, 64).replace(/^remote-/, "");
+  if (!/^[0-9a-f-]{36}$/i.test(accountId) || !await hasValidDataAccessProof(accountId, body.dataProof)) return null;
+  const account = await findById(accountId);
+  return account?.status === "approved" ? account : null;
+}
+
 async function findByEmail(email: string) {
   const rows = await restRequest(`?email=eq.${encodeURIComponent(email)}&select=*&limit=1`) as RegistrationRow[];
   return rows[0] ?? null;
@@ -304,6 +381,7 @@ async function handleSignIn(body: Record<string, unknown>) {
     account: {
       ...mapApprovedAccount(request),
       pushProof: await createPushRegistrationProof(request.id),
+      dataProof: await createDataAccessProof(request.id),
     },
   });
 }
@@ -431,6 +509,37 @@ async function handleConsultationPush(body: Record<string, unknown>) {
   return json({ submitted });
 }
 
+async function handleDataPull(body: Record<string, unknown>) {
+  const account = await approvedDataAccount(body);
+  if (!account) return json({ error: "data_access_unauthorized" }, 403);
+  const rows = await snapshotRequest("?workspace_key=eq.ksmc-neurosurgery-pilot&select=data,version,updated_at,updated_by&limit=1") as DepartmentSnapshotRow[];
+  return json({ ok: true, snapshot: rows[0] ? snapshotResponse(rows[0]) : null });
+}
+
+async function handleDataPush(body: Record<string, unknown>) {
+  const account = await approvedDataAccount(body);
+  const expectedVersion = Number(body.expectedVersion);
+  const data = body.data;
+  if (!account) return json({ error: "data_access_unauthorized" }, 403);
+  if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0 || !data || typeof data !== "object" || Array.isArray(data)) return json({ error: "invalid_snapshot_request" }, 400);
+  const serialized = JSON.stringify(data);
+  if (encoder.encode(serialized).byteLength > 7_500_000) return json({ error: "snapshot_too_large" }, 413);
+  const rows = await snapshotRpcRequest({
+    method: "POST",
+    body: JSON.stringify({
+      p_workspace_key: "ksmc-neurosurgery-pilot",
+      p_expected_version: expectedVersion,
+      p_data: data,
+      p_actor_account_id: account.id,
+      p_actor_name: account.name,
+      p_change_summary: departmentChangeSummary(data),
+    }),
+  }) as DepartmentSnapshotWriteRow[];
+  const result = rows[0];
+  if (!result || !result.accepted) return json({ ok: false, reason: "conflict", latestVersion: Number(result?.version ?? 0) });
+  return json({ ok: true, snapshot: { data, version: Number(result.version), updatedAt: result.updated_at, updatedBy: result.updated_by } });
+}
+
 async function handleList(body: Record<string, unknown>) {
   if (!requireApprovalSecret(body.approvalSecret)) return json({ error: "approval_unauthorized" }, 403);
   const rows = await restRequest("?select=*&order=created_at.desc") as RegistrationRow[];
@@ -469,6 +578,8 @@ Deno.serve(async (request) => {
       case "push_register": return await handlePushRegister(body);
       case "push_send_general": return await handleGeneralPush(body);
       case "push_send_consultation": return await handleConsultationPush(body);
+      case "data_pull": return await handleDataPull(body);
+      case "data_push": return await handleDataPush(body);
       default: return json({ error: "unknown_action" }, 400);
     }
   } catch (error) {

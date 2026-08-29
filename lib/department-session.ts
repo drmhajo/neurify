@@ -5,6 +5,7 @@ export type DepartmentSession = {
   name: string;
   role: UserRole;
   pushProof?: string;
+  dataProof?: string;
 };
 
 const sessionRoles: UserRole[] = ["admin", "consultant", "coordinator", "team_member"];
@@ -22,6 +23,7 @@ export function parseStoredDepartmentSession(raw: string): DepartmentSession | n
       name: typeof parsed.name === "string" && parsed.name.trim() ? parsed.name.trim() : "عضو القسم",
       role: sessionRoles.includes(parsed.role as UserRole) ? (parsed.role as UserRole) : "team_member",
       ...(typeof parsed.pushProof === "string" && parsed.pushProof ? { pushProof: parsed.pushProof } : {}),
+      ...(typeof parsed.dataProof === "string" && parsed.dataProof ? { dataProof: parsed.dataProof } : {}),
     };
   } catch {
     return null;

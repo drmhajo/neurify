@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import {
   createInternalDepartmentData,
   applyWeeklyGroupsRoster,
@@ -30,7 +30,6 @@ import {
 } from "@/lib/department-model";
 import { dispatchGeneralPush, dispatchTeamPush } from "@/lib/push-notifications";
 import type { DepartmentBackup } from "@/lib/department-backup";
-import { createTRPCClient } from "@/lib/trpc";
 import { syncFailureStatus, type DepartmentSyncState, parseCloudDepartmentData, prepareDepartmentDataForCloud, restoreLocalAttachmentReferences } from "@/lib/department-sync";
 import { canRemoveDepartmentUser, normalizeDemoUsername } from "@/lib/department-user-admin";
 import { buildDailyShiftReport } from "@/lib/shift-endorsement";
@@ -38,7 +37,7 @@ import { createGeneralAnnouncement, validateGeneralAnnouncement } from "@/lib/ge
 import { isEligibleForOnCallSlot } from "@/lib/on-call-eligibility";
 import { canManageDischargedCases, deleteDischargedCase, type ArchivedCaseUpdate, updateDischargedCase } from "@/lib/discharged-case-admin";
 import { shouldLockLocalBootstrap } from "@/lib/local-bootstrap";
-import { changeCentralPassword, resetCentralPassword, signInCentralRegistration, submitCentralRegistration } from "@/lib/central-registration-api";
+import { changeCentralPassword, pullCentralDepartmentData, resetCentralPassword, saveCentralDepartmentData, signInCentralRegistration, submitCentralRegistration } from "@/lib/central-registration-api";
 import { parseStoredDepartmentSession, type DepartmentSession } from "@/lib/department-session";
 
 type Session = DepartmentSession;
@@ -91,13 +90,16 @@ type DepartmentStore = {
 const DATA_KEY = "ksmc-neuro.department-data.v2";
 const SESSION_KEY = "ksmc-neuro.department-session.v2";
 const SYNC_STATE_KEY = "ksmc-neuro.department-sync-state.v2";
+const CENTRAL_DATA_PROOF_KEY_PREFIX = "ksmc.neuro.central-data-proof.";
+const CENTRAL_MIGRATION_BACKUP_KEY = "ksmc-neuro.central-migration-backup.v1";
+const CENTRAL_CONFLICT_BACKUP_KEY = "ksmc-neuro.central-conflict-backup.v1";
 const PASSWORD_KEY_PREFIX = "ksmc.neuro.department.password.";
 const LEGACY_DATA_KEY = "ksmc-neuro.demo-data.v1";
 const LEGACY_SESSION_KEY = "ksmc-neuro.demo-session.v1";
 const LEGACY_SYNC_STATE_KEY = "ksmc-neuro.demo-sync-state.v1";
 const LEGACY_PASSWORD_KEY_PREFIX = "ksmc.neuro.demo.password.";
 const DepartmentContext = createContext<DepartmentStore | null>(null);
-const CLOUD_SYNC_ENABLED = process.env.EXPO_PUBLIC_ENABLE_CLOUD_SYNC === "true";
+const CENTRAL_SYNC_POLL_MS = 30_000;
 
 function passwordKey(userId: string) { return `${PASSWORD_KEY_PREFIX}${userId}`; }
 function legacyPasswordKey(userId: string) { return `${LEGACY_PASSWORD_KEY_PREFIX}${userId}`; }
@@ -114,6 +116,27 @@ async function removeDepartmentPassword(userId: string) {
   if (Platform.OS === "web") return AsyncStorage.removeItem(passwordKey(userId));
   return SecureStore.deleteItemAsync(passwordKey(userId));
 }
+function centralDataProofKey(userId: string) { return `${CENTRAL_DATA_PROOF_KEY_PREFIX}${userId}`; }
+async function readCentralDataProof(userId: string) {
+  if (Platform.OS === "web") return AsyncStorage.getItem(centralDataProofKey(userId));
+  return SecureStore.getItemAsync(centralDataProofKey(userId));
+}
+async function writeCentralDataProof(userId: string, proof: string) {
+  if (Platform.OS === "web") return AsyncStorage.setItem(centralDataProofKey(userId), proof);
+  return SecureStore.setItemAsync(centralDataProofKey(userId), proof);
+}
+async function removeCentralDataProof(userId: string) {
+  if (Platform.OS === "web") return AsyncStorage.removeItem(centralDataProofKey(userId));
+  return SecureStore.deleteItemAsync(centralDataProofKey(userId));
+}
+function persistedSession(session: Session) {
+  const { dataProof: _dataProof, ...persisted } = session;
+  return persisted;
+}
+function mergeMissingCentralUsers(remoteData: DepartmentData, localData: DepartmentData) {
+  const remoteUsers = localData.users.filter((user) => user.id.startsWith("remote-") && !remoteData.users.some((candidate) => candidate.id === user.id));
+  return remoteUsers.length ? { ...remoteData, users: [...remoteData.users, ...remoteUsers] } : remoteData;
+}
 function createTemporaryPassword() { return `KSMC-${Math.floor(100000 + Math.random() * 900000)}!`; }
 
 export function DepartmentProvider({ children }: { children: ReactNode }) {
@@ -125,7 +148,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   const dirtyRef = useRef(false);
   const hasPersistedLocalDataRef = useRef(false);
   const firstSyncUserRef = useRef<string | null>(null);
-  const trpcClient = useMemo(() => createTRPCClient(), []);
+  const hasCentralBaselineRef = useRef(false);
 
   useEffect(() => { dataRef.current = data; }, [data]);
 
@@ -165,9 +188,11 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
           await AsyncStorage.setItem(DATA_KEY, JSON.stringify(freshData));
         }
         const parsedSession = restoredSession ? parseStoredDepartmentSession(restoredSession) : null;
-        if (parsedSession && (initialSetupCompleted || parsedSession.userId.startsWith("remote-"))) {
-          setSession(parsedSession);
-          await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(parsedSession));
+        const dataProof = parsedSession?.userId.startsWith("remote-") ? await readCentralDataProof(parsedSession.userId) : null;
+        if (parsedSession?.userId.startsWith("remote-") && dataProof) {
+          const activeSession = { ...parsedSession, dataProof };
+          setSession(activeSession);
+          await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(persistedSession(activeSession)));
         } else if (restoredSession) {
           await AsyncStorage.removeItem(SESSION_KEY);
         }
@@ -193,36 +218,65 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const syncNow = useCallback(async () => {
-    if (session?.role !== "admin") return false;
-    if (!CLOUD_SYNC_ENABLED) {
-      setSyncState((current) => ({ ...current, status: "local" }));
-      return false;
-    }
+    const accountId = session?.userId?.replace(/^remote-/, "");
+    const dataProof = session?.dataProof;
+    if (!session || !accountId || !dataProof || !session.userId.startsWith("remote-")) return false;
     setSyncState((current) => ({ ...current, status: "syncing" }));
     try {
       const localData = dataRef.current;
-      if (!hasPersistedLocalDataRef.current) {
-        const remote = await trpcClient.cloudSync.pull.query();
-        if (remote) {
-          const cloudData = parseCloudDepartmentData(remote.data);
-          const rosterData = applyWeeklyGroupsRoster(cloudData);
-          const releaseReadyData = prepareInternalReleaseData(rosterData);
-          const restored = { ...restoreLocalAttachmentReferences(releaseReadyData, localData), initialSetupCompleted: localData.initialSetupCompleted };
-          if (releaseReadyData !== cloudData) dirtyRef.current = true;
-          dataRef.current = restored;
-          hasPersistedLocalDataRef.current = true;
-          setData(restored);
-          await AsyncStorage.setItem(DATA_KEY, JSON.stringify(restored));
-          const nextState: DepartmentSyncState = { status: "synced", lastSyncedAt: remote.updatedAt, version: remote.version };
-          setSyncState(nextState);
-          await AsyncStorage.setItem(SYNC_STATE_KEY, JSON.stringify(nextState));
-          return true;
+      const remote = await pullCentralDepartmentData({ accountId, dataProof });
+      if (remote.snapshot && (!hasCentralBaselineRef.current || !dirtyRef.current)) {
+        if (hasPersistedLocalDataRef.current) {
+          await AsyncStorage.setItem(CENTRAL_MIGRATION_BACKUP_KEY, JSON.stringify({ exportedAt: new Date().toISOString(), data: localData }));
         }
+        const cloudData = parseCloudDepartmentData(remote.snapshot.data);
+        const rosterData = applyWeeklyGroupsRoster(cloudData);
+        const releaseReadyData = prepareInternalReleaseData(rosterData);
+        const mergedUsers = mergeMissingCentralUsers(releaseReadyData, localData);
+        const restored = { ...restoreLocalAttachmentReferences(mergedUsers, localData), initialSetupCompleted: true };
+        dirtyRef.current = mergedUsers !== releaseReadyData || releaseReadyData !== cloudData;
+        dataRef.current = restored;
+        hasPersistedLocalDataRef.current = true;
+        hasCentralBaselineRef.current = true;
+        setData(restored);
+        await AsyncStorage.setItem(DATA_KEY, JSON.stringify(restored));
+        const nextState: DepartmentSyncState = { status: "synced", lastSyncedAt: remote.snapshot.updatedAt, version: remote.snapshot.version };
+        setSyncState(nextState);
+        await AsyncStorage.setItem(SYNC_STATE_KEY, JSON.stringify(nextState));
+        return true;
       }
-      const saved = await trpcClient.cloudSync.push.mutate({ data: prepareDepartmentDataForCloud(localData), actorName: session.name });
+      if (!remote.snapshot && session.role !== "admin") {
+        const nextState: DepartmentSyncState = { status: "awaiting_initialization" };
+        setSyncState(nextState);
+        await AsyncStorage.setItem(SYNC_STATE_KEY, JSON.stringify(nextState));
+        return false;
+      }
+      if (remote.snapshot && syncState.version !== remote.snapshot.version) {
+        await AsyncStorage.setItem(CENTRAL_CONFLICT_BACKUP_KEY, JSON.stringify({ exportedAt: new Date().toISOString(), latestVersion: remote.snapshot.version, data: localData }));
+        dirtyRef.current = false;
+        const nextState: DepartmentSyncState = { status: "conflict", version: remote.snapshot.version };
+        setSyncState(nextState);
+        await AsyncStorage.setItem(SYNC_STATE_KEY, JSON.stringify(nextState));
+        return false;
+      }
+      const saved = await saveCentralDepartmentData({
+        accountId,
+        dataProof,
+        expectedVersion: syncState.version ?? remote.snapshot?.version ?? 0,
+        data: prepareDepartmentDataForCloud(localData),
+      });
+      if (!saved.ok) {
+        await AsyncStorage.setItem(CENTRAL_CONFLICT_BACKUP_KEY, JSON.stringify({ exportedAt: new Date().toISOString(), latestVersion: saved.latestVersion, data: localData }));
+        dirtyRef.current = false;
+        const nextState: DepartmentSyncState = { status: "conflict", version: saved.latestVersion };
+        setSyncState(nextState);
+        await AsyncStorage.setItem(SYNC_STATE_KEY, JSON.stringify(nextState));
+        return false;
+      }
       dirtyRef.current = false;
       hasPersistedLocalDataRef.current = true;
-      const nextState: DepartmentSyncState = { status: "synced", lastSyncedAt: saved.updatedAt, version: saved.version };
+      hasCentralBaselineRef.current = true;
+      const nextState: DepartmentSyncState = { status: "synced", lastSyncedAt: saved.snapshot.updatedAt, version: saved.snapshot.version };
       setSyncState(nextState);
       await AsyncStorage.setItem(SYNC_STATE_KEY, JSON.stringify(nextState));
       return true;
@@ -235,19 +289,31 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       });
       return false;
     }
-  }, [session, trpcClient]);
+  }, [session, syncState.version]);
 
   useEffect(() => {
-    if (!hydrated || session?.role !== "admin" || !dirtyRef.current) return;
+    if (!hydrated || !session?.dataProof || !dirtyRef.current) return;
     const timer = setTimeout(() => { void syncNow(); }, 1400);
     return () => clearTimeout(timer);
-  }, [data, hydrated, session?.role, syncNow]);
+  }, [data, hydrated, session?.dataProof, syncNow]);
 
   useEffect(() => {
-    if (!hydrated || session?.role !== "admin" || firstSyncUserRef.current === session.userId) return;
+    if (!hydrated || !session?.dataProof || firstSyncUserRef.current === session.userId) return;
     firstSyncUserRef.current = session.userId;
     void syncNow();
-  }, [hydrated, session?.role, session?.userId, syncNow]);
+  }, [hydrated, session?.dataProof, session?.userId, syncNow]);
+
+  useEffect(() => {
+    if (!hydrated || !session?.dataProof) return;
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") void syncNow();
+    });
+    const interval = setInterval(() => { void syncNow(); }, CENTRAL_SYNC_POLL_MS);
+    return () => {
+      subscription.remove();
+      clearInterval(interval);
+    };
+  }, [hydrated, session?.dataProof, session?.userId, syncNow]);
 
   const importApprovedRegistration = useCallback((input: { id: string; name: string; email: string; phone: string; jobTitle: string }) => updateData((current) => {
     const userId = `remote-${input.id}`;
@@ -271,24 +337,23 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     if (!username.trim() || !password.trim()) return { ok: false, message: "أدخل اسم المستخدم وكلمة المرور." };
     const normalizedUsername = normalizeDemoUsername(username);
     const isCentralAdministrator = normalizedUsername === "admin";
-    const user = isCentralAdministrator ? undefined : data.users.find((item) => item.active && item.id !== "u-admin" && normalizeDemoUsername(item.username ?? "") === normalizedUsername);
-    if (user && !user.id.startsWith("remote-")) {
-      if (user.passwordRecoveryRequired && !await hasDepartmentPassword(user.id)) return { ok: false, message: "يلزم أن يعيّن المشرف كلمة مرور مؤقتة لهذا الحساب أولاً." };
-      if (password !== await readDepartmentPassword(user.id)) return { ok: false, message: "تحقق من بيانات الدخول." };
-      const nextSession: Session = { userId: user.id, name: user.name, role: user.role };
-      setSession(nextSession);
-      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
-      return { ok: true, recoveryRequired: user.passwordRecoveryRequired };
-    }
     if (!username.includes("@") && !isCentralAdministrator) return { ok: false, message: "استخدم اسم المشرف المركزي أو البريد الإلكتروني المعتمد." };
     try {
       const remote = await signInCentralRegistration({ identifier: username.trim().toLowerCase(), password });
       if (!remote.ok) return { ok: false, message: remote.status === "pending" ? "طلب التسجيل ما زال بانتظار الموافقة." : remote.status === "rejected" ? "تم رفض طلب التسجيل. تواصل مع مشرف القسم." : "تحقق من بيانات الدخول." };
       const remoteUser: DepartmentUser = { id: remote.account.id, username: remote.account.username ?? remote.account.email, name: remote.account.name, email: remote.account.email, phone: remote.account.phone, jobTitle: remote.account.jobTitle, role: remote.account.role, teamIds: [], active: true, permissions: rolePermissionDefaults[remote.account.role], passwordRecoveryRequired: false };
       updateData((current) => ({ ...current, users: current.users.some((item) => item.id === remoteUser.id) ? current.users.map((item) => item.id === remoteUser.id ? { ...item, ...remoteUser } : item) : [...current.users.filter((item) => item.id !== "u-admin"), remoteUser] }));
-      const nextSession: Session = { userId: remoteUser.id, name: remoteUser.name, role: remoteUser.role, pushProof: remote.account.pushProof };
+      if (!remote.account.dataProof) return { ok: false, message: "تعذر تأكيد جلسة البيانات المركزية. أعد المحاولة." };
+      const nextSession: Session = { userId: remoteUser.id, name: remoteUser.name, role: remoteUser.role, pushProof: remote.account.pushProof, dataProof: remote.account.dataProof };
       setSession(nextSession);
-      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
+      firstSyncUserRef.current = null;
+      hasCentralBaselineRef.current = false;
+      setSyncState({ status: "local" });
+      await Promise.all([
+        AsyncStorage.setItem(SESSION_KEY, JSON.stringify(persistedSession(nextSession))),
+        AsyncStorage.removeItem(SYNC_STATE_KEY),
+        writeCentralDataProof(nextSession.userId, remote.account.dataProof),
+      ]);
       return { ok: true, recoveryRequired: false };
     } catch {
       return { ok: false, message: "تعذر الاتصال بخدمة تسجيل المستخدمين. تحقق من الاتصال بالشبكة وحاول مرة أخرى." };
@@ -301,9 +366,12 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    const currentUserId = session?.userId;
     setSession(null);
-    await AsyncStorage.removeItem(SESSION_KEY);
-  }, []);
+    firstSyncUserRef.current = null;
+    hasCentralBaselineRef.current = false;
+    await Promise.all([AsyncStorage.removeItem(SESSION_KEY), currentUserId ? removeCentralDataProof(currentUserId) : Promise.resolve()]);
+  }, [session?.userId]);
 
   const advanceReport = useCallback((id: string) => updateData((current) => ({
     ...current,
@@ -579,7 +647,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     if (!userId) return;
     const name = input.name.trim();
     updateData((current) => ({ ...current, users: current.users.map((user) => user.id === userId ? { ...user, name, jobTitle: input.jobTitle.trim(), email: input.email.trim(), phone: input.phone.trim() } : user) }));
-    if (session) { const nextSession = { ...session, name }; setSession(nextSession); AsyncStorage.setItem(SESSION_KEY, JSON.stringify(nextSession)).catch(() => undefined); }
+    if (session) { const nextSession = { ...session, name }; setSession(nextSession); AsyncStorage.setItem(SESSION_KEY, JSON.stringify(persistedSession(nextSession))).catch(() => undefined); }
   }, [session, updateData]);
 
   const changeOwnPassword = useCallback(async (currentPassword: string, newPassword: string) => {
