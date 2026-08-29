@@ -38,8 +38,8 @@ const env = {
   // App branding - update these values directly (do not use env vars)
   appName: "Neurify",
   appSlug: "ksmc-neurosurgery",
-  // Stable CDN location of the approved transparent Neurify neural-path brand mark.
-  logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/uWLvJRjRIXTShrvS.png",
+  // Stable CDN location of the approved light, safe-area Neurify launcher icon.
+  logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/IbIfxQJZJkslXVmk.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
@@ -48,7 +48,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.18",
+  version: "1.0.19",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -70,7 +70,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: "#082B49",
+      backgroundColor: "#F4F8FA",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -78,7 +78,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    versionCode: 19,
+    versionCode: 20,
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
     permissions: ["POST_NOTIFICATIONS"],
@@ -133,9 +133,9 @@ const config: ExpoConfig = {
         image: "./assets/images/splash-icon.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#082B49",
+        backgroundColor: "#F4F8FA",
         dark: {
-          backgroundColor: "#082B49",
+          backgroundColor: "#F4F8FA",
         },
       },
     ],

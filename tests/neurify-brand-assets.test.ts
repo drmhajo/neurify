@@ -21,10 +21,10 @@ describe("هوية Neurify وأصول الأيقونات", () => {
     expect(config).toContain('appName: "Neurify"');
     expect(config).toContain('appSlug: "ksmc-neurosurgery"');
     expect(config).toContain('rawBundleId = "com.app.ksmcneurosurgery"');
-    expect(config).toContain('version: "1.0.14"');
-    expect(config).toContain("versionCode: 15");
-    expect(config).toContain('backgroundColor: "#082B49"');
-    expect(config).toContain('logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/uWLvJRjRIXTShrvS.png"');
+    expect(config).toContain('version: "1.0.19"');
+    expect(config).toContain("versionCode: 20");
+    expect(config).toContain('backgroundColor: "#F4F8FA"');
+    expect(config).toContain('logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/IbIfxQJZJkslXVmk.png"');
   });
 
   it("يصدر الرمز العصبي بمقاسات iOS وAndroid الصحيحة", () => {
