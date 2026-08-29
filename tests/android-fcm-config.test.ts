@@ -12,7 +12,7 @@ describe("إعداد FCM لحزمة Android", () => {
 
     expect(packageName).toBe("com.app.ksmcneurosurgery");
     expect(config).toContain('googleServicesFile: "./google-services.json"');
-    expect(config).toContain("versionCode: 18");
+    expect(config).toContain("versionCode: 19");
     expect(config).toContain('"expo-notifications"');
     expect(config).toContain("centralDataEnabled: true");
   });
