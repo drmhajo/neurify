@@ -366,3 +366,4 @@
 - [x] Enforce central access checks, optimistic conflict protection, and an auditable change history for departmental data
 - [x] Migrate existing local department data safely without overwriting the central source
 - [ ] Validate authorized multi-device data visibility and preserve local fallback on connectivity failure
+- [x] Resize the department emblem on the login screen so it displays fully across phone sizes
