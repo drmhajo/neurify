@@ -367,3 +367,4 @@
 - [x] Migrate existing local department data safely without overwriting the central source
 - [ ] Validate authorized multi-device data visibility and preserve local fallback on connectivity failure
 - [x] Resize the department emblem on the login screen so it displays fully across phone sizes
+- [x] Balance the responsive spacing between the login emblem and form fields on small phones

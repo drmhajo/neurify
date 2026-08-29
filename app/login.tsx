@@ -88,7 +88,7 @@ export default function LoginScreen() {
       <View style={[styles.mark, { width: layout.loginLogoSize, height: layout.loginLogoSize, borderRadius: layout.loginLogoRadius }]}><Image source={require("../assets/images/neurosurgery-department-logo.png")} style={{ width: layout.loginLogoImageSize, height: layout.loginLogoImageSize }} resizeMode="contain" accessibilityLabel="Neurosurgery Department, King Saud Medical City" /></View>
       <Text style={[styles.title, { fontSize: layout.loginTitleSize, writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("department")}</Text>
       <Text style={[styles.subtitle, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("hospital")}</Text>
-      <Text style={[styles.description, { writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("workspace")}</Text>
+      <Text style={[styles.description, { marginTop: layout.loginDescriptionTopMargin, marginBottom: layout.loginDescriptionBottomMargin, writingDirection: isRTL ? "rtl" : "ltr" }]}>{t("workspace")}</Text>
       <View style={[styles.form, { padding: layout.cardPadding }]}>
         <Text style={[styles.formTitle, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{t("signIn")}</Text>
         <Text style={[styles.label, { writingDirection: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left" }]}>{language === "en" ? "Administrator username or approved email" : "اسم مستخدم المشرف أو البريد الإلكتروني المعتمد"}</Text>

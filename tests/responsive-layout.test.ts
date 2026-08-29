@@ -9,8 +9,8 @@ describe("التخطيط المتجاوب على الهواتف", () => {
   it("يقلل المسافات والعناصر الثانوية على الهاتف الضيق أو القصير دون خفض أهداف اللمس", () => {
     const compact = createResponsiveLayout(320, 640);
     const standard = createResponsiveLayout(390, 844);
-    expect(compact).toMatchObject({ isCompact: true, isShort: true, screenPadding: 14, loginLogoSize: 88, loginLogoImageSize: 72, tabHeight: 58, tabLabelSize: 8 });
-    expect(standard).toMatchObject({ isCompact: false, isShort: false, loginLogoSize: 104, loginLogoImageSize: 86, tabHeight: 64, tabLabelSize: 10 });
+    expect(compact).toMatchObject({ isCompact: true, isShort: true, screenPadding: 14, loginLogoSize: 88, loginLogoImageSize: 72, loginDescriptionTopMargin: 36, tabHeight: 58, tabLabelSize: 8 });
+    expect(standard).toMatchObject({ isCompact: false, isShort: false, loginLogoSize: 104, loginLogoImageSize: 86, loginDescriptionTopMargin: 50, tabHeight: 64, tabLabelSize: 10 });
     expect(compact.contentBottomPadding).toBeGreaterThanOrEqual(24);
   });
 
@@ -35,6 +35,7 @@ describe("التخطيط المتجاوب على الهواتف", () => {
     expect(login).toContain("top: insets.top + 10");
     expect(login).toContain("loginLogoImageSize");
     expect(login).toContain("padding: 6");
+    expect(login).toContain("loginDescriptionTopMargin");
     expect(tabs).toContain("const layout = useResponsiveLayout()");
     expect(tabs).toContain("height: layout.tabHeight + bottomPadding");
     expect(tabs).toContain("tabBarItemStyle: { minWidth: 0");

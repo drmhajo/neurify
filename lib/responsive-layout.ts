@@ -14,6 +14,8 @@ export function createResponsiveLayout(width: number, height: number) {
     loginLogoSize: isCompact ? 88 : 104,
     loginLogoImageSize: isCompact ? 72 : 86,
     loginLogoRadius: isCompact ? 24 : 28,
+    loginDescriptionTopMargin: isShort ? 36 : isCompact ? 42 : 50,
+    loginDescriptionBottomMargin: isShort ? 14 : 18,
     loginTitleSize: isCompact ? 22 : 24,
     loginWordmarkWidth: isCompact ? 96 : 106,
     loginWordmarkHeight: isCompact ? 30 : 32,
