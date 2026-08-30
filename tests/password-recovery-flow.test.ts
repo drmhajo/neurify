@@ -25,8 +25,11 @@ describe("استعادة كلمة المرور المركزية عبر البر�
     const functionSource = source("supabase/functions/central-registration/index.ts");
     const schema = source("supabase/central_registration.sql");
 
-    expect(functionSource).toContain("RESEND_API_KEY");
-    expect(functionSource).toContain("RESEND_FROM_EMAIL");
+    expect(functionSource).toContain("GMAIL_RELAY_URL");
+    expect(functionSource).toContain("GMAIL_RELAY_TOKEN");
+    expect(functionSource).toContain('action: "password_recovery"');
+    expect(functionSource).toContain("OFFICIAL_DEPARTMENT_LOGO_URL");
+    expect(functionSource).toContain("Neurify");
     expect(functionSource).toContain("PASSWORD_RESET_CODE_TTL_MS = 15 * 60 * 1000");
     expect(functionSource).toContain("PASSWORD_RESET_MAX_ATTEMPTS = 5");
     expect(functionSource).toContain('return json({ accepted: true });');

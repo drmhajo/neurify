@@ -163,26 +163,34 @@ function serviceAccountPrivateKey(value: string) {
   return base64ToBytes(base64).buffer;
 }
 
-function resendConfiguration() {
-  const apiKey = Deno.env.get("RESEND_API_KEY")?.trim() ?? "";
-  const from = Deno.env.get("RESEND_FROM_EMAIL")?.trim() ?? "";
-  if (!apiKey || !from) throw new Error("Password recovery email is not configured.");
-  return { apiKey, from };
+const OFFICIAL_DEPARTMENT_LOGO_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/faAuaUHZiRmxbDab.png";
+
+function gmailRelayConfiguration() {
+  const url = Deno.env.get("GMAIL_RELAY_URL")?.trim() ?? "";
+  const token = Deno.env.get("GMAIL_RELAY_TOKEN")?.trim() ?? "";
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(url) || token.length < 32) {
+    throw new Error("Password recovery Gmail relay is not configured.");
+  }
+  return { url, token };
+}
+
+function passwordRecoveryEmailContent(code: string) {
+  const subject = "Neurify password recovery code / رمز استعادة كلمة المرور";
+  const text = `Your Neurify password recovery code is: ${code}\nIt expires in 15 minutes. Do not share it with anyone.\n\nرمز استعادة كلمة مرور Neurify هو: ${code}\nتنتهي صلاحيته خلال 15 دقيقة. لا تشاركه مع أي شخص.`;
+  const html = `<div style="margin:0;background:#F4F8FA;padding:28px 16px;font-family:Arial,sans-serif;color:#082B49"><div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #D7E4E8;border-radius:16px;overflow:hidden"><div style="padding:24px;text-align:center;background:#082B49"><img src="${OFFICIAL_DEPARTMENT_LOGO_URL}" width="72" height="72" alt="Neurosurgery Department" style="display:block;margin:0 auto 12px;object-fit:contain"/><div style="font-size:24px;font-weight:700;letter-spacing:.3px;color:#ffffff">Neurify</div><div style="margin-top:6px;font-size:13px;color:#BFE7E8">Neurosurgery Department · King Saud Medical City</div></div><div style="padding:28px 24px;text-align:center"><h1 style="margin:0 0 12px;font-size:21px;color:#082B49">Password recovery / استعادة كلمة المرور</h1><p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#334E5C">Use this one-time code to reset your Neurify password. Do not share it with anyone.</p><p dir="rtl" style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#334E5C">استخدم هذا الرمز لمرة واحدة لتعيين كلمة مرور Neurify جديدة. لا تشاركه مع أي شخص.</p><div style="margin:0 auto 18px;padding:15px 18px;width:max-content;min-width:150px;border-radius:10px;background:#E8F6F6;color:#082B49;font-size:30px;font-weight:700;letter-spacing:7px">${code}</div><p style="margin:0;font-size:13px;line-height:1.6;color:#607480">This code expires in 15 minutes. / تنتهي صلاحية الرمز خلال 15 دقيقة.</p></div></div></div>`;
+  return { subject, text, html };
 }
 
 async function sendPasswordRecoveryEmail(email: string, code: string) {
-  const { apiKey, from } = resendConfiguration();
-  const response = await fetch("https://api.resend.com/emails", {
+  const { url, token } = gmailRelayConfiguration();
+  const content = passwordRecoveryEmailContent(code);
+  const response = await fetch(url, {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from,
-      to: [email],
-      subject: "Neurify password recovery code / رمز استعادة كلمة المرور",
-      text: `Your Neurify password recovery code is: ${code}\nIt expires in 15 minutes. Do not share it with anyone.\n\nرمز استعادة كلمة مرور Neurify هو: ${code}\nتنتهي صلاحيته خلال 15 دقيقة. لا تشاركه مع أي شخص.`,
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "password_recovery", relay_token: token, to: email, code, ...content }),
   });
-  if (!response.ok) throw new Error(`Password recovery email failed (${response.status}).`);
+  const payload = await response.json().catch(() => null) as { ok?: boolean } | null;
+  if (!response.ok || !payload?.ok) throw new Error(`Password recovery Gmail relay failed (${response.status}).`);
 }
 
 async function fcmAccessToken(account: FirebaseServiceAccount) {

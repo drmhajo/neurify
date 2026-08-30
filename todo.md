@@ -392,3 +392,7 @@
 - [x] Simplify sign-in field label and show clear invalid-credential feedback
 - [x] Add secure forgot-password flow with central email account recovery
 - [x] Configure Resend server-side delivery for password-recovery emails
+- [x] Replace Resend delivery with the Gmail recovery relay for password-recovery emails
+- [x] Configure a Google Apps Script Gmail relay for password-recovery delivery
+- [x] Restore controllable access to the Google Apps Script editor and publish the Gmail relay
+- [x] Configure the user-provided Google Apps Script project as the secure Gmail recovery relay
