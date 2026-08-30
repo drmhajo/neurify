@@ -39,6 +39,7 @@ import { canManageDischargedCases, deleteDischargedCase, type ArchivedCaseUpdate
 import { shouldLockLocalBootstrap } from "@/lib/local-bootstrap";
 import { changeCentralPassword, pullCentralDepartmentData, resetCentralPassword, saveCentralDepartmentData, signInCentralRegistration, submitCentralRegistration } from "@/lib/central-registration-api";
 import { parseStoredDepartmentSession, type DepartmentSession } from "@/lib/department-session";
+import { patientUpdateMarker } from "@/lib/patient-file-updates";
 
 type Session = DepartmentSession;
 
@@ -73,6 +74,7 @@ type DepartmentStore = {
   addCareTeam: (input: Pick<CareTeam, "name" | "shortName" | "color" | "lead">) => void;
   updateCareTeam: (teamId: string, input: Pick<CareTeam, "name" | "shortName" | "color" | "lead">) => void;
   updateMedicalFile: (teamId: string, caseId: string, input: Pick<PatientCase, "fullName" | "age" | "medicalHistory" | "clinicalTests" | "diagnosis" | "ward" | "bed">) => void;
+  markPatientFileUpdateRead: (teamId: string, caseId: string) => void;
   updateWeekendPlan: (teamId: string, caseId: string, plan: string) => boolean;
   addDiagnosticImaging: (teamId: string, caseId: string, input: Omit<DiagnosticImaging, "id" | "addedBy">) => void;
   addPatientMessage: (teamId: string, caseId: string, text: string, attachment?: PatientMessage["attachment"]) => void;
@@ -445,7 +447,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     const now = Date.now();
     const caseId = `c-${now}`;
     const fileNumber = input.patient.fileNumber.trim() || input.patient.code.trim();
-    const patientCase: PatientCase = { id: caseId, code: fileNumber, fileNumber, fullName: input.patient.fullName.trim(), age: input.patient.age, medicalHistory: input.patient.medicalHistory.trim() || "غير موثّق بعد", clinicalTests: input.patient.clinicalTests.trim() || "غير موثّق بعد", diagnosis: input.patient.diagnosis.trim(), clinicalDecision: input.patient.clinicalDecision?.trim(), surgeryType: input.patient.surgeryType?.trim(), admittedSince: "الآن", admittedAt: new Date(now).toISOString(), status: input.disposition === "admit" ? "منوّم" : "متابعة", imaging: [], messages: [] };
+    const patientCase: PatientCase = { id: caseId, code: fileNumber, fileNumber, fullName: input.patient.fullName.trim(), age: input.patient.age, medicalHistory: input.patient.medicalHistory.trim() || "غير موثّق بعد", clinicalTests: input.patient.clinicalTests.trim() || "غير موثّق بعد", diagnosis: input.patient.diagnosis.trim(), clinicalDecision: input.patient.clinicalDecision?.trim(), surgeryType: input.patient.surgeryType?.trim(), admittedSince: "الآن", admittedAt: new Date(now).toISOString(), status: input.disposition === "admit" ? "منوّم" : "متابعة", imaging: [], messages: [], ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") };
     updateData((current) => ({
       ...current,
       teams: current.teams.map((team) => team.id === teamId ? {
@@ -468,7 +470,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       ...current,
       teams: current.teams.map((team) => team.id === teamId ? {
         ...team,
-        cases: [{ id: `c-${now}`, code: input.code.trim(), fileNumber: input.code.trim(), fullName: "حالة جديدة", age: null, medicalHistory: "غير موثّق بعد", clinicalTests: "غير موثّق بعد", diagnosis: input.diagnosis.trim(), admittedSince: "الآن", admittedAt: new Date(now).toISOString(), status: "منوّم", imaging: [], messages: [] }, ...team.cases],
+        cases: [{ id: `c-${now}`, code: input.code.trim(), fileNumber: input.code.trim(), fullName: "حالة جديدة", age: null, medicalHistory: "غير موثّق بعد", clinicalTests: "غير موثّق بعد", diagnosis: input.diagnosis.trim(), admittedSince: "الآن", admittedAt: new Date(now).toISOString(), status: "منوّم", imaging: [], messages: [], ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") }, ...team.cases],
       } : team),
       notifications: [createTeamNotification({ id: `n-${now}`, type: "admitted_case", team: targetTeam }), ...(current.notifications ?? [])],
     }));
@@ -561,13 +563,15 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const addSurgery = useCallback((input: Omit<Surgery, "id">) => updateData((current) => {
     const matchedPatient = current.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.fileNumber === input.patientCode.trim() || patientCase.code === input.patientCode.trim() ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined;
-    return { ...current, surgeries: [{ ...input, id: `o-${Date.now()}`, patientLink: input.patientLink ?? matchedPatient, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim(), recordedAt: input.recordedAt ?? new Date().toISOString() }, ...current.surgeries] };
-  }), [updateData]);
+    const patientLink = input.patientLink ?? matchedPatient;
+    return { ...current, surgeries: [{ ...input, id: `o-${Date.now()}`, patientLink, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim(), recordedAt: input.recordedAt ?? new Date().toISOString() }, ...current.surgeries], teams: patientLink ? current.teams.map((team) => team.id === patientLink.teamId ? { ...team, cases: team.cases.map((patient) => patient.id === patientLink.caseId ? { ...patient, ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patient) } : team) : current.teams };
+  }), [session?.name, session?.userId, updateData]);
 
   const updateSurgery = useCallback((surgeryId: string, input: Omit<Surgery, "id">) => updateData((current) => {
     const matchedPatient = current.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.fileNumber === input.patientCode.trim() || patientCase.code === input.patientCode.trim() ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined;
-    return { ...current, surgeries: current.surgeries.map((surgery) => surgery.id === surgeryId ? { ...input, id: surgeryId, patientLink: input.patientLink ?? matchedPatient, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim() } : surgery) };
-  }), [updateData]);
+    const patientLink = input.patientLink ?? matchedPatient;
+    return { ...current, surgeries: current.surgeries.map((surgery) => surgery.id === surgeryId ? { ...input, id: surgeryId, patientLink, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim() } : surgery), teams: patientLink ? current.teams.map((team) => team.id === patientLink.teamId ? { ...team, cases: team.cases.map((patient) => patient.id === patientLink.caseId ? { ...patient, ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patient) } : team) : current.teams };
+  }), [session?.name, session?.userId, updateData]);
 
   const addSchedulePdf = useCallback((input: Omit<SchedulePdf, "id" | "uploadedBy" | "uploadedAt">) => updateData((current) => ({
     ...current,
@@ -586,8 +590,19 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const updateMedicalFile = useCallback((teamId: string, caseId: string, input: Pick<PatientCase, "fullName" | "age" | "medicalHistory" | "clinicalTests" | "diagnosis" | "ward" | "bed">) => updateData((current) => ({
     ...current,
-    teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, ...input } : patientCase) } : team),
-  })), [updateData]);
+    teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, ...input, ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patientCase) } : team),
+  })), [session?.name, session?.userId, updateData]);
+
+  const markPatientFileUpdateRead = useCallback((teamId: string, caseId: string) => {
+    const userId = session?.userId;
+    if (!userId) return;
+    const patient = dataRef.current.teams.find((team) => team.id === teamId)?.cases.find((item) => item.id === caseId);
+    if (!patient?.lastUpdatedAt || patient.updateReadByUserIds?.includes(userId)) return;
+    updateData((current) => ({
+      ...current,
+      teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, updateReadByUserIds: [...(patientCase.updateReadByUserIds ?? []), userId] } : patientCase) } : team),
+    }));
+  }, [session?.userId, updateData]);
 
   const updateWeekendPlan = useCallback((teamId: string, caseId: string, plan: string) => {
     const team = data.teams.find((item) => item.id === teamId);
@@ -602,6 +617,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
           weekendPlan: plan.trim(),
           weekendPlanUpdatedAt: new Date().toISOString(),
           weekendPlanUpdatedBy: session?.name ?? "عضو الفريق",
+          ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق"),
         } : patientCase),
       } : item),
     }));
@@ -610,16 +626,16 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const addDiagnosticImaging = useCallback((teamId: string, caseId: string, input: Omit<DiagnosticImaging, "id" | "addedBy">) => updateData((current) => ({
     ...current,
-    teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, imaging: [{ ...input, id: `i-${Date.now()}`, addedBy: session?.name ?? "عضو الفريق" }, ...patientCase.imaging] } : patientCase) } : team),
-  })), [session?.name, updateData]);
+    teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, imaging: [{ ...input, id: `i-${Date.now()}`, addedBy: session?.name ?? "عضو الفريق" }, ...patientCase.imaging], ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patientCase) } : team),
+  })), [session?.name, session?.userId, updateData]);
 
   const addPatientMessage = useCallback((teamId: string, caseId: string, text: string, attachment?: PatientMessage["attachment"]) => {
     const message: PatientMessage = { id: `m-${Date.now()}`, text: text.trim(), senderName: session?.name ?? "عضو الفريق", sentAt: "الآن", attachment };
     updateData((current) => ({
       ...current,
-      teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, messages: [...patientCase.messages, message] } : patientCase) } : team),
+    teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, messages: [...patientCase.messages, message], ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patientCase) } : team),
     }));
-  }, [session?.name, updateData]);
+  }, [session?.name, session?.userId, updateData]);
 
   const addGeneralDiscussionMessage = useCallback((text: string) => {
     const currentUser = session ? dataRef.current.users.find((user) => user.id === session.userId) : undefined;
@@ -698,7 +714,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, requestRegistration, importApprovedRegistration, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, updateDischargedPatient, deleteDischargedPatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, data, deleteDischargedPatient, dischargePatient, generateDailyShiftReport, hydrated, importApprovedRegistration, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, removeUser, requestRegistration, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateDischargedPatient, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
+  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, requestRegistration, importApprovedRegistration, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, updateDischargedPatient, deleteDischargedPatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, markPatientFileUpdateRead, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, data, deleteDischargedPatient, dischargePatient, generateDailyShiftReport, hydrated, importApprovedRegistration, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, markPatientFileUpdateRead, removeUser, requestRegistration, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateDischargedPatient, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }

@@ -387,3 +387,5 @@
 - [x] Embed all core visual identity assets and theme tokens in the Android installation package
 - [x] Search patient records by file number or diagnosis
 - [x] Filter Weekend Endorsement by ward before PDF or Excel export
+- [x] Show patient-file update indicators for treating-team follow-up
+- [x] Open and update patient files from consultation and non-admitted follow-up cases

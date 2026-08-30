@@ -91,6 +91,9 @@ export type PatientCase = {
   weekendPlan?: string;
   weekendPlanUpdatedAt?: string;
   weekendPlanUpdatedBy?: string;
+  lastUpdatedAt?: string;
+  lastUpdatedBy?: string;
+  updateReadByUserIds?: string[];
   surgeryType?: string;
   surgeryTypeCode?: NeurosurgeryProcedureCode;
   admittedSince: string;
