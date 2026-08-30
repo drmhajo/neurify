@@ -389,3 +389,4 @@
 - [x] Filter Weekend Endorsement by ward before PDF or Excel export
 - [x] Show patient-file update indicators for treating-team follow-up
 - [x] Open and update patient files from consultation and non-admitted follow-up cases
+- [x] Simplify sign-in field label and show clear invalid-credential feedback
