@@ -428,3 +428,6 @@
 - [x] Create a new light, eye-comfortable Neurify live-wallpaper collection for MacBook 13-inch
 - [x] Use a distinct promotional phrase for each light live-wallpaper design
 - [x] Deliver and verify the new light-color animated wallpaper files
+- [x] Capture the latest Run gradlew and additional Android build error details
+- [x] Diagnose the concrete EAS Android build failure from the supplied logs
+- [x] Apply and verify a targeted Android build fix before rebuilding the APK
