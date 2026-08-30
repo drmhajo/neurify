@@ -415,3 +415,7 @@
 - [x] Diagnose the reported EAS Android Gradle build failure from the Run gradlew phase
 - [x] Fix the Android build configuration or dependency causing the Gradle failure
 - [x] Re-run Android production export and verify the repaired build
+- [x] Audit the complete Neurify project for Android build blockers
+- [x] Validate Expo config, dependencies, assets, config plugins, and generated Gradle properties
+- [x] Run TypeScript, lint, complete regression tests, Expo prebuild, and Android export
+- [x] Fix every reproducible build error and save a verified release checkpoint

@@ -40,10 +40,13 @@ export default function PatientFileScreen() {
   const scheduledOperations = useMemo(() => data.surgeries.filter((operation) => operation.patientLink?.teamId === teamId && operation.patientLink?.caseId === caseId), [caseId, data.surgeries, teamId]);
   const canEdit = Boolean(team && session);
   const age = patient?.age === null || patient?.age === undefined ? localize("غير موثق") : language === "en" ? `${patient.age} years` : `${patient.age} سنة`;
+  const activeTeamId = team?.id;
+  const activePatientId = patient?.id;
+  const activePatientLastUpdatedAt = patient?.lastUpdatedAt;
 
   useEffect(() => {
-    if (team && patient) markPatientFileUpdateRead(team.id, patient.id);
-  }, [markPatientFileUpdateRead, patient?.id, patient?.lastUpdatedAt, team?.id]);
+    if (activeTeamId && activePatientId) markPatientFileUpdateRead(activeTeamId, activePatientId);
+  }, [activePatientId, activePatientLastUpdatedAt, activeTeamId, markPatientFileUpdateRead]);
 
   if (!team || !patient || !canEdit) return <View style={styles.page}><EmptyState icon="lock" text={language === "en" ? "Sign in with an approved department account to access this medical record." : "سجّل الدخول بحساب قسم معتمد للوصول إلى الملف الطبي."} /></View>;
 
