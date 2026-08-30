@@ -13,8 +13,8 @@ describe("central registration Supabase migration", () => {
     expect(appConfig).toContain("/functions/v1/central-registration");
     expect(client).toContain("centralRegistration");
     expect(appConfig).toContain('appName: "Neurify"');
-    expect(appConfig).toContain('version: "1.0.34"');
-    expect(appConfig).toContain("versionCode: 35");
+    expect(appConfig).toContain('version: "1.0.35"');
+    expect(appConfig).toContain("versionCode: 36");
   });
 
   it("routes registration and central data reads and writes through the Edge Function", () => {

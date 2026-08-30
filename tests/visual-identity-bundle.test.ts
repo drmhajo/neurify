@@ -8,6 +8,7 @@ describe("حزمة الهوية المرئية المحلية", () => {
   it("تضمّن أصول الهوية وخط Material Icons في حزمة Android", () => {
     const config = fs.readFileSync(path.join(root, "app.config.ts"), "utf8");
     const layout = fs.readFileSync(path.join(root, "app", "_layout.tsx"), "utf8");
+    const gradlePlugin = fs.readFileSync(path.join(root, "plugins", "with-gradle-constraints.js"), "utf8");
 
     const requiredVisualAssets = [
       "icon.png",
@@ -23,7 +24,11 @@ describe("حزمة الهوية المرئية المحلية", () => {
     ];
     requiredVisualAssets.forEach((asset) => expect(fs.existsSync(path.join(root, "assets", "images", asset))).toBe(true));
     expect(fs.existsSync(path.join(root, "assets", "fonts", "MaterialIcons.ttf"))).toBe(true);
-    expect(config).toContain('assets: ["./assets/images", "./assets/fonts"]');
+    expect(config).not.toContain('"expo-asset"');
+    expect(config).toContain('"./plugins/with-gradle-constraints.js"');
+    expect(gradlePlugin).toContain('org.gradle.jvmargs');
+    expect(gradlePlugin).toContain('org.gradle.parallel", "false"');
+    expect(gradlePlugin).toContain('org.gradle.workers.max", "2"');
     expect(config).toContain('fonts: ["./assets/fonts/MaterialIcons.ttf"]');
     expect(config).toContain('fontFamily: "material"');
     expect(layout).toContain('material: require("../assets/fonts/MaterialIcons.ttf")');

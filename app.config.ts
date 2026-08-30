@@ -48,7 +48,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.34",
+  version: "1.0.35",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -78,7 +78,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    versionCode: 35,
+    versionCode: 36,
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
     permissions: ["POST_NOTIFICATIONS"],
@@ -103,12 +103,6 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
-    [
-      "expo-asset",
-      {
-        assets: ["./assets/images", "./assets/fonts"],
-      },
-    ],
     [
       "expo-font",
       {
@@ -170,6 +164,7 @@ const config: ExpoConfig = {
         },
       },
     ],
+    "./plugins/with-gradle-constraints.js",
   ],
   experiments: {
     typedRoutes: true,

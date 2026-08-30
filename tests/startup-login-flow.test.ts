@@ -41,7 +41,8 @@ describe("مسار بدء Neurify الآمن", () => {
     expect(rootLayout).toContain('require("../assets/fonts/MaterialIcons.ttf")');
     expect(rootLayout).toContain('require("../assets/images/icon.png")');
     expect(rootLayout).toContain("startupAssetsReady ? <LanguageTransition>");
-    expect(config).toContain('assets: ["./assets/images", "./assets/fonts"]');
+    expect(config).not.toContain('"expo-asset"');
+    expect(config).toContain('"./plugins/with-gradle-constraints.js"');
     expect(config).toContain('fonts: ["./assets/fonts/MaterialIcons.ttf"]');
     expect(config).toContain('fontFamily: "material"');
   });

@@ -412,3 +412,6 @@
 - [x] Verify bundled icons, fonts, images, and theme assets match the preview
 - [x] Verify Expo asset/font configuration includes all runtime visual resources
 - [x] Run Android production export and asset regression checks for preview parity
+- [x] Diagnose the reported EAS Android Gradle build failure from the Run gradlew phase
+- [x] Fix the Android build configuration or dependency causing the Gradle failure
+- [x] Re-run Android production export and verify the repaired build
