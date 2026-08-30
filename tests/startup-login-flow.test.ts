@@ -31,6 +31,19 @@ describe("مسار بدء Neurify الآمن", () => {
     expect(rootLayout).toContain('import MaterialIcons from "@expo/vector-icons/MaterialIcons"');
     expect(rootLayout).toContain("useFonts(MaterialIcons.font)");
     expect(rootLayout).toContain("materialIconsLoaded || Boolean(materialIconsError)");
-    expect(rootLayout).toContain("iconFontReady ? <LanguageTransition>");
+    expect(rootLayout).toContain("startupAssetsReady = iconFontReady && coreUiAssetsReady");
+  });
+
+  it("يخزّن أصول الواجهة الأساسية محليًا قبل فتح التطبيق", () => {
+    const rootLayout = fs.readFileSync(path.join(root, "app", "_layout.tsx"), "utf8");
+    const config = fs.readFileSync(path.join(root, "app.config.ts"), "utf8");
+
+    expect(rootLayout).toContain('import { useAssets } from "expo-asset"');
+    expect(rootLayout).toContain('require("../assets/fonts/MaterialIcons.ttf")');
+    expect(rootLayout).toContain('require("../assets/images/icon.png")');
+    expect(rootLayout).toContain("startupAssetsReady ? <LanguageTransition>");
+    expect(config).toContain('assets: ["./assets/images", "./assets/fonts"]');
+    expect(config).toContain('fonts: ["./assets/fonts/MaterialIcons.ttf"]');
+    expect(config).toContain('fontFamily: "material"');
   });
 });

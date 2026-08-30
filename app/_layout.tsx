@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useAssets } from "expo-asset";
 import { useFonts } from "expo-font";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -15,9 +16,17 @@ SplashScreen.setOptions({ duration: 260, fade: true });
 
 export default function RootLayout() {
   const [materialIconsLoaded, materialIconsError] = useFonts(MaterialIcons.font);
+  const [coreUiAssets, coreUiAssetsError] = useAssets([
+    require("../assets/fonts/MaterialIcons.ttf"),
+    require("../assets/images/icon.png"),
+    require("../assets/images/neurify-wordmark.png"),
+    require("../assets/images/neurosurgery-department-logo.png"),
+  ]);
   const iconFontReady = materialIconsLoaded || Boolean(materialIconsError);
+  const coreUiAssetsReady = Boolean(coreUiAssets) || Boolean(coreUiAssetsError);
+  const startupAssetsReady = iconFontReady && coreUiAssetsReady;
 
-  return <GestureHandlerRootView style={{ flex: 1 }}><ThemeProvider><LanguageProvider>{iconFontReady ? <LanguageTransition><DepartmentProvider><AppNavigator /></DepartmentProvider></LanguageTransition> : <LogoLoading />}</LanguageProvider></ThemeProvider></GestureHandlerRootView>;
+  return <GestureHandlerRootView style={{ flex: 1 }}><ThemeProvider><LanguageProvider>{startupAssetsReady ? <LanguageTransition><DepartmentProvider><AppNavigator /></DepartmentProvider></LanguageTransition> : <LogoLoading />}</LanguageProvider></ThemeProvider></GestureHandlerRootView>;
 }
 
 function AppNavigator() {

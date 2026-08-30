@@ -48,7 +48,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.22",
+  version: "1.0.23",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -78,7 +78,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    versionCode: 23,
+    versionCode: 24,
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
     permissions: ["POST_NOTIFICATIONS"],
@@ -103,8 +103,30 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
-    "expo-asset",
-    "expo-font",
+    [
+      "expo-asset",
+      {
+        assets: ["./assets/images", "./assets/fonts"],
+      },
+    ],
+    [
+      "expo-font",
+      {
+        fonts: ["./assets/fonts/MaterialIcons.ttf"],
+        android: {
+          fonts: [
+            {
+              fontFamily: "material",
+              fontDefinitions: [
+                {
+                  path: "./assets/fonts/MaterialIcons.ttf",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
     "expo-web-browser",
     [
       "expo-audio",
