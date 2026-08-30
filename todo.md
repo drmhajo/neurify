@@ -425,3 +425,6 @@
 - [x] Regenerate the fifth Neurify identity-formation animation as a 10-second sequence
 - [x] Generate seamless promotional video loops and verify playback quality
 - [x] Deliver 2560×1600 macOS-ready wallpaper files with installation instructions
+- [x] Create a new light, eye-comfortable Neurify live-wallpaper collection for MacBook 13-inch
+- [x] Use a distinct promotional phrase for each light live-wallpaper design
+- [x] Deliver and verify the new light-color animated wallpaper files
