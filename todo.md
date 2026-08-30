@@ -406,3 +406,6 @@
 - [x] Position the OPD waiting list next to operations in the schedule workflow
 - [x] Allow all approved users to add OPD waiting entries while restricting edits to operation supervisors
 - [x] Download exported reports directly to the user's device
+- [x] Highlight newly added OPD waiting-list cases for Operations supervisors with a bilingual visual indicator
+- [x] Add regression coverage for the OPD new-case indicator
+- [x] Increment the app version and verify Android export for the OPD indicator

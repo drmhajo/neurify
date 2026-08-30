@@ -32,3 +32,12 @@ export function opdStatusLabel(status: OpdOperationWaitingEntry["status"], langu
   if (language === "ar") return status;
   return status === "بانتظار مراجعة" ? "Awaiting review" : status === "معتمد" ? "Approved" : status === "مجدول" ? "Scheduled" : status === "مكتمل" ? "Completed" : "Cancelled";
 }
+
+/** A newly submitted request remains visually new until an Operations supervisor changes its status. */
+export function isOpdWaitingEntryNew(entry: OpdOperationWaitingEntry) {
+  return entry.status === "بانتظار مراجعة";
+}
+
+export function opdNewEntryLabel(language: "ar" | "en") {
+  return language === "en" ? "NEW · Review needed" : "جديد · يحتاج مراجعة";
+}

@@ -12,5 +12,9 @@ describe("صلاحيات ومكان قائمة انتظار OPD", () => {
     expect(schedule).toContain("opdWaitingListLink");
     expect(waitingList).toContain("const canAdd = canAddOpdOperationWaitingList");
     expect(waitingList).toContain("const canManage = canManageOpdOperationWaitingList");
+    expect(waitingList).toContain("isOpdWaitingEntryNew(item)");
+    expect(waitingList).toContain("opdNewEntryLabel(language)");
+    expect(waitingList).toContain("styles.newEntry");
+    expect(waitingList).toContain("styles.newBanner");
   });
 });

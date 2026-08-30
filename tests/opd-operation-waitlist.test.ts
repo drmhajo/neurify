@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canAddOpdOperationWaitingList, canManageOpdOperationWaitingList, findOpdWaitingListPatientLink, opdPriorityLabel, opdStatusLabel } from "../lib/opd-operation-waitlist";
+import { canAddOpdOperationWaitingList, canManageOpdOperationWaitingList, findOpdWaitingListPatientLink, isOpdWaitingEntryNew, opdNewEntryLabel, opdPriorityLabel, opdStatusLabel } from "../lib/opd-operation-waitlist";
 import type { DepartmentData } from "../lib/department-model";
 
 const data = { teams: [{ id: "t1", cases: [{ id: "c1", code: "MRN-001", fileNumber: "MRN-001" }] }] } as unknown as DepartmentData;
@@ -18,5 +18,9 @@ describe("قائمة انتظار عمليات العيادات", () => {
     expect(canManageOpdOperationWaitingList("team_member", [])).toBe(false);
     expect(opdPriorityLabel("عاجل", "en")).toBe("Urgent");
     expect(opdStatusLabel("مجدول", "en")).toBe("Scheduled");
+    expect(isOpdWaitingEntryNew({ status: "بانتظار مراجعة" } as never)).toBe(true);
+    expect(isOpdWaitingEntryNew({ status: "معتمد" } as never)).toBe(false);
+    expect(opdNewEntryLabel("ar")).toBe("جديد · يحتاج مراجعة");
+    expect(opdNewEntryLabel("en")).toBe("NEW · Review needed");
   });
 });
