@@ -401,3 +401,5 @@
 - [x] Add a structured list of common neurosurgery diagnoses to patient data entry
 - [x] Use a searchable standardized Ward list for patient data entry and Weekend Endorsement filtering
 - [x] Add an OPD operation waiting-list page with patient links, priority, status, and notes
+- [x] Filter OPD operation waiting list by priority or status
+- [x] Export filtered OPD operation waiting list to PDF and Excel
