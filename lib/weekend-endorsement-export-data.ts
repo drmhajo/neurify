@@ -9,13 +9,14 @@ function safeFilePart(value: string) {
 }
 
 function scopeLabel(report: WeekendEndorsementReport, language: WeekendEndorsementExportLanguage) {
-  if (report.consultantFilter) return report.consultantFilter;
-  return language === "en" ? "All consultants" : "جميع الاستشاريين";
+  const consultant = report.consultantFilter ?? (language === "en" ? "All consultants" : "جميع الاستشاريين");
+  const ward = report.wardFilter ?? (language === "en" ? "All wards" : "جميع الأجنحة");
+  return `${consultant} · ${language === "en" ? "Ward" : "الجناح"}: ${ward}`;
 }
 
 export function weekendEndorsementExportFileName(report: WeekendEndorsementReport, extension: "pdf" | "xlsx") {
   const date = report.generatedAt.slice(0, 10) || "weekend";
-  return `ksmc-neurosurgery-weekend-endorsement-${safeFilePart(report.consultantFilter ?? "all-consultants")}-${date}.${extension}`;
+  return `ksmc-neurosurgery-weekend-endorsement-${safeFilePart(`${report.consultantFilter ?? "all-consultants"}-${report.wardFilter ?? "all-wards"}`)}-${date}.${extension}`;
 }
 
 export function weekendEndorsementExcelRows(report: WeekendEndorsementReport, language: WeekendEndorsementExportLanguage) {

@@ -48,13 +48,27 @@ describe("Weekend Endorsement", () => {
     expect(html).toContain("Treating consultant · Dr. Hashmi");
   });
 
+  it("يقصر التقرير والطباعة على الجناح المحدد مع الاستمرار في فلترة الاستشاري", () => {
+    const data = createInitialDepartmentData();
+    data.teams[0].cases[0].ward = "Ward 4";
+    const report = buildWeekendEndorsementReport(data, "Admin", "Dr. Hashmi", "Ward 4");
+    const html = createWeekendEndorsementHtml(report);
+
+    expect(report.wardFilter).toBe("Ward 4");
+    expect(report.entries).toHaveLength(1);
+    expect(report.entries.every((entry) => entry.ward === "Ward 4")).toBe(true);
+    expect(html).toContain("Ward · Ward 4");
+  });
+
   it("ينشئ ملف Excel مصفّى يضم الملخص وخطط المرضى فقط", () => {
-    const report = buildWeekendEndorsementReport(createInitialDepartmentData(), "Admin", "Dr. Hashmi");
+    const data = createInitialDepartmentData();
+    data.teams[0].cases[0].ward = "Ward 4";
+    const report = buildWeekendEndorsementReport(data, "Admin", "Dr. Hashmi", "Ward 4");
     const rows = weekendEndorsementExcelRows(report, "en");
     const workbook = createWeekendEndorsementWorkbook(report, "en");
 
-    expect(weekendEndorsementExportFileName(report, "xlsx")).toContain("dr-hashmi");
-    expect(rows.summary).toContainEqual(["Scope", "Dr. Hashmi"]);
+    expect(weekendEndorsementExportFileName(report, "xlsx")).toContain("dr-hashmi-ward-4");
+    expect(rows.summary).toContainEqual(["Scope", "Dr. Hashmi · Ward: Ward 4"]);
     expect(rows.plans).toHaveLength(2);
     expect(rows.plans[0]).toContain("Ward");
     expect(rows.plans[0]).toContain("Diagnosis");
