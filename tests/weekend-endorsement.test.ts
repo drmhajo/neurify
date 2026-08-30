@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialDepartmentData } from "../lib/department-model";
-import { buildWeekendEndorsementReport, createWeekendEndorsementHtml, searchWeekendEndorsementEntries } from "../lib/weekend-endorsement";
+import { buildWeekendEndorsementReport, createWeekendEndorsementHtml, searchWeekendEndorsementEntries, weekendEndorsementPatientRoute } from "../lib/weekend-endorsement";
 import { createWeekendEndorsementWorkbook, weekendEndorsementExcelRows, weekendEndorsementExportFileName } from "../lib/weekend-endorsement-export-data";
 
 describe("Weekend Endorsement", () => {
@@ -16,6 +16,7 @@ describe("Weekend Endorsement", () => {
     expect(report.entries).toHaveLength(3);
     expect(patient).toMatchObject({
       patientName: data.teams[0].cases[0].fullName,
+      teamId: data.teams[0].id,
       fileNumber: data.teams[0].cases[0].fileNumber,
       consultant: "Dr. Hashmi",
       ward: "Ward 4",
@@ -83,5 +84,12 @@ describe("Weekend Endorsement", () => {
     expect(searchWeekendEndorsementEntries(report.entries, entry.patientName.slice(0, 3))).toEqual([entry]);
     expect(searchWeekendEndorsementEntries(report.entries, "no match")).toEqual([]);
     expect(report.entries).toHaveLength(1);
+  });
+
+  it("يوفر مسار فتح ملف المريض من بطاقة قائمة Weekend Endorsement", () => {
+    const data = createInitialDepartmentData();
+    const entry = buildWeekendEndorsementReport(data, "Admin").entries[0];
+
+    expect(weekendEndorsementPatientRoute(entry)).toEqual({ teamId: entry.teamId, caseId: entry.id });
   });
 });

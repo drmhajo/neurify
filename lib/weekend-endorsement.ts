@@ -4,6 +4,7 @@ import { formatRiyadhDateTime } from "./riyadh-time";
 
 export type WeekendEndorsementEntry = {
   id: string;
+  teamId: string;
   patientName: string;
   fileNumber: string;
   consultant: string;
@@ -42,6 +43,7 @@ export function buildWeekendEndorsementReport(data: DepartmentData, generatedBy:
       .filter((patient) => patient.status === "منوّم" && (!consultantFilter || team.lead === consultantFilter) && (!wardFilter || normalizeWard(patient.ward) === normalizeWard(wardFilter)))
       .map((patient) => ({
         id: patient.id,
+        teamId: team.id,
         patientName: patient.fullName,
         fileNumber: patient.fileNumber || patient.code,
         consultant: team.lead,
@@ -52,6 +54,10 @@ export function buildWeekendEndorsementReport(data: DepartmentData, generatedBy:
         teamName: team.name,
       }))),
   };
+}
+
+export function weekendEndorsementPatientRoute(entry: WeekendEndorsementEntry) {
+  return { teamId: entry.teamId, caseId: entry.id };
 }
 
 function escapeHtml(value: string) {

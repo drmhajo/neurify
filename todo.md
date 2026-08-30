@@ -397,3 +397,5 @@
 - [x] Restore controllable access to the Google Apps Script editor and publish the Gmail relay
 - [x] Configure the user-provided Google Apps Script project as the secure Gmail recovery relay
 - [x] Send branded welcome email after a new user registration is submitted
+- [x] Open patient file by tapping an inpatient in Weekend Endorsement
+- [x] Add a structured list of common neurosurgery diagnoses to patient data entry
