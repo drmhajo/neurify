@@ -92,6 +92,14 @@ export function changeCentralPassword(input: { accountId: string; pushProof: str
   return callCentralRegistration<{ ok: boolean }>("change_password", input);
 }
 
+export function requestCentralPasswordRecovery(input: { email: string }) {
+  return callCentralRegistration<{ accepted: boolean }>("password_reset_request", input);
+}
+
+export function confirmCentralPasswordRecovery(input: { email: string; code: string; newPassword: string }) {
+  return callCentralRegistration<{ ok: boolean }>("password_reset_confirm", input);
+}
+
 export function rejectCentralRegistration(input: { id: string; rejectedBy: string; approvalSecret: string }) {
   return callCentralRegistration<CentralRegistrationRequest & { reviewedAt?: string | null }>("reject", input);
 }

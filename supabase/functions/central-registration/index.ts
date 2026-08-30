@@ -9,6 +9,8 @@ const PBKDF2_ITERATIONS = 210_000;
 const PUSH_PROOF_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const PUSH_PROOF_CLOCK_SKEW_MS = 5 * 60 * 1000;
 const DATA_PROOF_TTL_MS = 12 * 60 * 60 * 1000;
+const PASSWORD_RESET_CODE_TTL_MS = 15 * 60 * 1000;
+const PASSWORD_RESET_MAX_ATTEMPTS = 5;
 const CENTRAL_ADMIN_USERNAME = "admin";
 const CENTRAL_ADMIN_EMAIL = "admin@ksmc.local";
 
@@ -21,6 +23,11 @@ type RegistrationRow = {
   password_hash: string;
   password_salt: string;
   password_iterations: number;
+  password_reset_code_hash: string | null;
+  password_reset_code_salt: string | null;
+  password_reset_code_iterations: number | null;
+  password_reset_code_expires_at: string | null;
+  password_reset_attempts: number;
   status: "pending" | "approved" | "rejected";
   approved_by: string | null;
   approved_at: string | null;
@@ -72,6 +79,10 @@ function normalizeIdentifier(value: unknown) {
 
 function cleanText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function createPasswordRecoveryCode() {
+  return String(crypto.getRandomValues(new Uint32Array(1))[0] % 900_000 + 100_000);
 }
 
 function bytesToBase64(bytes: Uint8Array) {
@@ -150,6 +161,28 @@ function fcmServiceAccount() {
 function serviceAccountPrivateKey(value: string) {
   const base64 = value.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, "");
   return base64ToBytes(base64).buffer;
+}
+
+function resendConfiguration() {
+  const apiKey = Deno.env.get("RESEND_API_KEY")?.trim() ?? "";
+  const from = Deno.env.get("RESEND_FROM_EMAIL")?.trim() ?? "";
+  if (!apiKey || !from) throw new Error("Password recovery email is not configured.");
+  return { apiKey, from };
+}
+
+async function sendPasswordRecoveryEmail(email: string, code: string) {
+  const { apiKey, from } = resendConfiguration();
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from,
+      to: [email],
+      subject: "Neurify password recovery code / رمز استعادة كلمة المرور",
+      text: `Your Neurify password recovery code is: ${code}\nIt expires in 15 minutes. Do not share it with anyone.\n\nرمز استعادة كلمة مرور Neurify هو: ${code}\nتنتهي صلاحيته خلال 15 دقيقة. لا تشاركه مع أي شخص.`,
+    }),
+  });
+  if (!response.ok) throw new Error(`Password recovery email failed (${response.status}).`);
 }
 
 async function fcmAccessToken(account: FirebaseServiceAccount) {
@@ -448,6 +481,45 @@ async function handleChangePassword(body: Record<string, unknown>) {
   return json({ ok: true });
 }
 
+async function handlePasswordResetRequest(body: Record<string, unknown>) {
+  const email = normalizeEmail(body.email);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ accepted: true });
+  const account = await findByEmail(email);
+  if (!account || account.status !== "approved") return json({ accepted: true });
+  const code = createPasswordRecoveryCode();
+  const codeFields = await hashPassword(code);
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_CODE_TTL_MS).toISOString();
+  await restRequest(`?id=eq.${encodeURIComponent(account.id)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ password_reset_code_hash: codeFields.password_hash, password_reset_code_salt: codeFields.password_salt, password_reset_code_iterations: codeFields.password_iterations, password_reset_code_expires_at: expiresAt, password_reset_attempts: 0 }),
+  });
+  try {
+    await sendPasswordRecoveryEmail(email, code);
+  } catch (error) {
+    console.warn("Password recovery email unavailable", error instanceof Error ? error.message : error);
+  }
+  return json({ accepted: true });
+}
+
+async function handlePasswordResetConfirm(body: Record<string, unknown>) {
+  const email = normalizeEmail(body.email);
+  const code = cleanText(body.code, 12);
+  const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6}$/.test(code) || newPassword.length < 12 || newPassword.length > 128) return json({ ok: false }, 400);
+  const account = await findByEmail(email);
+  const expiresAt = account?.password_reset_code_expires_at ? Date.parse(account.password_reset_code_expires_at) : 0;
+  const remainingAttempts = account ? PASSWORD_RESET_MAX_ATTEMPTS - Number(account.password_reset_attempts ?? 0) : 0;
+  const validCode = Boolean(account && account.status === "approved" && account.password_reset_code_hash && account.password_reset_code_salt && account.password_reset_code_iterations && expiresAt > Date.now() && remainingAttempts > 0 && await verifyPassword(code, { ...account, password_hash: account.password_reset_code_hash, password_salt: account.password_reset_code_salt, password_iterations: account.password_reset_code_iterations }));
+  if (!account || !validCode) {
+    if (account && remainingAttempts > 0) await restRequest(`?id=eq.${encodeURIComponent(account.id)}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ password_reset_attempts: Number(account.password_reset_attempts ?? 0) + 1 }) });
+    return json({ ok: false }, 403);
+  }
+  const passwordFields = await hashPassword(newPassword);
+  await restRequest(`?id=eq.${encodeURIComponent(account.id)}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ ...passwordFields, password_reset_code_hash: null, password_reset_code_salt: null, password_reset_code_iterations: null, password_reset_code_expires_at: null, password_reset_attempts: 0 }) });
+  return json({ ok: true });
+}
+
 async function handlePushRegister(body: Record<string, unknown>) {
   const accountId = cleanText(body.accountId, 64).replace(/^remote-/, "");
   const token = cleanText(body.token, 255);
@@ -572,6 +644,8 @@ Deno.serve(async (request) => {
       case "bootstrap_admin": return await handleBootstrapAdministrator(body);
       case "reset_password": return await handleResetPassword(body);
       case "change_password": return await handleChangePassword(body);
+      case "password_reset_request": return await handlePasswordResetRequest(body);
+      case "password_reset_confirm": return await handlePasswordResetConfirm(body);
       case "list": return await handleList(body);
       case "approve": return await handleDecision(body, "approved");
       case "reject": return await handleDecision(body, "rejected");

@@ -9,12 +9,24 @@ create table if not exists public.registration_requests (
   password_hash text not null,
   password_salt text not null,
   password_iterations integer not null default 210000 check (password_iterations >= 100000),
+  password_reset_code_hash text,
+  password_reset_code_salt text,
+  password_reset_code_iterations integer,
+  password_reset_code_expires_at timestamptz,
+  password_reset_attempts integer not null default 0 check (password_reset_attempts between 0 and 5),
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
   approved_by text,
   approved_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.registration_requests
+  add column if not exists password_reset_code_hash text,
+  add column if not exists password_reset_code_salt text,
+  add column if not exists password_reset_code_iterations integer,
+  add column if not exists password_reset_code_expires_at timestamptz,
+  add column if not exists password_reset_attempts integer not null default 0;
 
 create unique index if not exists registration_requests_email_unique
   on public.registration_requests (lower(email));

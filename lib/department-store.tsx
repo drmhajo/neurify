@@ -37,7 +37,7 @@ import { createGeneralAnnouncement, validateGeneralAnnouncement } from "@/lib/ge
 import { isEligibleForOnCallSlot } from "@/lib/on-call-eligibility";
 import { canManageDischargedCases, deleteDischargedCase, type ArchivedCaseUpdate, updateDischargedCase } from "@/lib/discharged-case-admin";
 import { shouldLockLocalBootstrap } from "@/lib/local-bootstrap";
-import { changeCentralPassword, pullCentralDepartmentData, resetCentralPassword, saveCentralDepartmentData, signInCentralRegistration, submitCentralRegistration } from "@/lib/central-registration-api";
+import { changeCentralPassword, confirmCentralPasswordRecovery, pullCentralDepartmentData, requestCentralPasswordRecovery, resetCentralPassword, saveCentralDepartmentData, signInCentralRegistration, submitCentralRegistration } from "@/lib/central-registration-api";
 import { parseStoredDepartmentSession, type DepartmentSession } from "@/lib/department-session";
 import { patientUpdateMarker } from "@/lib/patient-file-updates";
 
@@ -49,6 +49,8 @@ type DepartmentStore = {
   data: DepartmentData;
   completeInitialSetup: (password: string) => Promise<{ ok: boolean; message?: string }>;
   signIn: (username: string, password: string) => Promise<{ ok: boolean; message?: string; recoveryRequired?: boolean }>;
+  requestPasswordRecovery: (email: string) => Promise<{ ok: boolean; message?: string }>;
+  confirmPasswordRecovery: (input: { email: string; code: string; newPassword: string }) => Promise<{ ok: boolean; message?: string }>;
   requestRegistration: (input: { name: string; email: string; phone: string; jobTitle: string; password: string }) => Promise<{ ok: boolean; reason?: "pending" | "existing" | "service" }>;
   importApprovedRegistration: (input: { id: string; name: string; email: string; phone: string; jobTitle: string }) => void;
   signOut: () => Promise<void>;
@@ -361,6 +363,28 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       return { ok: false, message: "تعذر الاتصال بخدمة تسجيل المستخدمين. تحقق من الاتصال بالشبكة وحاول مرة أخرى." };
     }
   }, [data.users, updateData]);
+
+  const requestPasswordRecovery = useCallback(async (email: string) => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return { ok: false, message: "أدخل بريدًا إلكترونيًا صحيحًا." };
+    try {
+      await requestCentralPasswordRecovery({ email: email.trim().toLowerCase() });
+      return { ok: true };
+    } catch {
+      return { ok: false, message: "تعذر إرسال رمز الاستعادة حاليًا. تحقق من الاتصال وحاول مرة أخرى." };
+    }
+  }, []);
+
+  const confirmPasswordRecovery = useCallback(async (input: { email: string; code: string; newPassword: string }) => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim()) || input.code.trim().length < 6 || input.newPassword.length < 12) {
+      return { ok: false, message: "تحقق من البريد والرمز وكلمة المرور الجديدة." };
+    }
+    try {
+      const result = await confirmCentralPasswordRecovery({ email: input.email.trim().toLowerCase(), code: input.code.trim(), newPassword: input.newPassword });
+      return result.ok ? { ok: true } : { ok: false, message: "الرمز غير صحيح أو انتهت صلاحيته. اطلب رمزًا جديدًا." };
+    } catch {
+      return { ok: false, message: "تعذر استعادة كلمة المرور حاليًا. حاول مرة أخرى لاحقًا." };
+    }
+  }, []);
 
   const completeInitialSetup = useCallback(async (password: string) => {
     void password;
@@ -714,7 +738,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, requestRegistration, importApprovedRegistration, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, updateDischargedPatient, deleteDischargedPatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, markPatientFileUpdateRead, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, data, deleteDischargedPatient, dischargePatient, generateDailyShiftReport, hydrated, importApprovedRegistration, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, markPatientFileUpdateRead, removeUser, requestRegistration, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateDischargedPatient, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
+  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, requestPasswordRecovery, confirmPasswordRecovery, requestRegistration, importApprovedRegistration, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, updateDischargedPatient, deleteDischargedPatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, markPatientFileUpdateRead, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, confirmPasswordRecovery, data, deleteDischargedPatient, dischargePatient, generateDailyShiftReport, hydrated, importApprovedRegistration, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, markPatientFileUpdateRead, removeUser, requestPasswordRecovery, requestRegistration, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateDischargedPatient, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }
