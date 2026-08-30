@@ -22,6 +22,7 @@ export default function TabLayout() {
     <Tabs.Screen name="index" options={{ title: t("home"), tabBarIcon: ({ color }) => <IconSymbol size={layout.tabIconSize} name="house.fill" color={color} /> }} />
     <Tabs.Screen name="reports" options={{ title: t("reports"), tabBarIcon: ({ color }) => <IconSymbol size={layout.tabIconSize} name="doc.text.fill" color={color} /> }} />
     <Tabs.Screen name="schedule" options={{ title: t("schedules"), tabBarIcon: ({ color }) => <IconSymbol size={layout.tabIconSize} name="calendar" color={color} /> }} />
+    <Tabs.Screen name="opd-operation-waiting-list" options={{ href: null, title: "OPD operation waiting list" }} />
     <Tabs.Screen name="teams" options={{ title: t("teams"), tabBarIcon: ({ color }) => <IconSymbol size={layout.tabIconSize} name="person.3.fill" color={color} /> }} />
     <Tabs.Screen name="discussions" options={{ title: t("discussions"), tabBarBadge: discussionBadge, tabBarBadgeStyle: { backgroundColor: "#B42318", color: "#FFFFFF", fontSize: layout.isCompact ? 9 : 10, fontWeight: "900" }, tabBarIcon: ({ color }) => <IconSymbol size={layout.tabIconSize} name="bubble.left.and.bubble.right.fill" color={color} /> }} />
     <Tabs.Screen name="admin" options={{ title: t("admin"), href: session?.role === "admin" || data.users.find((user) => user.id === session?.userId)?.permissions.includes("approve_registration_requests") ? undefined : null, tabBarIcon: ({ color }) => <IconSymbol size={layout.tabIconSize} name="gearshape.fill" color={color} /> }} />

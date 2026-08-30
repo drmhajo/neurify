@@ -22,6 +22,7 @@ import {
   type ReportPriority,
   type SchedulePdf,
   type Surgery,
+  type OpdOperationWaitingEntry,
   type UserRole,
   type CareTeam,
   type DailyShiftReport,
@@ -41,6 +42,7 @@ import { changeCentralPassword, confirmCentralPasswordRecovery, pullCentralDepar
 import { parseStoredDepartmentSession, type DepartmentSession } from "@/lib/department-session";
 import { patientUpdateMarker } from "@/lib/patient-file-updates";
 import { canonicalWard } from "@/lib/ward-catalog";
+import { findOpdWaitingListPatientLink } from "@/lib/opd-operation-waitlist";
 
 type Session = DepartmentSession;
 
@@ -73,6 +75,8 @@ type DepartmentStore = {
   addShift: (input: { clinician: string; period: "صباحي" | "مسائي" | "ليلي"; team: string }) => void;
   addSurgery: (input: Omit<Surgery, "id">) => void;
   updateSurgery: (surgeryId: string, input: Omit<Surgery, "id">) => void;
+  addOpdOperationWaitingEntry: (input: Omit<OpdOperationWaitingEntry, "id" | "createdAt" | "updatedAt" | "updatedBy" | "patientLink">) => void;
+  updateOpdOperationWaitingEntry: (entryId: string, input: Omit<OpdOperationWaitingEntry, "id" | "createdAt" | "updatedAt" | "updatedBy" | "patientLink">) => void;
   addSchedulePdf: (input: Omit<SchedulePdf, "id" | "uploadedBy" | "uploadedAt">) => void;
   addCareTeam: (input: Pick<CareTeam, "name" | "shortName" | "color" | "lead">) => void;
   updateCareTeam: (teamId: string, input: Pick<CareTeam, "name" | "shortName" | "color" | "lead">) => void;
@@ -169,6 +173,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
           hasPersistedLocalDataRef.current = true;
           let parsedData = JSON.parse(restoredData) as DepartmentData;
           parsedData.shiftReports ??= [];
+          parsedData.opdOperationWaitingList ??= [];
           parsedData.users = parsedData.users.map((user) => ({ ...user, username: user.username ?? (user.id === "u-admin" ? "admin" : `staff-${user.id.replace(/[^a-z0-9]/gi, "")}`), passwordRecoveryRequired: user.passwordRecoveryRequired ?? false }));
           const rosterUpdated = applyWeeklyGroupsRoster(parsedData);
           const releaseReadyData = prepareInternalReleaseData(rosterUpdated);
@@ -599,6 +604,26 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return { ...current, surgeries: current.surgeries.map((surgery) => surgery.id === surgeryId ? { ...input, id: surgeryId, patientLink, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim() } : surgery), teams: patientLink ? current.teams.map((team) => team.id === patientLink.teamId ? { ...team, cases: team.cases.map((patient) => patient.id === patientLink.caseId ? { ...patient, ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patient) } : team) : current.teams };
   }), [session?.name, session?.userId, updateData]);
 
+  const addOpdOperationWaitingEntry = useCallback((input: Omit<OpdOperationWaitingEntry, "id" | "createdAt" | "updatedAt" | "updatedBy" | "patientLink">) => updateData((current) => {
+    const patientLink = findOpdWaitingListPatientLink(current, input.fileNumber);
+    const now = new Date().toISOString();
+    return {
+      ...current,
+      opdOperationWaitingList: [{ ...input, id: `opd-${Date.now()}`, patientLink, patientName: input.patientName.trim(), fileNumber: input.fileNumber.trim(), diagnosis: input.diagnosis.trim(), procedure: input.procedure.trim(), requestedBy: input.requestedBy.trim(), plannedDate: input.plannedDate.trim(), notes: input.notes.trim(), createdAt: now, updatedAt: now, updatedBy: session?.name ?? "عضو الفريق" }, ...(current.opdOperationWaitingList ?? [])],
+      teams: patientLink ? current.teams.map((team) => team.id === patientLink.teamId ? { ...team, cases: team.cases.map((patient) => patient.id === patientLink.caseId ? { ...patient, ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patient) } : team) : current.teams,
+    };
+  }), [session?.name, session?.userId, updateData]);
+
+  const updateOpdOperationWaitingEntry = useCallback((entryId: string, input: Omit<OpdOperationWaitingEntry, "id" | "createdAt" | "updatedAt" | "updatedBy" | "patientLink">) => updateData((current) => {
+    const patientLink = findOpdWaitingListPatientLink(current, input.fileNumber);
+    const now = new Date().toISOString();
+    return {
+      ...current,
+      opdOperationWaitingList: (current.opdOperationWaitingList ?? []).map((entry) => entry.id === entryId ? { ...entry, ...input, patientLink, patientName: input.patientName.trim(), fileNumber: input.fileNumber.trim(), diagnosis: input.diagnosis.trim(), procedure: input.procedure.trim(), requestedBy: input.requestedBy.trim(), plannedDate: input.plannedDate.trim(), notes: input.notes.trim(), updatedAt: now, updatedBy: session?.name ?? "عضو الفريق" } : entry),
+      teams: patientLink ? current.teams.map((team) => team.id === patientLink.teamId ? { ...team, cases: team.cases.map((patient) => patient.id === patientLink.caseId ? { ...patient, ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patient) } : team) : current.teams,
+    };
+  }), [session?.name, session?.userId, updateData]);
+
   const addSchedulePdf = useCallback((input: Omit<SchedulePdf, "id" | "uploadedBy" | "uploadedAt">) => updateData((current) => ({
     ...current,
     scheduleDocuments: [{ ...input, id: `pdf-${Date.now()}`, uploadedBy: session?.name ?? "مستخدم مخول", uploadedAt: "الآن" }, ...current.scheduleDocuments],
@@ -740,7 +765,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, requestPasswordRecovery, confirmPasswordRecovery, requestRegistration, importApprovedRegistration, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, updateDischargedPatient, deleteDischargedPatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, markPatientFileUpdateRead, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, confirmPasswordRecovery, data, deleteDischargedPatient, dischargePatient, generateDailyShiftReport, hydrated, importApprovedRegistration, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, markPatientFileUpdateRead, removeUser, requestPasswordRecovery, requestRegistration, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateDischargedPatient, updateMedicalFile, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
+  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, requestPasswordRecovery, confirmPasswordRecovery, requestRegistration, importApprovedRegistration, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, updateDischargedPatient, deleteDischargedPatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addOpdOperationWaitingEntry, updateOpdOperationWaitingEntry, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, markPatientFileUpdateRead, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addOpdOperationWaitingEntry, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, confirmPasswordRecovery, data, deleteDischargedPatient, dischargePatient, generateDailyShiftReport, hydrated, importApprovedRegistration, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, markPatientFileUpdateRead, removeUser, requestPasswordRecovery, requestRegistration, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateDischargedPatient, updateMedicalFile, updateOpdOperationWaitingEntry, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }

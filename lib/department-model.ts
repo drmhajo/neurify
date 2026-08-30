@@ -76,6 +76,24 @@ export type Surgery = {
   recordedAt?: string;
 };
 
+export type OpdOperationWaitingEntry = {
+  id: string;
+  patientLink?: { teamId: string; caseId: string };
+  patientName: string;
+  fileNumber: string;
+  diagnosis: string;
+  procedure: string;
+  procedureCode?: NeurosurgeryProcedureCode;
+  requestedBy: string;
+  plannedDate: string;
+  priority: "عاجل" | "قريب" | "روتيني";
+  status: "بانتظار مراجعة" | "معتمد" | "مجدول" | "مكتمل" | "ملغى";
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string;
+};
+
 export type PatientCase = {
   id: string;
   code: string;
@@ -272,6 +290,7 @@ export type DepartmentData = {
   reports: MedicalReport[];
   shifts: Shift[];
   surgeries: Surgery[];
+  opdOperationWaitingList?: OpdOperationWaitingEntry[];
   weeklyAssignments: WeeklyAssignment[];
   scheduleDocuments: SchedulePdf[];
   teams: CareTeam[];
@@ -509,6 +528,7 @@ export const createInternalDepartmentData = (): DepartmentData => ({
   reports: [],
   shifts: [],
   surgeries: [],
+  opdOperationWaitingList: [],
   weeklyAssignments: [],
   scheduleDocuments: [],
   teams: weeklyGroupDefinitions.map((team) => ({

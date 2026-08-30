@@ -400,3 +400,4 @@
 - [x] Open patient file by tapping an inpatient in Weekend Endorsement
 - [x] Add a structured list of common neurosurgery diagnoses to patient data entry
 - [x] Use a searchable standardized Ward list for patient data entry and Weekend Endorsement filtering
+- [x] Add an OPD operation waiting-list page with patient links, priority, status, and notes
