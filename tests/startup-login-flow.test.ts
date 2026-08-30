@@ -44,6 +44,7 @@ describe("مسار بدء Neurify الآمن", () => {
     expect(config).not.toContain('"expo-asset"');
     expect(config).toContain('"./plugins/with-gradle-constraints.js"');
     expect(config).toContain('fonts: ["./assets/fonts/MaterialIcons.ttf"]');
-    expect(config).toContain('fontFamily: "material"');
+    expect(config).not.toContain("fontDefinitions");
+    expect(config).not.toContain("fontWeight");
   });
 });

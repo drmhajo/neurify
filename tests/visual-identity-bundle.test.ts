@@ -30,7 +30,8 @@ describe("حزمة الهوية المرئية المحلية", () => {
     expect(gradlePlugin).toContain('org.gradle.parallel", "false"');
     expect(gradlePlugin).toContain('org.gradle.workers.max", "2"');
     expect(config).toContain('fonts: ["./assets/fonts/MaterialIcons.ttf"]');
-    expect(config).toContain('fontFamily: "material"');
+    expect(config).not.toContain("fontDefinitions");
+    expect(config).not.toContain("fontWeight");
     expect(layout).toContain('material: require("../assets/fonts/MaterialIcons.ttf")');
     expect(layout).toContain('require("../assets/images/neurosurgery-department-logo.png")');
   });
