@@ -419,3 +419,9 @@
 - [x] Validate Expo config, dependencies, assets, config plugins, and generated Gradle properties
 - [x] Run TypeScript, lint, complete regression tests, Expo prebuild, and Android export
 - [x] Fix every reproducible build error and save a verified release checkpoint
+- [x] Confirm MacBook 13-inch format, five live wallpapers, loop duration, text, and silent playback
+- [x] Create four distinct Neurify live-wallpaper concepts with logo and wordmark
+- [x] Create a fifth animation where the two check marks form a scalpel, split the words, and the pieces recombine into the Neurify wordmark with the logo above
+- [x] Regenerate the fifth Neurify identity-formation animation as a 10-second sequence
+- [x] Generate seamless promotional video loops and verify playback quality
+- [x] Deliver 2560×1600 macOS-ready wallpaper files with installation instructions
