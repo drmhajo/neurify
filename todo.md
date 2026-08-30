@@ -381,3 +381,4 @@
 - [x] Render an Arabic and English teaser phrase clearly in every animated Neurify screensaver
 - [x] Prepare a practical Neurify launch campaign using the approved flyers and animated screensavers
 - [x] Redesign report PDF and Excel export controls with distinct colors and clearer placement on mobile screens
+- [x] Reformat Reports page icons for clearer mobile layout and bilingual accessibility
