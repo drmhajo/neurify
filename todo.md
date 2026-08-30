@@ -409,3 +409,6 @@
 - [x] Highlight newly added OPD waiting-list cases for Operations supervisors with a bilingual visual indicator
 - [x] Add regression coverage for the OPD new-case indicator
 - [x] Increment the app version and verify Android export for the OPD indicator
+- [x] Verify bundled icons, fonts, images, and theme assets match the preview
+- [x] Verify Expo asset/font configuration includes all runtime visual resources
+- [x] Run Android production export and asset regression checks for preview parity

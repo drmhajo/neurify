@@ -9,6 +9,19 @@ describe("حزمة الهوية المرئية المحلية", () => {
     const config = fs.readFileSync(path.join(root, "app.config.ts"), "utf8");
     const layout = fs.readFileSync(path.join(root, "app", "_layout.tsx"), "utf8");
 
+    const requiredVisualAssets = [
+      "icon.png",
+      "splash-icon.png",
+      "favicon.png",
+      "android-icon-background.png",
+      "android-icon-foreground.png",
+      "android-icon-monochrome.png",
+      "neurify-mark-transparent.png",
+      "neurify-wordmark.png",
+      "neurosurgery-department-logo.png",
+      "neurosurgery-department-report-logo.png",
+    ];
+    requiredVisualAssets.forEach((asset) => expect(fs.existsSync(path.join(root, "assets", "images", asset))).toBe(true));
     expect(fs.existsSync(path.join(root, "assets", "fonts", "MaterialIcons.ttf"))).toBe(true);
     expect(config).toContain('assets: ["./assets/images", "./assets/fonts"]');
     expect(config).toContain('fonts: ["./assets/fonts/MaterialIcons.ttf"]');
