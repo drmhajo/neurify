@@ -28,8 +28,7 @@ describe("مسار بدء Neurify الآمن", () => {
     const rootLayout = fs.readFileSync(path.join(root, "app", "_layout.tsx"), "utf8");
 
     expect(rootLayout).toContain('import { useFonts } from "expo-font"');
-    expect(rootLayout).toContain('import MaterialIcons from "@expo/vector-icons/MaterialIcons"');
-    expect(rootLayout).toContain("useFonts(MaterialIcons.font)");
+    expect(rootLayout).toContain('material: require("../assets/fonts/MaterialIcons.ttf")');
     expect(rootLayout).toContain("materialIconsLoaded || Boolean(materialIconsError)");
     expect(rootLayout).toContain("startupAssetsReady = iconFontReady && coreUiAssetsReady");
   });

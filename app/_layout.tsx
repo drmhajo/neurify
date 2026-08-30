@@ -2,7 +2,6 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useAssets } from "expo-asset";
 import { useFonts } from "expo-font";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { DepartmentProvider, useDepartment } from "@/lib/department-store";
@@ -15,7 +14,9 @@ import * as SplashScreen from "expo-splash-screen";
 SplashScreen.setOptions({ duration: 260, fade: true });
 
 export default function RootLayout() {
-  const [materialIconsLoaded, materialIconsError] = useFonts(MaterialIcons.font);
+  const [materialIconsLoaded, materialIconsError] = useFonts({
+    material: require("../assets/fonts/MaterialIcons.ttf"),
+  });
   const [coreUiAssets, coreUiAssetsError] = useAssets([
     require("../assets/fonts/MaterialIcons.ttf"),
     require("../assets/images/icon.png"),

@@ -384,3 +384,4 @@
 - [x] Reformat Reports page icons for clearer mobile layout and bilingual accessibility
 - [x] Fix Android-installed icon rendering to match preview across sign-in, general discussion, and quick actions
 - [x] Embed and preload Material Icons locally for immediate repeat launches
+- [x] Embed all core visual identity assets and theme tokens in the Android installation package
