@@ -23,4 +23,14 @@ describe("مسار بدء Neurify الآمن", () => {
     expect(loader).toContain("duration: 360");
     expect(loader).toContain("<Animated.View style={{ opacity: wordmarkOpacity }}>");
   });
+
+  it("يحمّل خط Material Icons قبل إظهار شاشة الدخول أو أيقونات التبويب في Android", () => {
+    const rootLayout = fs.readFileSync(path.join(root, "app", "_layout.tsx"), "utf8");
+
+    expect(rootLayout).toContain('import { useFonts } from "expo-font"');
+    expect(rootLayout).toContain('import MaterialIcons from "@expo/vector-icons/MaterialIcons"');
+    expect(rootLayout).toContain("useFonts(MaterialIcons.font)");
+    expect(rootLayout).toContain("materialIconsLoaded || Boolean(materialIconsError)");
+    expect(rootLayout).toContain("iconFontReady ? <LanguageTransition>");
+  });
 });

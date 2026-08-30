@@ -1,5 +1,7 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useFonts } from "expo-font";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { DepartmentProvider, useDepartment } from "@/lib/department-store";
@@ -12,7 +14,10 @@ import * as SplashScreen from "expo-splash-screen";
 SplashScreen.setOptions({ duration: 260, fade: true });
 
 export default function RootLayout() {
-  return <GestureHandlerRootView style={{ flex: 1 }}><ThemeProvider><LanguageProvider><LanguageTransition><DepartmentProvider><AppNavigator /></DepartmentProvider></LanguageTransition></LanguageProvider></ThemeProvider></GestureHandlerRootView>;
+  const [materialIconsLoaded, materialIconsError] = useFonts(MaterialIcons.font);
+  const iconFontReady = materialIconsLoaded || Boolean(materialIconsError);
+
+  return <GestureHandlerRootView style={{ flex: 1 }}><ThemeProvider><LanguageProvider>{iconFontReady ? <LanguageTransition><DepartmentProvider><AppNavigator /></DepartmentProvider></LanguageTransition> : <LogoLoading />}</LanguageProvider></ThemeProvider></GestureHandlerRootView>;
 }
 
 function AppNavigator() {

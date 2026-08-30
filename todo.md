@@ -382,3 +382,4 @@
 - [x] Prepare a practical Neurify launch campaign using the approved flyers and animated screensavers
 - [x] Redesign report PDF and Excel export controls with distinct colors and clearer placement on mobile screens
 - [x] Reformat Reports page icons for clearer mobile layout and bilingual accessibility
+- [x] Fix Android-installed icon rendering to match preview across sign-in, general discussion, and quick actions
