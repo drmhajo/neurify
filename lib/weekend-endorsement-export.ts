@@ -3,6 +3,7 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 import * as XLSX from "xlsx";
+import { saveReportBase64ToDevice, saveReportUriToDevice } from "./report-direct-download";
 import { createWeekendEndorsementHtml, type WeekendEndorsementReport } from "./weekend-endorsement";
 import { createWeekendEndorsementWorkbook, weekendEndorsementExportFileName, type WeekendEndorsementExportLanguage } from "./weekend-endorsement-export-data";
 
@@ -30,8 +31,9 @@ export async function exportWeekendEndorsementPdf(report: WeekendEndorsementRepo
     window.setTimeout(() => { popup.focus(); popup.print(); }, 180);
     return "print-opened";
   }
-  if (!(await Sharing.isAvailableAsync())) return "unavailable";
   const result = await Print.printToFileAsync({ html });
+  if (Platform.OS === "android") return saveReportUriToDevice({ uri: result.uri, fileName, mimeType: "application/pdf" });
+  if (!(await Sharing.isAvailableAsync())) return "unavailable";
   await Sharing.shareAsync(result.uri, { mimeType: "application/pdf", dialogTitle: fileName, UTI: ".pdf" });
   return "shared";
 }
@@ -46,6 +48,7 @@ export async function exportWeekendEndorsementExcel(report: WeekendEndorsementRe
     downloadBlob(new Blob([bytes], { type: mimeType }), fileName);
     return "downloaded";
   }
+  if (Platform.OS === "android") return saveReportBase64ToDevice({ base64, fileName, mimeType });
   if (!FileSystem.documentDirectory || !(await Sharing.isAvailableAsync())) return "unavailable";
   const folder = `${FileSystem.documentDirectory}exports/`;
   await FileSystem.makeDirectoryAsync(folder, { intermediates: true });

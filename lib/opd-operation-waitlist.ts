@@ -3,8 +3,16 @@ import type { DepartmentData, OpdOperationWaitingEntry, PermissionKey, UserRole 
 export const OPD_OPERATION_PRIORITIES = ["عاجل", "قريب", "روتيني"] as const;
 export const OPD_OPERATION_STATUSES = ["بانتظار مراجعة", "معتمد", "مجدول", "مكتمل", "ملغى"] as const;
 
+export function canAddOpdOperationWaitingList(role: UserRole | undefined) {
+  return Boolean(role);
+}
+
+export function canSuperviseOperations(role: UserRole | undefined, permissions: PermissionKey[] | undefined) {
+  return role === "admin" || Boolean(permissions?.includes("manage_operations"));
+}
+
 export function canManageOpdOperationWaitingList(role: UserRole | undefined, permissions: PermissionKey[] | undefined) {
-  return role === "admin" || Boolean(permissions?.includes("manage_schedules"));
+  return canSuperviseOperations(role, permissions);
 }
 
 export function findOpdWaitingListPatientLink(data: DepartmentData, fileNumber: string): OpdOperationWaitingEntry["patientLink"] {

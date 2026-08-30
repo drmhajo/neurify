@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canManageOpdOperationWaitingList, findOpdWaitingListPatientLink, opdPriorityLabel, opdStatusLabel } from "../lib/opd-operation-waitlist";
+import { canAddOpdOperationWaitingList, canManageOpdOperationWaitingList, findOpdWaitingListPatientLink, opdPriorityLabel, opdStatusLabel } from "../lib/opd-operation-waitlist";
 import type { DepartmentData } from "../lib/department-model";
 
 const data = { teams: [{ id: "t1", cases: [{ id: "c1", code: "MRN-001", fileNumber: "MRN-001" }] }] } as unknown as DepartmentData;
@@ -10,9 +10,11 @@ describe("قائمة انتظار عمليات العيادات", () => {
     expect(findOpdWaitingListPatientLink(data, "unknown")).toBeUndefined();
   });
 
-  it("تقيّد التعديل بصلاحية إدارة الجداول وتعرض التسميات الثنائية", () => {
+  it("تسمح بإضافة الطلب للمستخدم المعتمد وتقصر التحديث على إشراف العمليات", () => {
     expect(canManageOpdOperationWaitingList("admin", [])).toBe(true);
-    expect(canManageOpdOperationWaitingList("team_member", ["manage_schedules"])).toBe(true);
+    expect(canAddOpdOperationWaitingList("team_member")).toBe(true);
+    expect(canManageOpdOperationWaitingList("team_member", ["manage_schedules"])).toBe(false);
+    expect(canManageOpdOperationWaitingList("team_member", ["manage_operations"])).toBe(true);
     expect(canManageOpdOperationWaitingList("team_member", [])).toBe(false);
     expect(opdPriorityLabel("عاجل", "en")).toBe("Urgent");
     expect(opdStatusLabel("مجدول", "en")).toBe("Scheduled");

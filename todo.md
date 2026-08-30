@@ -403,3 +403,6 @@
 - [x] Add an OPD operation waiting-list page with patient links, priority, status, and notes
 - [x] Filter OPD operation waiting list by priority or status
 - [x] Export filtered OPD operation waiting list to PDF and Excel
+- [x] Position the OPD waiting list next to operations in the schedule workflow
+- [x] Allow all approved users to add OPD waiting entries while restricting edits to operation supervisors
+- [x] Download exported reports directly to the user's device

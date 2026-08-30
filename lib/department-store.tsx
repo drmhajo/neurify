@@ -42,7 +42,7 @@ import { changeCentralPassword, confirmCentralPasswordRecovery, pullCentralDepar
 import { parseStoredDepartmentSession, type DepartmentSession } from "@/lib/department-session";
 import { patientUpdateMarker } from "@/lib/patient-file-updates";
 import { canonicalWard } from "@/lib/ward-catalog";
-import { findOpdWaitingListPatientLink } from "@/lib/opd-operation-waitlist";
+import { canAddOpdOperationWaitingList, canSuperviseOperations, findOpdWaitingListPatientLink } from "@/lib/opd-operation-waitlist";
 
 type Session = DepartmentSession;
 
@@ -593,18 +593,23 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   })), [updateData]);
 
   const addSurgery = useCallback((input: Omit<Surgery, "id">) => updateData((current) => {
+    const actor = current.users.find((user) => user.id === session?.userId);
+    if (!canSuperviseOperations(session?.role, actor?.permissions)) return current;
     const matchedPatient = current.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.fileNumber === input.patientCode.trim() || patientCase.code === input.patientCode.trim() ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined;
     const patientLink = input.patientLink ?? matchedPatient;
     return { ...current, surgeries: [{ ...input, id: `o-${Date.now()}`, patientLink, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim(), recordedAt: input.recordedAt ?? new Date().toISOString() }, ...current.surgeries], teams: patientLink ? current.teams.map((team) => team.id === patientLink.teamId ? { ...team, cases: team.cases.map((patient) => patient.id === patientLink.caseId ? { ...patient, ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patient) } : team) : current.teams };
-  }), [session?.name, session?.userId, updateData]);
+  }), [session?.name, session?.role, session?.userId, updateData]);
 
   const updateSurgery = useCallback((surgeryId: string, input: Omit<Surgery, "id">) => updateData((current) => {
+    const actor = current.users.find((user) => user.id === session?.userId);
+    if (!canSuperviseOperations(session?.role, actor?.permissions)) return current;
     const matchedPatient = current.teams.flatMap((team) => team.cases.map((patientCase) => patientCase.fileNumber === input.patientCode.trim() || patientCase.code === input.patientCode.trim() ? { teamId: team.id, caseId: patientCase.id } : null)).find(Boolean) ?? undefined;
     const patientLink = input.patientLink ?? matchedPatient;
     return { ...current, surgeries: current.surgeries.map((surgery) => surgery.id === surgeryId ? { ...input, id: surgeryId, patientLink, date: input.date.trim(), time: input.time.trim(), patientCode: input.patientCode.trim(), procedure: input.procedure.trim(), surgeon: input.surgeon.trim(), room: input.room.trim(), notes: input.notes.trim() } : surgery), teams: patientLink ? current.teams.map((team) => team.id === patientLink.teamId ? { ...team, cases: team.cases.map((patient) => patient.id === patientLink.caseId ? { ...patient, ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patient) } : team) : current.teams };
-  }), [session?.name, session?.userId, updateData]);
+  }), [session?.name, session?.role, session?.userId, updateData]);
 
   const addOpdOperationWaitingEntry = useCallback((input: Omit<OpdOperationWaitingEntry, "id" | "createdAt" | "updatedAt" | "updatedBy" | "patientLink">) => updateData((current) => {
+    if (!canAddOpdOperationWaitingList(session?.role)) return current;
     const patientLink = findOpdWaitingListPatientLink(current, input.fileNumber);
     const now = new Date().toISOString();
     return {
@@ -612,9 +617,11 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       opdOperationWaitingList: [{ ...input, id: `opd-${Date.now()}`, patientLink, patientName: input.patientName.trim(), fileNumber: input.fileNumber.trim(), diagnosis: input.diagnosis.trim(), procedure: input.procedure.trim(), requestedBy: input.requestedBy.trim(), plannedDate: input.plannedDate.trim(), notes: input.notes.trim(), createdAt: now, updatedAt: now, updatedBy: session?.name ?? "عضو الفريق" }, ...(current.opdOperationWaitingList ?? [])],
       teams: patientLink ? current.teams.map((team) => team.id === patientLink.teamId ? { ...team, cases: team.cases.map((patient) => patient.id === patientLink.caseId ? { ...patient, ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patient) } : team) : current.teams,
     };
-  }), [session?.name, session?.userId, updateData]);
+  }), [session?.name, session?.role, session?.userId, updateData]);
 
   const updateOpdOperationWaitingEntry = useCallback((entryId: string, input: Omit<OpdOperationWaitingEntry, "id" | "createdAt" | "updatedAt" | "updatedBy" | "patientLink">) => updateData((current) => {
+    const actor = current.users.find((user) => user.id === session?.userId);
+    if (!canSuperviseOperations(session?.role, actor?.permissions)) return current;
     const patientLink = findOpdWaitingListPatientLink(current, input.fileNumber);
     const now = new Date().toISOString();
     return {
@@ -622,7 +629,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
       opdOperationWaitingList: (current.opdOperationWaitingList ?? []).map((entry) => entry.id === entryId ? { ...entry, ...input, patientLink, patientName: input.patientName.trim(), fileNumber: input.fileNumber.trim(), diagnosis: input.diagnosis.trim(), procedure: input.procedure.trim(), requestedBy: input.requestedBy.trim(), plannedDate: input.plannedDate.trim(), notes: input.notes.trim(), updatedAt: now, updatedBy: session?.name ?? "عضو الفريق" } : entry),
       teams: patientLink ? current.teams.map((team) => team.id === patientLink.teamId ? { ...team, cases: team.cases.map((patient) => patient.id === patientLink.caseId ? { ...patient, ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patient) } : team) : current.teams,
     };
-  }), [session?.name, session?.userId, updateData]);
+  }), [session?.name, session?.role, session?.userId, updateData]);
 
   const addSchedulePdf = useCallback((input: Omit<SchedulePdf, "id" | "uploadedBy" | "uploadedAt">) => updateData((current) => ({
     ...current,

@@ -3,6 +3,7 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 import * as XLSX from "xlsx";
+import { saveReportBase64ToDevice, saveReportUriToDevice } from "./report-direct-download";
 import { createOpdWaitlistHtml, createOpdWaitlistWorkbook, opdWaitlistExportFileName, type OpdWaitlistExportLanguage, type OpdWaitlistReport } from "./opd-operation-waitlist-export-data";
 
 export { buildOpdWaitlistReport, createOpdWaitlistHtml, createOpdWaitlistWorkbook, filterOpdWaitlist, opdWaitlistExcelRows, opdWaitlistExportFileName, opdWaitlistScopeLabel } from "./opd-operation-waitlist-export-data";
@@ -29,8 +30,9 @@ export async function exportOpdWaitlistPdf(report: OpdWaitlistReport, language: 
     window.setTimeout(() => { popup.focus(); popup.print(); }, 180);
     return "print-opened";
   }
-  if (!(await Sharing.isAvailableAsync())) return "unavailable";
   const result = await Print.printToFileAsync({ html });
+  if (Platform.OS === "android") return saveReportUriToDevice({ uri: result.uri, fileName, mimeType: "application/pdf" });
+  if (!(await Sharing.isAvailableAsync())) return "unavailable";
   await Sharing.shareAsync(result.uri, { mimeType: "application/pdf", dialogTitle: fileName, UTI: ".pdf" });
   return "shared";
 }
@@ -45,6 +47,7 @@ export async function exportOpdWaitlistExcel(report: OpdWaitlistReport, language
     downloadBlob(new Blob([bytes], { type: mimeType }), fileName);
     return "downloaded";
   }
+  if (Platform.OS === "android") return saveReportBase64ToDevice({ base64, fileName, mimeType });
   if (!FileSystem.documentDirectory || !(await Sharing.isAvailableAsync())) return "unavailable";
   const folder = `${FileSystem.documentDirectory}exports/`;
   await FileSystem.makeDirectoryAsync(folder, { intermediates: true });

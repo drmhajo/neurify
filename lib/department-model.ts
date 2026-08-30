@@ -1,7 +1,7 @@
 import type { NeurosurgeryProcedureCode } from "./neurosurgery-procedure-catalog";
 
 export type UserRole = "admin" | "consultant" | "coordinator" | "team_member";
-export type PermissionKey = "manage_users" | "manage_permissions" | "manage_teams" | "manage_schedules" | "manage_reports" | "view_all_patients" | "edit_medical_files" | "add_imaging" | "patient_chat" | "view_audit" | "send_general_announcement" | "approve_registration_requests";
+export type PermissionKey = "manage_users" | "manage_permissions" | "manage_teams" | "manage_schedules" | "manage_operations" | "manage_reports" | "view_all_patients" | "edit_medical_files" | "add_imaging" | "patient_chat" | "view_audit" | "send_general_announcement" | "approve_registration_requests";
 export type ReportPriority = "عاجل" | "عادي" | "متابعة";
 export type ReportStatus = "جديد" | "قيد الإعداد" | "مكتمل";
 
@@ -316,6 +316,7 @@ export const permissionLabels: Record<PermissionKey, string> = {
   manage_permissions: "إدارة الصلاحيات",
   manage_teams: "إدارة الفرق العلاجية",
   manage_schedules: "إدارة الجداول",
+  manage_operations: "إشراف العمليات",
   manage_reports: "إدارة التقارير",
   view_all_patients: "عرض جميع الملفات الطبية",
   edit_medical_files: "تعديل الملفات الطبية",
@@ -327,7 +328,7 @@ export const permissionLabels: Record<PermissionKey, string> = {
 };
 
 export const rolePermissionDefaults: Record<UserRole, PermissionKey[]> = {
-  admin: ["manage_users", "manage_permissions", "manage_teams", "manage_schedules", "manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat", "view_audit", "send_general_announcement", "approve_registration_requests"],
+  admin: ["manage_users", "manage_permissions", "manage_teams", "manage_schedules", "manage_operations", "manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat", "view_audit", "send_general_announcement", "approve_registration_requests"],
   consultant: ["manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat"],
   coordinator: ["manage_schedules", "manage_reports", "view_all_patients", "patient_chat"],
   team_member: ["edit_medical_files", "add_imaging", "patient_chat"],
