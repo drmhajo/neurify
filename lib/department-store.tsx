@@ -40,6 +40,7 @@ import { shouldLockLocalBootstrap } from "@/lib/local-bootstrap";
 import { changeCentralPassword, confirmCentralPasswordRecovery, pullCentralDepartmentData, requestCentralPasswordRecovery, resetCentralPassword, saveCentralDepartmentData, signInCentralRegistration, submitCentralRegistration } from "@/lib/central-registration-api";
 import { parseStoredDepartmentSession, type DepartmentSession } from "@/lib/department-session";
 import { patientUpdateMarker } from "@/lib/patient-file-updates";
+import { canonicalWard } from "@/lib/ward-catalog";
 
 type Session = DepartmentSession;
 
@@ -471,12 +472,13 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     const now = Date.now();
     const caseId = `c-${now}`;
     const fileNumber = input.patient.fileNumber.trim() || input.patient.code.trim();
-    const patientCase: PatientCase = { id: caseId, code: fileNumber, fileNumber, fullName: input.patient.fullName.trim(), age: input.patient.age, medicalHistory: input.patient.medicalHistory.trim() || "غير موثّق بعد", clinicalTests: input.patient.clinicalTests.trim() || "غير موثّق بعد", diagnosis: input.patient.diagnosis.trim(), clinicalDecision: input.patient.clinicalDecision?.trim(), surgeryType: input.patient.surgeryType?.trim(), admittedSince: "الآن", admittedAt: new Date(now).toISOString(), status: input.disposition === "admit" ? "منوّم" : "متابعة", imaging: [], messages: [], ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") };
+    const normalizedPatient = { ...input.patient, ward: canonicalWard(input.patient.ward) };
+    const patientCase: PatientCase = { id: caseId, code: fileNumber, fileNumber, fullName: normalizedPatient.fullName.trim(), age: normalizedPatient.age, medicalHistory: normalizedPatient.medicalHistory.trim() || "غير موثّق بعد", clinicalTests: normalizedPatient.clinicalTests.trim() || "غير موثّق بعد", diagnosis: normalizedPatient.diagnosis.trim(), ward: normalizedPatient.ward, clinicalDecision: normalizedPatient.clinicalDecision?.trim(), surgeryType: normalizedPatient.surgeryType?.trim(), admittedSince: "الآن", admittedAt: new Date(now).toISOString(), status: input.disposition === "admit" ? "منوّم" : "متابعة", imaging: [], messages: [], ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") };
     updateData((current) => ({
       ...current,
       teams: current.teams.map((team) => team.id === teamId ? {
         ...team,
-        consultations: [{ id: `q-${now}`, title: input.title.trim(), subject: input.subject.trim(), createdBy: session?.name ?? "عضو الفريق", time: "الآن", createdAt: new Date(now).toISOString(), patient: input.patient, disposition: input.disposition, convertedCaseId: caseId }, ...team.consultations],
+        consultations: [{ id: `q-${now}`, title: input.title.trim(), subject: input.subject.trim(), createdBy: session?.name ?? "عضو الفريق", time: "الآن", createdAt: new Date(now).toISOString(), patient: normalizedPatient, disposition: input.disposition, convertedCaseId: caseId }, ...team.consultations],
         cases: input.disposition === "discharge" ? team.cases : [patientCase, ...team.cases],
         dischargedCases: input.disposition === "discharge" ? [{ ...patientCase, dischargedAt: "الآن", dischargedBy: session?.name ?? "عضو الفريق", dischargeReason: input.subject.trim() || "خروج من الخدمة" }, ...(team.dischargedCases ?? [])] : team.dischargedCases ?? [],
       } : team),
@@ -513,7 +515,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     if (!canManageDischargedCases(session?.role)) return false;
     const exists = dataRef.current.teams.find((team) => team.id === teamId)?.dischargedCases?.some((patient) => patient.id === caseId);
     if (!exists) return false;
-    updateData((current) => updateDischargedCase(current, teamId, caseId, input));
+    updateData((current) => updateDischargedCase(current, teamId, caseId, { ...input, ward: canonicalWard(input.ward) }));
     return true;
   }, [session?.role, updateData]);
 
@@ -614,7 +616,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
 
   const updateMedicalFile = useCallback((teamId: string, caseId: string, input: Pick<PatientCase, "fullName" | "age" | "medicalHistory" | "clinicalTests" | "diagnosis" | "ward" | "bed">) => updateData((current) => ({
     ...current,
-    teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, ...input, ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patientCase) } : team),
+    teams: current.teams.map((team) => team.id === teamId ? { ...team, cases: team.cases.map((patientCase) => patientCase.id === caseId ? { ...patientCase, ...input, ward: canonicalWard(input.ward), ...patientUpdateMarker(session?.userId, session?.name ?? "عضو الفريق") } : patientCase) } : team),
   })), [session?.name, session?.userId, updateData]);
 
   const markPatientFileUpdateRead = useCallback((teamId: string, caseId: string) => {

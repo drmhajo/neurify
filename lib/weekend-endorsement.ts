@@ -1,6 +1,7 @@
 import type { DepartmentData } from "./department-model";
 import { createOfficialReportHeaderHtml } from "./report-branding";
 import { formatRiyadhDateTime } from "./riyadh-time";
+import { canonicalWard } from "./ward-catalog";
 
 export type WeekendEndorsementEntry = {
   id: string;
@@ -30,7 +31,7 @@ export function searchWeekendEndorsementEntries(entries: WeekendEndorsementEntry
 }
 
 function normalizeWard(value: string | undefined) {
-  return value?.trim().toLocaleLowerCase() ?? "";
+  return canonicalWard(value).toLocaleLowerCase();
 }
 
 export function buildWeekendEndorsementReport(data: DepartmentData, generatedBy: string, consultantFilter?: string, wardFilter?: string): WeekendEndorsementReport {
@@ -47,7 +48,7 @@ export function buildWeekendEndorsementReport(data: DepartmentData, generatedBy:
         patientName: patient.fullName,
         fileNumber: patient.fileNumber || patient.code,
         consultant: team.lead,
-        ward: patient.ward?.trim() || "—",
+        ward: canonicalWard(patient.ward) || "—",
         bed: patient.bed?.trim() || "—",
         diagnosis: patient.diagnosis?.trim() || "—",
         weekendPlan: patient.weekendPlan?.trim() || "Not documented",

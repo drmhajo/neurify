@@ -117,6 +117,7 @@ export type ConsultationPatient = {
   medicalHistory: string;
   clinicalTests: string;
   diagnosis: string;
+  ward?: string;
   clinicalDecision?: string;
   surgeryType?: string;
   surgeryTypeCode?: NeurosurgeryProcedureCode;
