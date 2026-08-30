@@ -181,6 +181,14 @@ function passwordRecoveryEmailContent(code: string) {
   return { subject, text, html };
 }
 
+function welcomeEmailContent(name: string) {
+  const displayName = cleanText(name, 160) || "Neurify user";
+  const subject = "Welcome to Neurify / مرحبًا بك في Neurify";
+  const text = `Welcome to Neurify, ${displayName}. Your account registration request has been received and is awaiting central approval. You will be able to sign in only after approval.\n\nمرحبًا بك في Neurify، ${displayName}. تم استلام طلب تسجيل حسابك وهو بانتظار الموافقة المركزية. ستتمكن من تسجيل الدخول بعد الموافقة فقط.`;
+  const html = `<div style="margin:0;background:#F4F8FA;padding:28px 16px;font-family:Arial,sans-serif;color:#082B49"><div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #D7E4E8;border-radius:16px;overflow:hidden"><div style="padding:24px;text-align:center;background:#082B49"><img src="${OFFICIAL_DEPARTMENT_LOGO_URL}" width="72" height="72" alt="Neurosurgery Department" style="display:block;margin:0 auto 12px;object-fit:contain"/><div style="font-size:24px;font-weight:700;letter-spacing:.3px;color:#ffffff">Neurify</div><div style="margin-top:6px;font-size:13px;color:#BFE7E8">Neurosurgery Department · King Saud Medical City</div></div><div style="padding:28px 24px;text-align:center"><h1 style="margin:0 0 12px;font-size:21px;color:#082B49">Welcome to Neurify / مرحبًا بك</h1><p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334E5C">Dear ${displayName}, your account registration request has been received and is awaiting central approval.</p><p dir="rtl" style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#334E5C">عزيزي/عزيزتي ${displayName}، تم استلام طلب تسجيل حسابك وهو بانتظار الموافقة المركزية.</p><div style="padding:14px 16px;border-radius:10px;background:#E8F6F6;font-size:14px;line-height:1.6;color:#082B49">You can sign in only after approval. We will notify you when the account is ready.<br/><span dir="rtl">يمكنك تسجيل الدخول بعد الموافقة فقط. سنبلغك عند جاهزية الحساب.</span></div></div></div></div>`;
+  return { subject, text, html };
+}
+
 async function sendPasswordRecoveryEmail(email: string, code: string) {
   const { url, token } = gmailRelayConfiguration();
   const content = passwordRecoveryEmailContent(code);
@@ -191,6 +199,18 @@ async function sendPasswordRecoveryEmail(email: string, code: string) {
   });
   const payload = await response.json().catch(() => null) as { ok?: boolean } | null;
   if (!response.ok || !payload?.ok) throw new Error(`Password recovery Gmail relay failed (${response.status}).`);
+}
+
+async function sendRegistrationWelcomeEmail(email: string, name: string) {
+  const { url, token } = gmailRelayConfiguration();
+  const content = welcomeEmailContent(name);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "account_welcome", relay_token: token, to: email, ...content }),
+  });
+  const payload = await response.json().catch(() => null) as { ok?: boolean } | null;
+  if (!response.ok || !payload?.ok) throw new Error(`Registration welcome email failed (${response.status}).`);
 }
 
 async function fcmAccessToken(account: FirebaseServiceAccount) {
@@ -406,6 +426,13 @@ async function handleSubmit(body: Record<string, unknown>) {
     headers: { Prefer: "return=representation" },
     body: JSON.stringify({ name, email, phone, job_title: jobTitle, ...passwordFields, status: "pending" }),
   }) as RegistrationRow[];
+  if (rows[0]) {
+    try {
+      await sendRegistrationWelcomeEmail(email, name);
+    } catch (error) {
+      console.warn("Registration welcome email unavailable", error instanceof Error ? error.message : error);
+    }
+  }
   return json({ accepted: true, id: rows[0].id });
 }
 

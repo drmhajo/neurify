@@ -396,3 +396,4 @@
 - [x] Configure a Google Apps Script Gmail relay for password-recovery delivery
 - [x] Restore controllable access to the Google Apps Script editor and publish the Gmail relay
 - [x] Configure the user-provided Google Apps Script project as the secure Gmail recovery relay
+- [x] Send branded welcome email after a new user registration is submitted

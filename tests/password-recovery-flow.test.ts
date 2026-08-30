@@ -30,6 +30,8 @@ describe("استعادة كلمة المرور المركزية عبر البر�
     expect(functionSource).toContain('action: "password_recovery"');
     expect(functionSource).toContain("OFFICIAL_DEPARTMENT_LOGO_URL");
     expect(functionSource).toContain("Neurify");
+    expect(functionSource).toContain('action: "account_welcome"');
+    expect(functionSource).toContain("sendRegistrationWelcomeEmail(email, name)");
     expect(functionSource).toContain("PASSWORD_RESET_CODE_TTL_MS = 15 * 60 * 1000");
     expect(functionSource).toContain("PASSWORD_RESET_MAX_ATTEMPTS = 5");
     expect(functionSource).toContain('return json({ accepted: true });');
