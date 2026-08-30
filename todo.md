@@ -372,3 +372,12 @@
 - [x] Create a bilingual curiosity-led Neurify teaser flyer with the requested Guess what is and Wait and see sequence
 - [x] Redesign the bilingual Neurify curiosity teaser as multiple distinct professional flyer alternatives
 - [x] Update the Android launcher icon with a light background and a smaller, fully visible Neurify mark
+- [x] Create three professional Neurify PC wallpapers and screensavers with distinct color systems
+- [x] Create an additional set of Neurify PC wallpapers and screensavers with new visual directions
+- [x] Ensure every additional Neurify wallpaper combines the neural-path mark with the full Neurify wordmark
+- [x] Create a professional Neurify PC screensaver with a concise teaser message
+- [x] Create more than three additional Neurify PC screensaver alternatives with varied teaser compositions
+- [x] Produce animated Neurify PC screensavers with approved movement, duration, sound, and display settings
+- [x] Render an Arabic and English teaser phrase clearly in every animated Neurify screensaver
+- [x] Prepare a practical Neurify launch campaign using the approved flyers and animated screensavers
+- [x] Redesign report PDF and Excel export controls with distinct colors and clearer placement on mobile screens

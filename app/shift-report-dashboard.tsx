@@ -118,21 +118,32 @@ export default function ShiftReportDashboardScreen() {
         ))}
       </ScrollView>
 
-      <View style={[styles.exportActions, direction(isRTL)]}>
-        <ExportButton
-          icon="picture-as-pdf"
-          label={exporting === "pdf" ? (language === "en" ? "Preparing…" : "جارٍ التجهيز…") : "PDF"}
-          onPress={() => exportDashboard("pdf")}
-          disabled={Boolean(exporting)}
-          tone="pdf"
-        />
-        <ExportButton
-          icon="table-chart"
-          label={exporting === "xlsx" ? (language === "en" ? "Preparing…" : "جارٍ التجهيز…") : "Excel"}
-          onPress={() => exportDashboard("xlsx")}
-          disabled={Boolean(exporting)}
-          tone="excel"
-        />
+      <View style={styles.exportPanel}>
+        <View style={[styles.exportPanelHead, direction(isRTL)]}>
+          <View style={styles.headerCopy}>
+            <Text style={[styles.exportTitle, align(isRTL)]}>{language === "en" ? "Export this dashboard" : "تصدير لوحة المعلومات"}</Text>
+            <Text style={[styles.exportHint, align(isRTL)]}>{language === "en" ? "Choose a printable or spreadsheet format" : "اختر تنسيقًا للطباعة أو جدول البيانات"}</Text>
+          </View>
+          <View style={styles.exportBadge}><MaterialIcons name="file-download" size={19} color={palette.navy} /></View>
+        </View>
+        <View style={[styles.exportActions, direction(isRTL)]}>
+          <ExportButton
+            icon="picture-as-pdf"
+            label={exporting === "pdf" ? (language === "en" ? "Preparing…" : "جارٍ التجهيز…") : (language === "en" ? "Export PDF" : "تصدير PDF")}
+            accessibilityLabel={language === "en" ? "Export dashboard as PDF" : "تصدير لوحة المعلومات PDF"}
+            onPress={() => exportDashboard("pdf")}
+            disabled={Boolean(exporting)}
+            tone="pdf"
+          />
+          <ExportButton
+            icon="table-chart"
+            label={exporting === "xlsx" ? (language === "en" ? "Preparing…" : "جارٍ التجهيز…") : (language === "en" ? "Export Excel" : "تصدير Excel")}
+            accessibilityLabel={language === "en" ? "Export dashboard as Excel" : "تصدير لوحة المعلومات Excel"}
+            onPress={() => exportDashboard("xlsx")}
+            disabled={Boolean(exporting)}
+            tone="excel"
+          />
+        </View>
       </View>
 
       <AppCard style={styles.monthCard}>
@@ -198,18 +209,18 @@ export default function ShiftReportDashboardScreen() {
   );
 }
 
-function ExportButton({ icon, label, onPress, disabled, tone }: { icon: "picture-as-pdf" | "table-chart"; label: string; onPress: () => void; disabled: boolean; tone: "pdf" | "excel" }) {
+function ExportButton({ icon, label, accessibilityLabel, onPress, disabled, tone }: { icon: "picture-as-pdf" | "table-chart"; label: string; accessibilityLabel: string; onPress: () => void; disabled: boolean; tone: "pdf" | "excel" }) {
   const isPdf = tone === "pdf";
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Export ${label}`}
+      accessibilityLabel={accessibilityLabel}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [styles.exportButton, isPdf ? styles.pdfButton : styles.excelButton, (pressed || disabled) && styles.exportButtonMuted]}
     >
-      <MaterialIcons name={icon} color={isPdf ? "#FFFFFF" : palette.teal} size={18} />
-      <Text style={[styles.exportButtonText, isPdf ? styles.pdfButtonText : styles.excelButtonText]}>{label}</Text>
+      <MaterialIcons name={icon} color="#FFFFFF" size={18} />
+      <Text style={styles.exportButtonText}>{label}</Text>
     </Pressable>
   );
 }
@@ -238,14 +249,17 @@ const styles = StyleSheet.create({
   monthChipSelected: { backgroundColor: palette.navy, borderColor: palette.navy },
   monthText: { color: palette.ink, fontSize: 11, fontWeight: "800" },
   monthTextSelected: { color: "#FFFFFF" },
-  exportActions: { gap: 9, paddingBottom: 13 },
-  exportButton: { flex: 1, minHeight: 42, borderRadius: 13, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 7, borderWidth: 1 },
-  pdfButton: { backgroundColor: palette.navy, borderColor: palette.navy },
-  excelButton: { backgroundColor: "#EAF8F5", borderColor: "#9CDDD2" },
+  exportPanel: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#D6E4EB", borderRadius: 16, padding: 12, marginBottom: 13 },
+  exportPanelHead: { alignItems: "center", gap: 9, marginBottom: 10 },
+  exportTitle: { color: palette.ink, fontSize: 13, fontWeight: "900" },
+  exportHint: { color: palette.muted, fontSize: 10, marginTop: 2 },
+  exportBadge: { width: 35, height: 35, borderRadius: 11, backgroundColor: palette.paleBlue, alignItems: "center", justifyContent: "center" },
+  exportActions: { gap: 9 },
+  exportButton: { flex: 1, minHeight: 46, borderRadius: 13, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 7, borderWidth: 1 },
+  pdfButton: { backgroundColor: "#C2413A", borderColor: "#C2413A" },
+  excelButton: { backgroundColor: "#107C41", borderColor: "#107C41" },
   exportButtonMuted: { opacity: 0.6 },
-  exportButtonText: { fontSize: 12, fontWeight: "900" },
-  pdfButtonText: { color: "#FFFFFF" },
-  excelButtonText: { color: palette.teal },
+  exportButtonText: { fontSize: 11, fontWeight: "900", color: "#FFFFFF" },
   monthCard: { padding: 15 },
   monthTitle: { color: palette.ink, fontSize: 16, fontWeight: "900" },
   monthSubtitle: { color: palette.muted, fontSize: 11, marginTop: 3 },
