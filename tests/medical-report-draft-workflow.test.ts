@@ -51,4 +51,15 @@ describe("AI medical-report draft workflow", () => {
     expect(action).toContain('setProgressStage("verifying")');
     expect(action).toContain("styles.progressPanel");
   });
+
+  it("uses a public native API fallback and preserves safe recovery messages", () => {
+    const apiBase = source("constants/oauth.ts");
+    const api = source("lib/medical-report-draft-api.ts");
+    const action = source("components/medical-report-draft-action.tsx");
+    expect(apiBase).toContain('const NATIVE_PRODUCTION_API_BASE_URL = "https://neurify.manus.space"');
+    expect(apiBase).toContain("return NATIVE_PRODUCTION_API_BASE_URL");
+    expect(api).toContain("Unable to contact the medical-report service");
+    expect(action).toContain("draftFailureCopy");
+    expect(action).toContain("لم يتم تعديل ملف المريض");
+  });
 });

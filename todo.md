@@ -466,3 +466,6 @@
 - [x] Define safe bilingual progress states for AI medical-report draft generation
 - [x] Add a visible loading indicator and status messaging to the medical-report action
 - [x] Test progress states, failure recovery, and Android export for medical-report generation
+- [x] Capture and diagnose the AI medical-report generation failure without using patient data
+- [x] Repair the failing auth, network, or model-generation path and expose a safe diagnostic message
+- [x] Verify successful de-identified generation, review lock, and Android export before release

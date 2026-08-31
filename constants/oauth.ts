@@ -16,6 +16,7 @@ const env = {
   apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? "",
   deepLinkScheme: schemeFromBundleId,
 };
+const NATIVE_PRODUCTION_API_BASE_URL = "https://neurify.manus.space";
 
 export const OAUTH_PORTAL_URL = env.portal;
 export const OAUTH_SERVER_URL = env.server;
@@ -45,8 +46,9 @@ export function getApiBaseUrl(): string {
     }
   }
 
-  // Fallback to empty (will use relative URL)
-  return "";
+  // Native release builds cannot use a relative URL. Retain the configured
+  // endpoint when provided, otherwise use the project’s secured public API.
+  return NATIVE_PRODUCTION_API_BASE_URL;
 }
 
 export const SESSION_TOKEN_KEY = "app_session_token";

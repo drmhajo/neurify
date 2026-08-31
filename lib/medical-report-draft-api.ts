@@ -12,11 +12,16 @@ export async function requestMedicalReportDraft(input: { patient: PatientCase; s
   const apiBaseUrl = getApiBaseUrl();
   if (!accountId || !input.session?.userId.startsWith("remote-") || !dataProof || !apiBaseUrl) throw new Error("A secure approved department connection is required.");
 
-  const response = await fetch(`${apiBaseUrl}/api/medical-report-draft`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accountId, dataProof, language: input.language, clinicalData: toMedicalReportClinicalData(input.patient) }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}/api/medical-report-draft`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountId, dataProof, language: input.language, clinicalData: toMedicalReportClinicalData(input.patient) }),
+    });
+  } catch {
+    throw new Error("Unable to contact the medical-report service. Check the network connection and try again.");
+  }
   const body = await response.json().catch(() => null) as (MedicalReportDraftResponse & { error?: string }) | null;
   if (!response.ok || !body?.draft) throw new Error(body?.error || "Medical-report draft generation is unavailable.");
   return body;

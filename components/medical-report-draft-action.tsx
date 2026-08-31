@@ -25,6 +25,15 @@ function progressCopy(stage: DraftProgressStage, language: "ar" | "en") {
   return copy[stage];
 }
 
+function draftFailureCopy(error: unknown, language: "ar" | "en") {
+  const message = error instanceof Error ? error.message : "";
+  if (message.includes("approved department session")) return language === "en" ? "Your approved department session has expired. Sign in again, then retry." : "انتهت جلسة القسم المعتمدة. سجّل الدخول مرة أخرى ثم أعد المحاولة.";
+  if (message.includes("Please wait before")) return language === "en" ? "Please wait a minute before requesting another draft." : "يرجى الانتظار دقيقة قبل طلب مسودة أخرى.";
+  if (message.includes("Unable to contact")) return language === "en" ? "The report service could not be reached. Check the network connection and retry." : "تعذر الوصول إلى خدمة التقرير. تحقق من اتصال الشبكة ثم أعد المحاولة.";
+  if (message.includes("temporarily unavailable")) return language === "en" ? "The draft service is temporarily unavailable. Your patient file was not changed; retry shortly." : "خدمة تجهيز المسودة غير متاحة مؤقتًا. لم يتم تعديل ملف المريض؛ أعد المحاولة بعد قليل.";
+  return language === "en" ? "The report draft could not be created. Your patient file was not changed." : "تعذر إنشاء مسودة التقرير. لم يتم تعديل ملف المريض.";
+}
+
 export function MedicalReportDraftAction({ patient, session, language, isRTL }: { patient: PatientCase; session: DepartmentSession | null; language: "ar" | "en"; isRTL: boolean }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -49,8 +58,8 @@ export function MedicalReportDraftAction({ patient, session, language, isRTL }: 
     try {
       const result = await requestMedicalReportDraft({ patient, session, language: reportLanguage });
       setDraft(result.draft); setApproved(false); setOpen(true);
-    } catch {
-      Alert.alert(language === "en" ? "Draft unavailable" : "تعذر إنشاء المسودة", language === "en" ? "An approved central department connection is required. No report was generated." : "يلزم اتصال مركزي بحساب قسم معتمد. لم يتم إنشاء أي تقرير.");
+    } catch (error) {
+      Alert.alert(language === "en" ? "Draft unavailable" : "تعذر إنشاء المسودة", draftFailureCopy(error, language));
     } finally { setProgressStage(null); setLoading(false); }
   };
   const updateSection = (key: keyof MedicalReportDraft, value: string) => setDraft((current) => current ? { ...current, [key]: value } : current);
