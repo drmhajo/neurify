@@ -460,3 +460,6 @@
 - [x] Add a selectable English print template for approved AI medical-report drafts
 - [x] Verify the official English PDF template and Android direct-download flow
 - [x] Create and visually review a de-identified sample PDF of the official English medical report
+- [x] Approve the official English medical-report template for production patient-file use
+- [x] Verify the protected AI draft route and clinician approval lock with de-identified test data
+- [x] Activate the medical-report action in the patient-file workflow and prepare the updated Android release

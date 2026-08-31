@@ -27,11 +27,13 @@ describe("AI medical-report draft workflow", () => {
 
   it("requires explicit approval before the reviewed PDF can be exported", () => {
     const action = source("components/medical-report-draft-action.tsx");
+    const patientFile = source("components/patient-scheduled-operations.tsx");
     const exporter = source("lib/medical-report-draft-export.ts");
     expect(action).toContain("disabled={!approved}");
     expect(action).toContain("Approve reviewed draft");
     expect(action).toContain("English · Official");
     expect(action).toContain("if (!draft || !approved) return");
+    expect(patientFile).toContain("MedicalReportDraftAction patient={patient} session={session}");
     expect(exporter).toContain("AI-assisted from documented file data");
     expect(exporter).toContain("Patient Medical Report");
     expect(exporter).toContain("formal-english");
