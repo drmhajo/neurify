@@ -12,6 +12,6 @@ describe("Light launcher icon", () => {
     expect(script).toContain("full neural-path symbol inside its safe area");
     const appConfig = fs.readFileSync(path.join(root, "app.config.ts"), "utf8");
     expect(appConfig).toContain("IbIfxQJZJkslXVmk.png");
-    expect(appConfig).toContain('backgroundColor: "#F4F8FA"');
+    expect(appConfig).toContain('backgroundColor: "#F8F8FC"');
   });
 });

@@ -5,18 +5,18 @@ import { useAppLanguage } from "@/lib/language";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
 
 export const palette = {
-  navy: "#123D63",
-  teal: "#08766D",
-  canvas: "#F3F7FB",
+  navy: "#4956A6",
+  teal: "#168B7A",
+  canvas: "#F8F8FC",
   card: "#FFFFFF",
-  ink: "#152F47",
-  muted: "#60778C",
-  line: "#D8E4EE",
-  urgent: "#B42318",
-  gold: "#B97922",
-  paleBlue: "#E7F0FA",
-  paleTeal: "#E5F5F1",
-  paleGold: "#FFF5E1",
+  ink: "#29364B",
+  muted: "#6D778C",
+  line: "#E2E4EF",
+  urgent: "#B44A5A",
+  gold: "#B97831",
+  paleBlue: "#EEF0FF",
+  paleTeal: "#E8F7F3",
+  paleGold: "#FFF0E8",
 };
 
 export function AppCard({ children, style }: { children: ReactNode; style?: object }) {
@@ -36,7 +36,7 @@ export function PrimaryButton({ label, onPress, icon = "add", tone = "navy", dis
 
 export function IconAction({ icon, onPress, label }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; onPress: () => void; label?: string }) {
   const { localize } = useAppLanguage();
-  return <Pressable onPress={onPress} accessibilityLabel={label ? localize(label) : undefined} style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}><MaterialIcons name={icon} size={22} color={palette.navy} /></Pressable>;
+  return <Pressable onPress={onPress} accessibilityLabel={label ? localize(label) : undefined} style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}><MaterialIcons name={icon} size={21} color={palette.navy} /></Pressable>;
 }
 
 export function NotificationBell({ count, onPress }: { count: number; onPress: () => void }) {
@@ -70,16 +70,16 @@ export function EmptyState({ icon, text }: { icon: React.ComponentProps<typeof M
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: palette.card, borderWidth: 1, borderColor: palette.line, borderRadius: 18, padding: 16, shadowColor: "#123D63", shadowOpacity: 0.055, shadowRadius: 14, shadowOffset: { width: 0, height: 5 }, elevation: 2 }, compactCard: { borderRadius: 16, padding: 14 },
-  primaryButton: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: palette.navy, minHeight: 50, paddingHorizontal: 16, borderRadius: 15 },
-  compactPrimaryButton: { minHeight: 48, paddingHorizontal: 14, borderRadius: 14 },
+  card: { backgroundColor: palette.card, borderWidth: 1, borderColor: palette.line, borderRadius: 20, padding: 16, shadowColor: "#4956A6", shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2 }, compactCard: { borderRadius: 18, padding: 14 },
+  primaryButton: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: palette.navy, minHeight: 50, paddingHorizontal: 16, borderRadius: 16 },
+  compactPrimaryButton: { minHeight: 48, paddingHorizontal: 14, borderRadius: 15 },
   tealButton: { backgroundColor: palette.teal },
-  lightButton: { backgroundColor: palette.paleBlue, borderWidth: 1, borderColor: "#C9DDED" },
+  lightButton: { backgroundColor: palette.paleBlue, borderWidth: 1, borderColor: "#CFD4FA" },
   disabledButton: { opacity: 0.5 },
   pressed: { opacity: 0.84, transform: [{ scale: 0.98 }] },
   primaryText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800", writingDirection: "rtl" },
   lightButtonText: { color: palette.navy },
-  iconAction: { height: 44, width: 44, borderRadius: 22, backgroundColor: "#FFFFFF", borderColor: palette.line, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  iconAction: { height: 42, width: 42, borderRadius: 15, backgroundColor: palette.paleBlue, borderColor: "#D8DCFA", borderWidth: 1, alignItems: "center", justifyContent: "center" },
   bellWrap: { position: "relative" },
   badge: { position: "absolute", top: -4, right: -4, minWidth: 18, height: 18, paddingHorizontal: 3, borderRadius: 9, backgroundColor: palette.urgent, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: palette.canvas },
   badgeText: { color: "#FFFFFF", fontSize: 9, fontWeight: "900" },
@@ -94,9 +94,9 @@ const styles = StyleSheet.create({
   pillRed: { backgroundColor: "#FEE2E2" }, pillRedText: { color: palette.urgent },
   pillGold: { backgroundColor: "#FEF3C7" }, pillGoldText: { color: palette.gold },
   pillGrey: { backgroundColor: "#E9EFF5" }, pillGreyText: { color: palette.muted },
-  metricCard: { flexDirection: "row-reverse", gap: 10, alignItems: "center", flex: 1, minWidth: 0, borderRadius: 18, padding: 12, minHeight: 82 }, compactMetricCard: { gap: 8, borderRadius: 16, padding: 10, minHeight: 76 },
-  metricIcon: { height: 36, width: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  compactMetricIcon: { height: 32, width: 32, borderRadius: 11 }, metricCopy: { flex: 1, minWidth: 0 },
+  metricCard: { flexDirection: "row-reverse", gap: 10, alignItems: "center", flex: 1, minWidth: 0, borderRadius: 20, padding: 12, minHeight: 82 }, compactMetricCard: { gap: 8, borderRadius: 18, padding: 10, minHeight: 76 },
+  metricIcon: { height: 36, width: 36, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  compactMetricIcon: { height: 32, width: 32, borderRadius: 12 }, metricCopy: { flex: 1, minWidth: 0 },
   metricValue: { fontSize: 22, fontWeight: "900", textAlign: "right" }, compactMetricValue: { fontSize: 20 },
   metricLabel: { color: palette.muted, fontSize: 11, fontWeight: "600", writingDirection: "rtl", marginTop: 1 },
   empty: { alignItems: "center", paddingVertical: 28, gap: 8 },

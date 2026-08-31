@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useAssets } from "expo-asset";
 import { useFonts } from "expo-font";
+import { Text, TextInput, type TextInputProps, type TextProps } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { DepartmentProvider, useDepartment } from "@/lib/department-store";
@@ -13,19 +14,32 @@ import * as SplashScreen from "expo-splash-screen";
 
 SplashScreen.setOptions({ duration: 260, fade: true });
 
+const styledText = Text as unknown as { defaultProps?: Partial<TextProps> };
+const styledTextInput = TextInput as unknown as { defaultProps?: Partial<TextInputProps> };
+styledText.defaultProps = { ...styledText.defaultProps, style: [styledText.defaultProps?.style, { fontFamily: "Cairo-Regular", includeFontPadding: false }] };
+styledTextInput.defaultProps = { ...styledTextInput.defaultProps, style: [styledTextInput.defaultProps?.style, { fontFamily: "Cairo-Regular", includeFontPadding: false }] };
+
 export default function RootLayout() {
-  const [materialIconsLoaded, materialIconsError] = useFonts({
+  const [visualFontsLoaded, visualFontsError] = useFonts({
     material: require("../assets/fonts/MaterialIcons.ttf"),
+    "material-community": require("../assets/fonts/MaterialCommunityIcons.ttf"),
+    "Cairo-Regular": require("../assets/fonts/Cairo-Regular.ttf"),
+    "Cairo-SemiBold": require("../assets/fonts/Cairo-SemiBold.ttf"),
+    "Cairo-Bold": require("../assets/fonts/Cairo-Bold.ttf"),
   });
   const [coreUiAssets, coreUiAssetsError] = useAssets([
     require("../assets/fonts/MaterialIcons.ttf"),
+    require("../assets/fonts/MaterialCommunityIcons.ttf"),
+    require("../assets/fonts/Cairo-Regular.ttf"),
+    require("../assets/fonts/Cairo-SemiBold.ttf"),
+    require("../assets/fonts/Cairo-Bold.ttf"),
     require("../assets/images/icon.png"),
     require("../assets/images/neurify-wordmark.png"),
     require("../assets/images/neurosurgery-department-logo.png"),
   ]);
-  const iconFontReady = materialIconsLoaded || Boolean(materialIconsError);
+  const visualFontsReady = visualFontsLoaded || Boolean(visualFontsError);
   const coreUiAssetsReady = Boolean(coreUiAssets) || Boolean(coreUiAssetsError);
-  const startupAssetsReady = iconFontReady && coreUiAssetsReady;
+  const startupAssetsReady = visualFontsReady && coreUiAssetsReady;
 
   return <GestureHandlerRootView style={{ flex: 1 }}><ThemeProvider><LanguageProvider>{startupAssetsReady ? <LanguageTransition><DepartmentProvider><AppNavigator /></DepartmentProvider></LanguageTransition> : <LogoLoading />}</LanguageProvider></ThemeProvider></GestureHandlerRootView>;
 }

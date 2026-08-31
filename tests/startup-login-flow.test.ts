@@ -27,13 +27,15 @@ describe("مسار بدء Neurify الآمن", () => {
     expect(loader).toContain("transform: [{ translateY: wordmarkLift }]");
   });
 
-  it("يحمّل خط Material Icons قبل إظهار شاشة الدخول أو أيقونات التبويب في Android", () => {
+  it("يحمّل خطوط Cairo والأيقونات المحلية قبل إظهار شاشة الدخول أو التبويبات في Android", () => {
     const rootLayout = fs.readFileSync(path.join(root, "app", "_layout.tsx"), "utf8");
 
     expect(rootLayout).toContain('import { useFonts } from "expo-font"');
     expect(rootLayout).toContain('material: require("../assets/fonts/MaterialIcons.ttf")');
-    expect(rootLayout).toContain("materialIconsLoaded || Boolean(materialIconsError)");
-    expect(rootLayout).toContain("startupAssetsReady = iconFontReady && coreUiAssetsReady");
+    expect(rootLayout).toContain('"material-community": require("../assets/fonts/MaterialCommunityIcons.ttf")');
+    expect(rootLayout).toContain('"Cairo-Bold": require("../assets/fonts/Cairo-Bold.ttf")');
+    expect(rootLayout).toContain("visualFontsLoaded || Boolean(visualFontsError)");
+    expect(rootLayout).toContain("startupAssetsReady = visualFontsReady && coreUiAssetsReady");
   });
 
   it("يخزّن أصول الواجهة الأساسية محليًا قبل فتح التطبيق", () => {
@@ -46,7 +48,8 @@ describe("مسار بدء Neurify الآمن", () => {
     expect(rootLayout).toContain("startupAssetsReady ? <LanguageTransition>");
     expect(config).not.toContain('"expo-asset"');
     expect(config).toContain('"./plugins/with-gradle-constraints.js"');
-    expect(config).toContain('fonts: ["./assets/fonts/MaterialIcons.ttf"]');
+    expect(config).toContain('"./assets/fonts/MaterialCommunityIcons.ttf"');
+    expect(config).toContain('"./assets/fonts/Cairo-Regular.ttf"');
     expect(config).not.toContain("fontDefinitions");
     expect(config).not.toContain("fontWeight");
   });

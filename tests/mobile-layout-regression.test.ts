@@ -30,7 +30,7 @@ describe("mobile layout regression", () => {
   it("uses command targets large enough to remain legible and easy to tap", () => {
     const ui = fs.readFileSync(path.join(root, "components/neuro-ui.tsx"), "utf8");
     expect(ui).toContain("minHeight: 50");
-    expect(ui).toContain("height: 44, width: 44");
+    expect(ui).toContain("height: 42, width: 42");
     expect(ui).toContain("sectionActionButton");
   });
 });

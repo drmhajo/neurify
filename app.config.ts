@@ -48,7 +48,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.0.38",
+  version: "1.0.39",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -70,7 +70,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: "#F4F8FA",
+      backgroundColor: "#F8F8FC",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -78,7 +78,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    versionCode: 39,
+    versionCode: 40,
     softwareKeyboardLayoutMode: "resize",
     googleServicesFile: "./google-services.json",
     permissions: ["POST_NOTIFICATIONS"],
@@ -106,7 +106,7 @@ const config: ExpoConfig = {
     [
       "expo-font",
       {
-        fonts: ["./assets/fonts/MaterialIcons.ttf"],
+        fonts: ["./assets/fonts/MaterialIcons.ttf", "./assets/fonts/MaterialCommunityIcons.ttf", "./assets/fonts/Cairo-Regular.ttf", "./assets/fonts/Cairo-SemiBold.ttf", "./assets/fonts/Cairo-Bold.ttf"],
       },
     ],
     "expo-web-browser",
@@ -120,7 +120,7 @@ const config: ExpoConfig = {
       "expo-notifications",
       {
         "defaultChannel": "department-alerts",
-        "color": "#00AFC1",
+        "color": "#4956A6",
         "enableBackgroundRemoteNotifications": true
       }
     ],
@@ -137,9 +137,9 @@ const config: ExpoConfig = {
         image: "./assets/images/splash-icon.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#F4F8FA",
+        backgroundColor: "#F8F8FC",
         dark: {
-          backgroundColor: "#F4F8FA",
+          backgroundColor: "#F8F8FC",
         },
       },
     ],

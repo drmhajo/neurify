@@ -442,3 +442,7 @@
 - [x] Correct compact-screen overlap in the main login interface
 - [x] Diagnose and resolve the blank Profile screen on Android
 - [x] Verify login, profile, and Operations layouts in Arabic RTL and English LTR
+- [x] Audit the current Neurify color, font, icon, and shared UI-token system
+- [x] Define and apply a new locally bundled visual system across core screens
+- [x] Replace the current icon treatment and typography without external visual dependencies
+- [x] Validate Arabic RTL, English LTR, compact Android layouts, and Android asset export
