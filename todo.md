@@ -449,3 +449,6 @@
 - [x] Audit all Neurify PDF and Excel report templates against the visual-system v2 identity
 - [x] Apply the new print palette, Cairo typography, and updated branded hierarchy to report exports
 - [x] Verify bilingual PDF and Excel exports, direct Android download, and output consistency
+- [x] Prepare de-identified sample data for each Neurify printable report
+- [x] Generate PDF review samples for on-call, monthly dashboard, Weekend Endorsement, and OPD waiting list reports
+- [x] Review PDF typography, colors, headers, tables, and RTL/LTR presentation before delivery
