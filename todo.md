@@ -463,3 +463,6 @@
 - [x] Approve the official English medical-report template for production patient-file use
 - [x] Verify the protected AI draft route and clinician approval lock with de-identified test data
 - [x] Activate the medical-report action in the patient-file workflow and prepare the updated Android release
+- [x] Define safe bilingual progress states for AI medical-report draft generation
+- [x] Add a visible loading indicator and status messaging to the medical-report action
+- [x] Test progress states, failure recovery, and Android export for medical-report generation

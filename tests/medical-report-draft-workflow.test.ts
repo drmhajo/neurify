@@ -38,4 +38,17 @@ describe("AI medical-report draft workflow", () => {
     expect(exporter).toContain("Patient Medical Report");
     expect(exporter).toContain("formal-english");
   });
+
+  it("shows bilingual, non-clinical progress updates while the draft is generated", () => {
+    const action = source("components/medical-report-draft-action.tsx");
+    expect(action).toContain('type DraftProgressStage = "preparing" | "verifying" | "drafting"');
+    expect(action).toContain("Preparing documented data");
+    expect(action).toContain("Verifying secure connection");
+    expect(action).toContain("No final report is issued automatically.");
+    expect(action).toContain("جارٍ تجهيز البيانات الموثقة");
+    expect(action).toContain("جارٍ التحقق من الاتصال الآمن");
+    expect(action).toContain("لا يتم إصدار تقرير نهائي تلقائيًا.");
+    expect(action).toContain('setProgressStage("verifying")');
+    expect(action).toContain("styles.progressPanel");
+  });
 });
