@@ -30,7 +30,10 @@ describe("AI medical-report draft workflow", () => {
     const exporter = source("lib/medical-report-draft-export.ts");
     expect(action).toContain("disabled={!approved}");
     expect(action).toContain("Approve reviewed draft");
+    expect(action).toContain("English · Official");
     expect(action).toContain("if (!draft || !approved) return");
     expect(exporter).toContain("AI-assisted from documented file data");
+    expect(exporter).toContain("Patient Medical Report");
+    expect(exporter).toContain("formal-english");
   });
 });

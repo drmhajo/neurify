@@ -456,3 +456,6 @@
 - [x] Generate bilingual structured draft sections without inventing clinical facts or recommendations
 - [x] Add patient-file controls to review, edit, copy, and export the AI draft only after clinician approval
 - [x] Test prompt data minimization, privacy boundaries, bilingual output, and Android export
+- [x] Define a formal English medical-report print layout with clinician approval details
+- [x] Add a selectable English print template for approved AI medical-report drafts
+- [x] Verify the official English PDF template and Android direct-download flow
