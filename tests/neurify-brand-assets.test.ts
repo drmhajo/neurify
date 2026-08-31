@@ -21,8 +21,8 @@ describe("هوية Neurify وأصول الأيقونات", () => {
     expect(config).toContain('appName: "Neurify"');
     expect(config).toContain('appSlug: "ksmc-neurosurgery"');
     expect(config).toContain('rawBundleId = "com.app.ksmcneurosurgery"');
-    expect(config).toContain('version: "1.0.40"');
-    expect(config).toContain("versionCode: 41");
+    expect(config).toContain('version: "1.0.41"');
+    expect(config).toContain("versionCode: 42");
     expect(config).toContain('backgroundColor: "#F8F8FC"');
     expect(config).toContain('logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310419663029677493/IbIfxQJZJkslXVmk.png"');
   });

@@ -3,17 +3,22 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AppCard, palette, SectionTitle, StatusPill } from "@/components/neuro-ui";
 import type { Surgery } from "@/lib/department-model";
 import { useDepartment } from "@/lib/department-store";
+import { MedicalReportDraftAction } from "@/components/medical-report-draft-action";
+import { useLocalSearchParams } from "expo-router";
 
 type SurgeryStatus = Surgery["status"];
 const statuses: SurgeryStatus[] = ["مؤكد", "قيد التحضير", "بانتظار مراجعة"];
 
 export function PatientScheduledOperations({ operations, isRTL, language }: { operations: Surgery[]; isRTL: boolean; language: "ar" | "en" }) {
   const { data, session, updateSurgery } = useDepartment();
+  const { caseId } = useLocalSearchParams<{ caseId: string }>();
+  const patient = data.teams.flatMap((team) => team.cases).find((item) => item.id === caseId);
   const currentUser = data.users.find((user) => user.id === session?.userId);
   const canUpdateStatus = Boolean(session?.role === "admin" || currentUser?.permissions.includes("manage_schedules"));
   const updateStatus = (operation: Surgery, status: SurgeryStatus) => updateSurgery(operation.id, { ...operation, status });
 
   return <View>
+    {patient ? <MedicalReportDraftAction patient={patient} session={session} language={language} isRTL={isRTL} /> : null}
     <SectionTitle title={language === "en" ? "Scheduled operations" : "العمليات الجراحية المجدولة"} />
     {operations.length ? operations.map((operation) => <AppCard key={operation.id} style={styles.card}><View style={[styles.head, direction(isRTL)]}><View><Text style={[styles.time, align(isRTL)]}>{operation.time}</Text><View style={[styles.dateLine, direction(isRTL)]}><MaterialIcons name="event" size={13} color={palette.teal} /><Text style={styles.date}>{operation.date}</Text></View></View><StatusPill label={statusLabel(operation.status, language)} tone={statusTone(operation.status)} /></View><Text style={[styles.title, align(isRTL)]}>{operation.procedure}</Text><Text style={[styles.meta, align(isRTL)]}>{operation.surgeon} · {operation.room}</Text>{operation.notes ? <View style={[styles.notes, direction(isRTL)]}><MaterialIcons name="sticky-note-2" size={16} color={palette.gold} /><Text style={[styles.notesText, align(isRTL)]}>{operation.notes}</Text></View> : null}{canUpdateStatus ? <View style={styles.statusControl}><Text style={[styles.statusControlTitle, align(isRTL)]}>{language === "en" ? "Update operation status" : "تحديث حالة العملية"}</Text><View style={[styles.statusChoices, direction(isRTL)]}>{statuses.map((status) => <Pressable key={status} onPress={() => updateStatus(operation, status)} style={({ pressed }) => [styles.statusChoice, operation.status === status && styles.statusChoiceActive, pressed && styles.pressed]} accessibilityLabel={language === "en" ? `Set status to ${statusLabel(status, language)}` : `تعيين الحالة إلى ${statusLabel(status, language)}`}><Text style={[styles.statusChoiceText, operation.status === status && styles.statusChoiceTextActive]}>{statusLabel(status, language)}</Text></Pressable>)}</View></View> : null}</AppCard>) : <AppCard style={styles.emptyCard}><MaterialIcons name="event-available" size={22} color={palette.muted} /><Text style={[styles.emptyText, align(isRTL)]}>{language === "en" ? "No scheduled operations are linked to this medical record." : "لا توجد عمليات جراحية مجدولة مرتبطة بهذا الملف الطبي."}</Text></AppCard>}
   </View>;

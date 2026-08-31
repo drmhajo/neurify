@@ -452,3 +452,7 @@
 - [x] Prepare de-identified sample data for each Neurify printable report
 - [x] Generate PDF review samples for on-call, monthly dashboard, Weekend Endorsement, and OPD waiting list reports
 - [x] Review PDF typography, colors, headers, tables, and RTL/LTR presentation before delivery
+- [x] Define a clinician-review-only AI medical-report draft workflow from existing patient-file data
+- [x] Generate bilingual structured draft sections without inventing clinical facts or recommendations
+- [x] Add patient-file controls to review, edit, copy, and export the AI draft only after clinician approval
+- [x] Test prompt data minimization, privacy boundaries, bilingual output, and Android export
