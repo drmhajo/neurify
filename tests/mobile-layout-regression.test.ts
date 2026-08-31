@@ -17,8 +17,9 @@ describe("mobile layout regression", () => {
 
   it("uses a safe-area profile layout and presents sign-out as a clear confirmed destructive action", () => {
     const screen = fs.readFileSync(path.join(root, "app/profile.tsx"), "utf8");
-    expect(screen).toContain("<ScreenContainer edges={[\"top\", \"left\", \"right\", \"bottom\"]}>");
-    expect(screen).toContain("Math.max(34, insets.bottom + 24)");
+    expect(screen).toContain('import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"');
+    expect(screen).toContain("<View style={styles.screen}><SafeAreaView edges={[\"top\", \"left\", \"right\", \"bottom\"]} style={styles.safeArea}>");
+    expect(screen).toContain("Math.max(layout.contentBottomPadding, insets.bottom + 24)");
     expect(screen).toContain("const displayName = session?.name?.trim()");
     expect(screen).toContain("displayName.slice(0, 1)");
     expect(screen).toContain("Session control");

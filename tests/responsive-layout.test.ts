@@ -9,8 +9,8 @@ describe("التخطيط المتجاوب على الهواتف", () => {
   it("يقلل المسافات والعناصر الثانوية على الهاتف الضيق أو القصير دون خفض أهداف اللمس", () => {
     const compact = createResponsiveLayout(320, 640);
     const standard = createResponsiveLayout(390, 844);
-    expect(compact).toMatchObject({ isCompact: true, isShort: true, screenPadding: 14, loginLogoSize: 88, loginLogoImageSize: 72, loginDescriptionTopMargin: 36, tabHeight: 58, tabLabelSize: 8 });
-    expect(standard).toMatchObject({ isCompact: false, isShort: false, loginLogoSize: 104, loginLogoImageSize: 86, loginDescriptionTopMargin: 50, tabHeight: 64, tabLabelSize: 10 });
+    expect(compact).toMatchObject({ isCompact: true, isShort: true, screenPadding: 14, loginLogoSize: 88, loginLogoImageSize: 72, loginDescriptionTopMargin: 36, scheduleHeaderTopPadding: 12, profileContentTopPadding: 10, tabHeight: 58, tabLabelSize: 8 });
+    expect(standard).toMatchObject({ isCompact: false, isShort: false, loginLogoSize: 104, loginLogoImageSize: 86, loginDescriptionTopMargin: 50, scheduleHeaderTopPadding: 24, profileContentTopPadding: 18, tabHeight: 64, tabLabelSize: 10 });
     expect(compact.contentBottomPadding).toBeGreaterThanOrEqual(24);
   });
 
@@ -39,5 +39,20 @@ describe("التخطيط المتجاوب على الهواتف", () => {
     expect(tabs).toContain("const layout = useResponsiveLayout()");
     expect(tabs).toContain("height: layout.tabHeight + bottomPadding");
     expect(tabs).toContain("tabBarItemStyle: { minWidth: 0");
+  });
+
+  it("يحافظ على صف العمليات وملف المستخدم قابلاً للعرض على Android الضيق في RTL وLTR", () => {
+    const schedule = fs.readFileSync(path.join(root, "app", "(tabs)", "schedule.tsx"), "utf8");
+    const profile = fs.readFileSync(path.join(root, "app", "profile.tsx"), "utf8");
+    const login = fs.readFileSync(path.join(root, "app", "login.tsx"), "utf8");
+    expect(schedule).toContain("const layout = useResponsiveLayout()");
+    expect(schedule).toContain("paddingTop: layout.scheduleHeaderTopPadding");
+    expect(schedule).toContain("opdWaitingListCopy: { flex: 1, minWidth: 0");
+    expect(schedule).toContain("numberOfLines={2}");
+    expect(profile).toContain('import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"');
+    expect(profile).toContain("<View style={styles.screen}><SafeAreaView");
+    expect(profile).toContain("const layout = useResponsiveLayout()");
+    expect(login).toContain("input: { flex: 1, minWidth: 0");
+    expect(login).toContain("centralInfoText: { color:");
   });
 });

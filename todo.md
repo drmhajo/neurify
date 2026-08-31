@@ -436,3 +436,9 @@
 - [x] Design an engaging Neurify loading state while local icon fonts and assets initialize
 - [x] Implement a lightweight bilingual animated loading screen tied to startup asset readiness
 - [x] Add regression coverage and verify Android export for the new loading experience
+- [x] Inspect and correct visual overlap in the Operations schedule interface
+- [x] Validate Operations layout at compact Android sizes in Arabic RTL and English LTR
+- [x] Add regression coverage and verify Android export for the Operations layout correction
+- [x] Correct compact-screen overlap in the main login interface
+- [x] Diagnose and resolve the blank Profile screen on Android
+- [x] Verify login, profile, and Operations layouts in Arabic RTL and English LTR
