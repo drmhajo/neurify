@@ -431,3 +431,5 @@
 - [x] Capture the latest Run gradlew and additional Android build error details
 - [x] Diagnose the concrete EAS Android build failure from the supplied logs
 - [x] Apply and verify a targeted Android build fix before rebuilding the APK
+- [x] Verify Material Icons render correctly on the login, tab, quick-action, and discussion interfaces
+- [x] Add regression coverage for bundled Material Icons after the Android font configuration fix

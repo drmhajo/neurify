@@ -48,4 +48,30 @@ describe("حزمة الهوية المرئية المحلية", () => {
     expect(provider).toContain('useState<ColorScheme>("light")');
     expect(provider).not.toContain("useSystemColorScheme");
   });
+
+  it("يحمي واجهات الدخول والتبويبات والإجراءات السريعة حتى يجهز خط Material Icons المحلي", () => {
+    const layout = fs.readFileSync(path.join(root, "app", "_layout.tsx"), "utf8");
+    const login = fs.readFileSync(path.join(root, "app", "login.tsx"), "utf8");
+    const tabs = fs.readFileSync(path.join(root, "app", "(tabs)", "_layout.tsx"), "utf8");
+    const dashboard = fs.readFileSync(path.join(root, "app", "(tabs)", "index.tsx"), "utf8");
+    const iconSymbol = fs.readFileSync(path.join(root, "components", "ui", "icon-symbol.tsx"), "utf8");
+
+    expect(layout).toContain('material: require("../assets/fonts/MaterialIcons.ttf")');
+    expect(layout).toContain("startupAssetsReady = iconFontReady && coreUiAssetsReady");
+    expect(layout).toContain("startupAssetsReady ? <LanguageTransition>");
+    for (const iconName of ["person-outline", "lock-outline", "lock-reset", "error-outline", "person-add-alt-1", "verified-user"]) {
+      expect(login).toContain(`name=\"${iconName}\"`);
+    }
+    expect(login).toContain('"visibility-off"');
+    expect(login).toContain(': "visibility"');
+    for (const iconName of ["house.fill", "doc.text.fill", "calendar", "person.3.fill", "bubble.left.and.bubble.right.fill", "gearshape.fill"]) {
+      expect(tabs).toContain(`name=\"${iconName}\"`);
+    }
+    for (const materialIcon of ["home", "description", "calendar-today", "groups", "forum", "admin-panel-settings"]) {
+      expect(iconSymbol).toContain(`\"${materialIcon}\"`);
+    }
+    for (const iconName of ["medical-services", "manage-search", "search", "add-comment", "notifications", "local-hospital", "hotel"]) {
+      expect(dashboard).toContain(`\"${iconName}\"`);
+    }
+  });
 });
