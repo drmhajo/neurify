@@ -459,3 +459,4 @@
 - [x] Define a formal English medical-report print layout with clinician approval details
 - [x] Add a selectable English print template for approved AI medical-report drafts
 - [x] Verify the official English PDF template and Android direct-download flow
+- [x] Create and visually review a de-identified sample PDF of the official English medical report
