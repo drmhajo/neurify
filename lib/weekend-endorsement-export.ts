@@ -4,6 +4,7 @@ import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 import * as XLSX from "xlsx";
 import { saveReportBase64ToDevice, saveReportUriToDevice } from "./report-direct-download";
+import { getReportPrintAssets } from "./report-print-theme";
 import { createWeekendEndorsementHtml, type WeekendEndorsementReport } from "./weekend-endorsement";
 import { createWeekendEndorsementWorkbook, weekendEndorsementExportFileName, type WeekendEndorsementExportLanguage } from "./weekend-endorsement-export-data";
 
@@ -20,8 +21,8 @@ function downloadBlob(blob: Blob, fileName: string) {
   URL.revokeObjectURL(url);
 }
 
-export async function exportWeekendEndorsementPdf(report: WeekendEndorsementReport): Promise<WeekendEndorsementExportResult> {
-  const html = createWeekendEndorsementHtml(report);
+export async function exportWeekendEndorsementPdf(report: WeekendEndorsementReport, language: WeekendEndorsementExportLanguage = "en"): Promise<WeekendEndorsementExportResult> {
+  const html = createWeekendEndorsementHtml(report, language, await getReportPrintAssets());
   const fileName = weekendEndorsementExportFileName(report, "pdf");
   if (Platform.OS === "web") {
     const popup = window.open("", "_blank");

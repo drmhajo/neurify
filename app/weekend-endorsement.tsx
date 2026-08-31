@@ -40,7 +40,7 @@ export default function WeekendEndorsementScreen() {
     }
     try {
       setExportingFormat(format);
-      const result: WeekendEndorsementExportResult = format === "pdf" ? await exportWeekendEndorsementPdf(report) : await exportWeekendEndorsementExcel(report, language);
+      const result: WeekendEndorsementExportResult = format === "pdf" ? await exportWeekendEndorsementPdf(report, language) : await exportWeekendEndorsementExcel(report, language);
       if (result === "unavailable") throw new Error("Export unavailable");
       const formatLabel = format === "pdf" ? "PDF" : "Excel";
       const message = result === "shared"

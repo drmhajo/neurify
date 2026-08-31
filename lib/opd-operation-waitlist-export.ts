@@ -5,6 +5,7 @@ import { Platform } from "react-native";
 import * as XLSX from "xlsx";
 import { saveReportBase64ToDevice, saveReportUriToDevice } from "./report-direct-download";
 import { createOpdWaitlistHtml, createOpdWaitlistWorkbook, opdWaitlistExportFileName, type OpdWaitlistExportLanguage, type OpdWaitlistReport } from "./opd-operation-waitlist-export-data";
+import { getReportPrintAssets } from "./report-print-theme";
 
 export { buildOpdWaitlistReport, createOpdWaitlistHtml, createOpdWaitlistWorkbook, filterOpdWaitlist, opdWaitlistExcelRows, opdWaitlistExportFileName, opdWaitlistScopeLabel } from "./opd-operation-waitlist-export-data";
 export type { OpdWaitlistExportLanguage, OpdWaitlistFilters, OpdWaitlistReport } from "./opd-operation-waitlist-export-data";
@@ -20,7 +21,7 @@ function downloadBlob(blob: Blob, fileName: string) {
 }
 
 export async function exportOpdWaitlistPdf(report: OpdWaitlistReport, language: OpdWaitlistExportLanguage): Promise<OpdWaitlistExportResult> {
-  const html = createOpdWaitlistHtml(report, language);
+  const html = createOpdWaitlistHtml(report, language, await getReportPrintAssets());
   const fileName = opdWaitlistExportFileName(report, "pdf");
   if (Platform.OS === "web") {
     const popup = window.open("", "_blank");

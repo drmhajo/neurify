@@ -1,8 +1,11 @@
 import * as XLSX from "xlsx";
+
 import type { OpdOperationWaitingEntry } from "./department-model";
-import { createOfficialReportHeaderHtml } from "./report-branding";
-import { formatRiyadhDateTime } from "./riyadh-time";
 import { opdPriorityLabel, opdStatusLabel } from "./opd-operation-waitlist";
+import { createOfficialReportHeaderHtml } from "./report-branding";
+import { createReportPrintCss, type ReportPrintAssets } from "./report-print-styles";
+import { applyReportWorkbookBranding } from "./report-workbook-branding";
+import { formatRiyadhDateTime } from "./riyadh-time";
 
 export type OpdWaitlistExportLanguage = "ar" | "en";
 export type OpdWaitlistFilters = { priority?: OpdOperationWaitingEntry["priority"]; status?: OpdOperationWaitingEntry["status"] };
@@ -52,15 +55,18 @@ export function createOpdWaitlistWorkbook(report: OpdWaitlistReport, language: O
   const entries = XLSX.utils.aoa_to_sheet(rows.entries);
   summary["!cols"] = [{ wch: 28 }, { wch: 44 }];
   entries["!cols"] = [{ wch: 5 }, { wch: 28 }, { wch: 18 }, { wch: 30 }, { wch: 32 }, { wch: 25 }, { wch: 18 }, { wch: 14 }, { wch: 18 }, { wch: 44 }];
+  applyReportWorkbookBranding(summary, { language, titleRows: [0, 1] });
+  applyReportWorkbookBranding(entries, { language, headerRow: 0, freezeAfterRow: 1 });
   XLSX.utils.book_append_sheet(workbook, summary, language === "en" ? "Summary" : "الملخص");
   XLSX.utils.book_append_sheet(workbook, entries, language === "en" ? "OPD wait list" : "قائمة انتظار العيادة");
   return workbook;
 }
 
-export function createOpdWaitlistHtml(report: OpdWaitlistReport, language: OpdWaitlistExportLanguage) {
+export function createOpdWaitlistHtml(report: OpdWaitlistReport, language: OpdWaitlistExportLanguage, assets?: ReportPrintAssets) {
   const english = language === "en";
-  const rows = report.entries.map((entry, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(entry.patientName)}</td><td>${escapeHtml(entry.fileNumber)}</td><td>${escapeHtml(entry.diagnosis || "—")}</td><td>${escapeHtml(entry.procedure)}</td><td>${escapeHtml(entry.requestedBy)}</td><td>${escapeHtml(entry.plannedDate || "—")}</td><td>${escapeHtml(opdPriorityLabel(entry.priority, language))}</td><td>${escapeHtml(opdStatusLabel(entry.status, language))}</td><td>${escapeHtml(entry.notes || "—").replace(/\n/g, "<br />")}</td></tr>`).join("") || `<tr><td colspan="10" class="empty">${english ? "No OPD operation requests match the selected filters." : "لا توجد طلبات عمليات عيادات تطابق الفلاتر المحددة."}</td></tr>`;
+  const rows = report.entries.map((entry, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(entry.patientName)}</td><td>${escapeHtml(entry.fileNumber)}</td><td>${escapeHtml(entry.diagnosis || "—")}</td><td>${escapeHtml(entry.procedure)}</td><td>${escapeHtml(entry.requestedBy)}</td><td>${escapeHtml(entry.plannedDate || "—")}</td><td>${escapeHtml(opdPriorityLabel(entry.priority, language))}</td><td class="status-cell">${escapeHtml(opdStatusLabel(entry.status, language))}</td><td>${escapeHtml(entry.notes || "—").replace(/\n/g, "<br />")}</td></tr>`).join("") || `<tr><td colspan="10" class="empty">${english ? "No OPD operation requests match the selected filters." : "لا توجد طلبات عمليات عيادات تطابق الفلاتر المحددة."}</td></tr>`;
   const scope = opdWaitlistScopeLabel(report, language);
-  const header = createOfficialReportHeaderHtml({ title: english ? "OPD operation waiting list" : "قائمة انتظار عمليات العيادات", subtitle: `${scope} · ${formatRiyadhDateTime(report.generatedAt, english ? "en" : "ar")}` });
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,"Noto Naskh Arabic",sans-serif;color:#123D63;margin:0;font-size:8.5px;line-height:1.4}.official-header{display:flex;align-items:center;gap:11px;border-bottom:3px solid #08766D;padding:0 0 12px;margin-bottom:16px}.official-logo{width:60px;height:60px;object-fit:contain}.official-identity{flex:1}.official-hospital{font-size:10px;font-weight:700;color:#08766D;margin:0}.official-department{font-size:15px;line-height:1.28;color:#123D63;margin:3px 0 0}.official-hospital span,.official-department span{display:block;direction:ltr}.official-report{min-width:132px;text-align:right;border-left:1px solid #D8E4EF;padding-left:10px}.official-report strong{display:block;font-size:11px}.official-report span{display:block;color:#5F738A;font-size:9px;margin-top:3px}h1{font-size:16px;margin:0 0 4px}p{margin:0;color:#526A7B}table{border-collapse:collapse;width:100%;margin-top:18px}th,td{border:1px solid #C9DBE8;padding:5px;text-align:left;vertical-align:top}th{background:#E7F0F7;color:#123D63;font-weight:700}.empty{text-align:center;color:#526A7B;padding:18px}.meta{border-top:1px solid #D8E4EF;margin-top:18px;padding-top:8px;font-size:9px}</style></head><body>${header}<h1>${english ? "OPD operation waiting list" : "قائمة انتظار عمليات العيادات"}</h1><p>${escapeHtml(scope)} · ${report.entries.length} ${english ? "request" : "طلب"}</p><table><thead><tr><th>#</th><th>${english ? "Patient name" : "اسم المريض"}</th><th>MRN</th><th>${english ? "Diagnosis" : "التشخيص"}</th><th>${english ? "Procedure" : "نوع العملية"}</th><th>${english ? "Requesting clinician" : "الطبيب طالب العملية"}</th><th>${english ? "Target date" : "الموعد المتوقع"}</th><th>${english ? "Priority" : "الأولوية"}</th><th>${english ? "Status" : "الحالة"}</th><th>${english ? "Notes" : "ملاحظات"}</th></tr></thead><tbody>${rows}</tbody></table><p class="meta">${english ? "Prepared by" : "أعدّه"} ${escapeHtml(report.generatedBy)} · ${escapeHtml(formatRiyadhDateTime(report.generatedAt, english ? "en" : "ar"))} (${english ? "Riyadh" : "الرياض"})</p></body></html>`;
+  const title = english ? "OPD operation waiting list" : "قائمة انتظار عمليات العيادات";
+  const header = createOfficialReportHeaderHtml({ title, subtitle: `${scope} · ${formatRiyadhDateTime(report.generatedAt, english ? "en" : "ar")}`, language, logoSrc: assets?.logoSrc });
+  return `<!DOCTYPE html><html lang="${language}" dir="${english ? "ltr" : "rtl"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${createReportPrintCss({ language, landscape: true, fontCss: assets?.fontCss })}</style></head><body><main class="print-page">${header}<section class="report-intro"><div><h1 class="report-title">${title}</h1><p class="report-subtitle">${escapeHtml(scope)} · ${report.entries.length} ${english ? "request" : "طلب"}</p></div><span class="report-kicker">${english ? "Operations oversight" : "إشراف العمليات"}</span></section><table class="report-table"><thead><tr><th>#</th><th>${english ? "Patient name" : "اسم المريض"}</th><th>MRN</th><th>${english ? "Diagnosis" : "التشخيص"}</th><th>${english ? "Procedure" : "نوع العملية"}</th><th>${english ? "Requesting clinician" : "الطبيب طالب العملية"}</th><th>${english ? "Target date" : "الموعد المتوقع"}</th><th>${english ? "Priority" : "الأولوية"}</th><th>${english ? "Status" : "الحالة"}</th><th>${english ? "Notes" : "ملاحظات"}</th></tr></thead><tbody>${rows}</tbody></table><p class="meta">${english ? "Prepared by" : "أعدّه"} ${escapeHtml(report.generatedBy)} · ${escapeHtml(formatRiyadhDateTime(report.generatedAt, english ? "en" : "ar"))} (${english ? "Riyadh" : "الرياض"})</p></main></body></html>`;
 }

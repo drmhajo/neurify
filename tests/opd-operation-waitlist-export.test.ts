@@ -16,8 +16,14 @@ describe("تصدير قائمة انتظار عمليات OPD", () => {
 
   it("ينشئ PDF وExcel رسميين يذكران نطاق الفلترة", () => {
     const report = buildOpdWaitlistReport(entries, "Authorized user", { priority: "عاجل", status: "مجدول" });
-    expect(createOpdWaitlistHtml(report, "en")).toContain("Priority: Urgent · Status: Scheduled");
-    expect(createOpdWaitlistWorkbook(report, "en").SheetNames).toEqual(["Summary", "OPD wait list"]);
+    const html = createOpdWaitlistHtml(report, "en");
+    const workbook = createOpdWaitlistWorkbook(report, "en");
+    expect(html).toContain("Priority: Urgent · Status: Scheduled");
+    expect(html).toContain("Neurify Cairo");
+    expect(html).toContain("Operations oversight");
+    expect(workbook.SheetNames).toEqual(["Summary", "OPD wait list"]);
+    expect(workbook.Sheets.Summary.A1.s?.font?.name).toBe("Cairo");
+    expect(workbook.Sheets["OPD wait list"].A1.s?.fill?.fgColor?.rgb).toBe("4956A6");
     expect(opdWaitlistExportFileName(report, "xlsx")).toMatch(/urgent.*xlsx$/);
   });
 });

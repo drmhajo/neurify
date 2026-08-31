@@ -6,6 +6,7 @@ import * as XLSX from "xlsx";
 import { saveReportBase64ToDevice, saveReportUriToDevice } from "./report-direct-download";
 import { createDashboardWorkbook, createMonthlyDashboardHtml, dashboardExportFileName, type DashboardExportLanguage } from "./shift-report-dashboard-export";
 import type { MonthlyShiftReportAnalytics } from "./shift-report-analytics";
+import { getReportPrintAssets } from "./report-print-theme";
 
 export type DashboardExportResult = "shared" | "downloaded" | "print-opened" | "unavailable";
 
@@ -19,7 +20,7 @@ function downloadBlob(blob: Blob, fileName: string) {
 }
 
 export async function exportMonthlyDashboardPdf(analytics: MonthlyShiftReportAnalytics, language: DashboardExportLanguage): Promise<DashboardExportResult> {
-  const html = createMonthlyDashboardHtml(analytics, language);
+  const html = createMonthlyDashboardHtml(analytics, language, await getReportPrintAssets());
   const fileName = dashboardExportFileName(analytics.month, "pdf");
   if (Platform.OS === "web") {
     const popup = window.open("", "_blank");

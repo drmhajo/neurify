@@ -1,13 +1,12 @@
 import * as XLSX from "xlsx";
+
 import type { WeekendEndorsementReport } from "./weekend-endorsement";
+import { applyReportWorkbookBranding } from "./report-workbook-branding";
 import { formatRiyadhDateTime } from "./riyadh-time";
 
 export type WeekendEndorsementExportLanguage = "ar" | "en";
 
-function safeFilePart(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "all-consultants";
-}
-
+function safeFilePart(value: string) { return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "all-consultants"; }
 function scopeLabel(report: WeekendEndorsementReport, language: WeekendEndorsementExportLanguage) {
   const consultant = report.consultantFilter ?? (language === "en" ? "All consultants" : "جميع الاستشاريين");
   const ward = report.wardFilter ?? (language === "en" ? "All wards" : "جميع الأجنحة");
@@ -15,25 +14,14 @@ function scopeLabel(report: WeekendEndorsementReport, language: WeekendEndorseme
 }
 
 export function weekendEndorsementExportFileName(report: WeekendEndorsementReport, extension: "pdf" | "xlsx") {
-  const date = report.generatedAt.slice(0, 10) || "weekend";
-  return `ksmc-neurosurgery-weekend-endorsement-${safeFilePart(`${report.consultantFilter ?? "all-consultants"}-${report.wardFilter ?? "all-wards"}`)}-${date}.${extension}`;
+  return `ksmc-neurosurgery-weekend-endorsement-${safeFilePart(`${report.consultantFilter ?? "all-consultants"}-${report.wardFilter ?? "all-wards"}`)}-${report.generatedAt.slice(0, 10) || "weekend"}.${extension}`;
 }
 
 export function weekendEndorsementExcelRows(report: WeekendEndorsementReport, language: WeekendEndorsementExportLanguage) {
   const english = language === "en";
   return {
-    summary: [
-      [english ? "KSMC Neurosurgery Department" : "قسم جراحة المخ والأعصاب — مدينة الملك سعود الطبية"],
-      ["Weekend Endorsement"],
-      [english ? "Scope" : "نطاق التقرير", scopeLabel(report, language)],
-      [english ? "Prepared by" : "أعدّه", report.generatedBy],
-      [english ? "Generated (Riyadh)" : "وقت الإنشاء (الرياض)", formatRiyadhDateTime(report.generatedAt, english ? "en" : "ar")],
-      [english ? "Inpatients" : "المرضى المنومون", report.entries.length],
-    ],
-    plans: [
-      ["#", english ? "Patient name" : "اسم المريض", english ? "MRN" : "رقم الملف", english ? "Ward" : "الجناح", english ? "Bed" : "السرير", english ? "Diagnosis" : "التشخيص", english ? "Treating consultant" : "الاستشاري المعالج", english ? "Weekend plan" : "خطة نهاية الأسبوع"],
-      ...report.entries.map((entry, index) => [index + 1, entry.patientName, entry.fileNumber, entry.ward, entry.bed, entry.diagnosis, entry.consultant, entry.weekendPlan]),
-    ],
+    summary: [[english ? "KSMC Neurosurgery Department" : "قسم جراحة المخ والأعصاب — مدينة الملك سعود الطبية"], [english ? "Weekend Endorsement" : "تسليم نهاية الأسبوع"], [english ? "Scope" : "نطاق التقرير", scopeLabel(report, language)], [english ? "Prepared by" : "أعدّه", report.generatedBy], [english ? "Generated (Riyadh)" : "وقت الإنشاء (الرياض)", formatRiyadhDateTime(report.generatedAt, english ? "en" : "ar")], [english ? "Inpatients" : "المرضى المنومون", report.entries.length]],
+    plans: [["#", english ? "Patient name" : "اسم المريض", english ? "MRN" : "رقم الملف", english ? "Ward" : "الجناح", english ? "Bed" : "السرير", english ? "Diagnosis" : "التشخيص", english ? "Treating consultant" : "الاستشاري المعالج", english ? "Weekend plan" : "خطة نهاية الأسبوع"], ...report.entries.map((entry, index) => [index + 1, entry.patientName, entry.fileNumber, entry.ward, entry.bed, entry.diagnosis, entry.consultant, entry.weekendPlan])],
   };
 }
 
@@ -44,6 +32,8 @@ export function createWeekendEndorsementWorkbook(report: WeekendEndorsementRepor
   const plans = XLSX.utils.aoa_to_sheet(rows.plans);
   summary["!cols"] = [{ wch: 26 }, { wch: 34 }];
   plans["!cols"] = [{ wch: 5 }, { wch: 28 }, { wch: 20 }, { wch: 16 }, { wch: 12 }, { wch: 30 }, { wch: 25 }, { wch: 65 }];
+  applyReportWorkbookBranding(summary, { language, titleRows: [0, 1] });
+  applyReportWorkbookBranding(plans, { language, headerRow: 0, freezeAfterRow: 1 });
   XLSX.utils.book_append_sheet(workbook, summary, language === "en" ? "Summary" : "الملخص");
   XLSX.utils.book_append_sheet(workbook, plans, language === "en" ? "Inpatient plans" : "خطط المنومين");
   return workbook;

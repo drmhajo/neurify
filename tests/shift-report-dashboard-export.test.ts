@@ -26,6 +26,8 @@ describe("تصدير لوحة معلومات المناوبات الشهرية",
     expect(html).toContain("Neurosurgery Department logo");
     expect(html).toContain("2026-08-02");
     expect(html).toContain(">11<");
+    expect(html).toContain("Neurify Cairo");
+    expect(html).toContain("#4956A6");
   });
 
   it("ينشئ مصنف Excel من ورقتي الملخص والتفصيل اليومي", () => {
@@ -33,6 +35,8 @@ describe("تصدير لوحة معلومات المناوبات الشهرية",
     const rows = dashboardExcelRows(analytics, "en");
     expect(workbook.SheetNames).toEqual(["Monthly summary", "Daily breakdown"]);
     expect(XLSX.utils.sheet_to_json(workbook.Sheets["Daily breakdown"], { header: 1 })).toEqual(rows.daily);
+    expect(workbook.Sheets["Monthly summary"].A1.s?.font?.name).toBe("Cairo");
+    expect(workbook.Sheets["Daily breakdown"].A1.s?.fill?.fgColor?.rgb).toBe("4956A6");
     expect(dashboardExportFileName("2026-08", "xlsx")).toBe("ksmc-neurosurgery-monthly-dashboard-2026-08.xlsx");
   });
 });

@@ -21,6 +21,8 @@ describe("ترويسة التقارير الرسمية", () => {
     expect(header).toContain("King Saud Medical City");
     expect(header).toContain("تقرير المناوبة");
     expect(header).toContain('dir="rtl"');
+    expect(header).toContain('class="report-mark"');
+    expect(header).toContain("Neurify");
   });
 
   it("uses the supplied department emblem in the login screen with its supporting palette", () => {

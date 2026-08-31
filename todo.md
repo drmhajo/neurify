@@ -446,3 +446,6 @@
 - [x] Define and apply a new locally bundled visual system across core screens
 - [x] Replace the current icon treatment and typography without external visual dependencies
 - [x] Validate Arabic RTL, English LTR, compact Android layouts, and Android asset export
+- [x] Audit all Neurify PDF and Excel report templates against the visual-system v2 identity
+- [x] Apply the new print palette, Cairo typography, and updated branded hierarchy to report exports
+- [x] Verify bilingual PDF and Excel exports, direct Android download, and output consistency

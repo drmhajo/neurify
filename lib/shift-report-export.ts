@@ -4,9 +4,10 @@ import { Platform } from "react-native";
 import type { DailyShiftReport } from "./department-model";
 import { saveReportUriToDevice } from "./report-direct-download";
 import { createShiftReportHtml } from "./shift-endorsement";
+import { getReportPrintAssets } from "./report-print-theme";
 
 export async function exportShiftReport(report: DailyShiftReport): Promise<"shared" | "downloaded" | "unavailable"> {
-  const html = createShiftReportHtml(report);
+  const html = createShiftReportHtml(report, await getReportPrintAssets());
   const fileName = `ksmc-neurosurgery-shift-report-${report.reportDate}.pdf`;
   if (Platform.OS === "web") {
     const blob = new Blob([html], { type: "text/html" });
