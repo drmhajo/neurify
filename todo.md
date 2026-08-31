@@ -433,3 +433,6 @@
 - [x] Apply and verify a targeted Android build fix before rebuilding the APK
 - [x] Verify Material Icons render correctly on the login, tab, quick-action, and discussion interfaces
 - [x] Add regression coverage for bundled Material Icons after the Android font configuration fix
+- [x] Design an engaging Neurify loading state while local icon fonts and assets initialize
+- [x] Implement a lightweight bilingual animated loading screen tied to startup asset readiness
+- [x] Add regression coverage and verify Android export for the new loading experience

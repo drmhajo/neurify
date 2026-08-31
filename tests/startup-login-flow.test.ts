@@ -19,9 +19,12 @@ describe("مسار بدء Neurify الآمن", () => {
 
     expect(rootLayout).toContain("SplashScreen.setOptions({ duration: 260, fade: true })");
     expect(loader).toContain("wordmarkOpacity = useRef(new Animated.Value(0))");
-    expect(loader).toContain("fadeInWordmark = Animated.timing(wordmarkOpacity");
-    expect(loader).toContain("duration: 360");
-    expect(loader).toContain("<Animated.View style={{ opacity: wordmarkOpacity }}>");
+    expect(loader).toContain("wordmarkLift = useRef(new Animated.Value(8))");
+    expect(loader).toContain("innerRingRotation = useRef(new Animated.Value(1))");
+    expect(loader).toContain("pulseDot = (dot: Animated.Value, delay: number)");
+    expect(loader).toContain("Loading interface icons and essentials");
+    expect(loader).toContain("جارٍ تحميل أيقونات الواجهة والعناصر الأساسية");
+    expect(loader).toContain("transform: [{ translateY: wordmarkLift }]");
   });
 
   it("يحمّل خط Material Icons قبل إظهار شاشة الدخول أو أيقونات التبويب في Android", () => {
