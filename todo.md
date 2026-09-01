@@ -486,3 +486,4 @@
 - [x] Restart the Neurify development server and verify the preview recovers
 - [x] Restart the Neurify development server and verify the preview recovers
 - [x] Test the administrator overdue-report screen and the displayed last-reminder timestamp with de-identified data
+- [x] Prepare a tailored Google Play Console publishing guide and form-copy recommendations for Neurify
