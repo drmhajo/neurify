@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-describe("عنوان API المنشور", () => {
+const enabled = process.env.RUN_SUPABASE_REGISTRATION_LIVE_TEST === "true";
+
+describe.skipIf(!enabled)("عنوان API المنشور", () => {
   it("يصل إلى وظيفة Supabase HTTPS الثابتة لتسجيل المستخدم وأجهزة Android", async () => {
     const projectUrl = process.env.SUPABASE_URL?.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
     const anonKey = process.env.SUPABASE_ANON_KEY;

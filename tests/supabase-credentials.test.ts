@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-describe("Supabase credentials", () => {
+const enabled = process.env.RUN_SUPABASE_CONNECTION_LIVE_TEST === "true";
+
+describe.skipIf(!enabled)("Supabase credentials", () => {
   it("reaches the Supabase auth settings endpoint with configured credentials", async () => {
     const projectUrl = process.env.SUPABASE_URL
       ?.replace(/\/rest\/v1\/?$/, "")

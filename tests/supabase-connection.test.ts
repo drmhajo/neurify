@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-describe("اتصال Supabase التجريبي", () => {
+const enabled = process.env.RUN_SUPABASE_CONNECTION_LIVE_TEST === "true";
+
+describe.skipIf(!enabled)("اتصال Supabase التجريبي", () => {
   it("يقبل مفتاح الخادم ويعيد واجهة REST", async () => {
     const configuredUrl = process.env.SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

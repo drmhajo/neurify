@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { generateMedicalReportDraftWithGemini } from "../server/gemini-medical-report-refinement";
 import { MEDICAL_REPORT_SECTION_KEYS, type MedicalReportClinicalData } from "../shared/medical-report-draft";
 
-describe("Google Gemini server credential", () => {
+const enabled = process.env.RUN_GEMINI_LIVE_TEST === "true";
+
+describe.skipIf(!enabled)("Google Gemini server credential", () => {
   it("can read the model catalog without sending clinical content", async () => {
     const apiKey = process.env.GEMINI_API_KEY;
     expect(apiKey).toBeTruthy();

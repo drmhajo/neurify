@@ -49,8 +49,10 @@ The `config/environment.sample` file documents supported variables without conta
 | `pnpm android` | Start Expo for an Android emulator or connected device |
 | `pnpm check` | Run the TypeScript compiler without emitting files |
 | `pnpm lint` | Run Expo ESLint checks |
-| `pnpm test` | Run the Vitest test suite |
+| `pnpm test` | Run the offline Vitest suite; external live checks remain skipped by default |
 | `pnpm build` | Bundle the production Node server |
+
+Live Gemini, Gmail relay, Supabase connection, and central-registration tests are opt-in through the `RUN_*_LIVE_TEST` flags documented in `config/environment.sample`. Enable them only in an approved environment that already contains the corresponding credentials; the default GitHub Actions workflow never receives those production secrets.
 
 ## Working with GitHub Copilot
 

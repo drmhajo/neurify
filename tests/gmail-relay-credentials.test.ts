@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-describe("اعتماد وسيط Gmail", () => {
+const enabled = process.env.RUN_GMAIL_RELAY_LIVE_TEST === "true";
+
+describe.skipIf(!enabled)("اعتماد وسيط Gmail", () => {
   it("يهيئ وسيط Apps Script برمز الحماية دون إرسال بريد", async () => {
     const url = process.env.GMAIL_RELAY_URL;
     const token = process.env.GMAIL_RELAY_TOKEN;

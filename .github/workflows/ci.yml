@@ -13,6 +13,10 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      DEPARTMENT_PUSH_ENABLED: "true"
+      REGISTRATION_APPROVAL_SECRET: "ci-registration-approval-secret-not-for-production"
+      CENTRAL_SUPABASE_SERVICE_ROLE_KEY: "ci-central-service-role-key-not-for-production"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
