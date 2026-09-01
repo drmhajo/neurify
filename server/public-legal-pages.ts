@@ -38,7 +38,7 @@ function documentShell(title: string, language: "en" | "ar", body: string) {
 }
 
 const englishPrivacyPage = documentShell("Privacy Policy", "en", `
-  <header><div class="brand">NEURIFY</div><h1>Privacy Policy</h1><p class="meta">Last updated: 1 September 2026</p><div class="nav"><a href="${APP_URL}/account-deletion">Account deletion request</a><a href="mailto:${KSMC_CONTACT_EMAIL}?subject=Neurify%20privacy%20request">Privacy contact</a></div></header>
+  <header><div class="brand">NEURIFY</div><h1>Privacy Policy</h1><p class="meta">Last updated: 1 September 2026</p><div class="nav"><a href="mailto:${KSMC_CONTACT_EMAIL}?subject=Neurify%20privacy%20request">Privacy contact</a></div></header>
   <p>Neurify is a restricted-access clinical coordination application for authorized users of the King Saud Medical City Neurosurgery Department. This policy describes how operational, account, and clinical workflow information is handled when authorized users access Neurify.</p>
   <div class="notice"><strong>Important:</strong> Neurify supports clinical coordination and documentation workflows. It does not provide patient-facing medical advice, diagnosis, triage, or emergency services. Authorized clinicians remain responsible for reviewing all clinical documentation before use, export, or sharing.</div>
   <h2>1. Information handled by Neurify</h2>
@@ -55,8 +55,8 @@ const englishPrivacyPage = documentShell("Privacy Policy", "en", `
   <p>Neurify uses authenticated access, role-based permissions, approved central sessions, and encrypted service communications. Access is restricted to approved users and may be logged for security and operational review. No security control eliminates all risk; users must protect their credentials, use approved devices and channels, and follow KSMC policies for patient information.</p>
   <h2>7. Retention</h2>
   <p>Information is retained only for the period needed to operate Neurify and meet KSMC’s applicable clinical, security, legal, and regulatory retention requirements. Some information may need to be retained even after an account-deletion request where KSMC has a documented obligation or legitimate operational need to do so.</p>
-  <h2>8. Your requests and account deletion</h2>
-  <p>Authorized users may request access, correction, or deletion of their Neurify account through the account-deletion page or by contacting <a href="mailto:${KSMC_CONTACT_EMAIL}">${KSMC_CONTACT_EMAIL}</a> from their approved account email. Do not include patient names, record numbers, clinical details, screenshots, or attachments in an email request. KSMC will verify the request and respond under its approved privacy and retention process.</p>
+  <h2>8. Privacy and account requests</h2>
+  <p>Authorized users may request access, correction, or deletion of their Neurify account by contacting <a href="mailto:${KSMC_CONTACT_EMAIL}">${KSMC_CONTACT_EMAIL}</a> from their approved account email. Do not include patient names, record numbers, clinical details, screenshots, or attachments in an email request. KSMC will verify the request and respond under its approved privacy and retention process.</p>
   <h2>9. Changes to this policy</h2>
   <p>KSMC may update this policy to reflect changes to Neurify, service providers, applicable requirements, or operational practice. The current version will be posted at this address with its updated date.</p>
   <h2>10. Contact</h2>
@@ -64,7 +64,7 @@ const englishPrivacyPage = documentShell("Privacy Policy", "en", `
 `);
 
 const arabicPrivacyPage = documentShell("سياسة الخصوصية", "ar", `
-  <header><div class="brand">NEURIFY</div><h1>سياسة الخصوصية</h1><p class="meta">آخر تحديث: 1 سبتمبر 2026</p><div class="nav"><a href="${APP_URL}/account-deletion?lang=ar">طلب حذف الحساب</a><a href="mailto:${KSMC_CONTACT_EMAIL}?subject=%D8%B7%D9%84%D8%A8%20%D8%AE%D8%B5%D9%88%D8%B5%D9%8A%D8%A9%20Neurify">التواصل بشأن الخصوصية</a></div></header>
+  <header><div class="brand">NEURIFY</div><h1>سياسة الخصوصية</h1><p class="meta">آخر تحديث: 1 سبتمبر 2026</p><div class="nav"><a href="mailto:${KSMC_CONTACT_EMAIL}?subject=%D8%B7%D9%84%D8%A8%20%D8%AE%D8%B5%D9%88%D8%B5%D9%8A%D8%A9%20Neurify">التواصل بشأن الخصوصية</a></div></header>
   <p>Neurify تطبيق مقيد الوصول لتنسيق أعمال مستخدمي قسم جراحة المخ والأعصاب المعتمدين في مدينة الملك سعود الطبية. تشرح هذه السياسة كيفية التعامل مع معلومات الحسابات والتشغيل ومسارات الملفات السريرية عند استخدام التطبيق من قبل المستخدمين المعتمدين.</p>
   <div class="notice"><strong>تنبيه مهم:</strong> يدعم Neurify التنسيق السريري والتوثيق، ولا يقدم نصيحة طبية مباشرة للمريض أو تشخيصًا أو فرزًا أو خدمة طوارئ. يظل الطبيب المخول مسؤولًا عن مراجعة أي توثيق سريري قبل استخدامه أو تصديره أو مشاركته.</div>
   <h2>1. المعلومات التي يتعامل معها التطبيق</h2>
@@ -81,30 +81,17 @@ const arabicPrivacyPage = documentShell("سياسة الخصوصية", "ar", `
   <p>يستخدم Neurify وصولًا موثقًا وصلاحيات حسب الدور وجلسات مركزية معتمدة واتصالات خدمة مشفرة. يقتصر الوصول على المستخدمين المعتمدين وقد يُسجل لأغراض الأمن والمراجعة التشغيلية. يجب على المستخدم حماية بيانات الدخول واستخدام الأجهزة والقنوات المعتمدة واتباع سياسات KSMC لبيانات المرضى.</p>
   <h2>7. الاحتفاظ بالبيانات</h2>
   <p>تُحتفظ المعلومات للمدة اللازمة لتشغيل Neurify والوفاء بمتطلبات KSMC السريرية والأمنية والقانونية والتنظيمية المعتمدة. قد يلزم الاحتفاظ ببعض البيانات بعد طلب حذف الحساب عند وجود التزام موثق أو حاجة تشغيلية مشروعة.</p>
-  <h2>8. طلبات الخصوصية وحذف الحساب</h2>
-  <p>يمكن للمستخدم المعتمد طلب الوصول إلى حسابه أو تصحيحه أو حذفه من خلال صفحة حذف الحساب أو بالتواصل من بريده المعتمد إلى <a href="mailto:${KSMC_CONTACT_EMAIL}">${KSMC_CONTACT_EMAIL}</a>. لا تضع أسماء مرضى أو أرقام ملفات أو تفاصيل سريرية أو لقطات شاشة أو مرفقات في رسالة الطلب. تتحقق KSMC من الطلب وتتعامل معه وفق عملية الخصوصية والاحتفاظ المعتمدة.</p>
+  <h2>8. طلبات الخصوصية والحساب</h2>
+  <p>يمكن للمستخدم المعتمد طلب الوصول إلى حسابه أو تصحيحه أو حذفه بالتواصل من بريده المعتمد إلى <a href="mailto:${KSMC_CONTACT_EMAIL}">${KSMC_CONTACT_EMAIL}</a>. لا تضع أسماء مرضى أو أرقام ملفات أو تفاصيل سريرية أو لقطات شاشة أو مرفقات في رسالة الطلب. تتحقق KSMC من الطلب وتتعامل معه وفق عملية الخصوصية والاحتفاظ المعتمدة.</p>
   <h2>9. تغييرات السياسة</h2>
   <p>قد تُحدّث KSMC هذه السياسة عند تغير Neurify أو مزودي الخدمة أو المتطلبات أو الممارسة التشغيلية. ستُنشر النسخة السارية في هذا الرابط مع تاريخ تحديثها.</p>
   <h2>10. التواصل</h2>
   <p>لطلبات الخصوصية والحسابات المتعلقة بـ Neurify، تواصل مع مدينة الملك سعود الطبية عبر قناة التواصل العامة: <a href="mailto:${KSMC_CONTACT_EMAIL}">${KSMC_CONTACT_EMAIL}</a>. استخدم العنوان <strong>«طلب خصوصية Neurify»</strong> وأرسل بيانات التواصل المهنية المعتمدة فقط.</p>
 `);
 
-function deletionPage(language: "en" | "ar") {
-  const isArabic = language === "ar";
-  const subject = encodeURIComponent(isArabic ? "طلب حذف حساب Neurify" : "Neurify account deletion request");
-  const intro = isArabic
-    ? `<p>تتيح هذه الصفحة لمستخدمي Neurify المعتمدين تقديم طلب حذف حسابهم. لا تحذف هذه الصفحة أي حساب تلقائيًا؛ إذ تتحقق KSMC من هوية مقدم الطلب وتطبّق التزامات الاحتفاظ المعتمدة قبل معالجة الطلب.</p><div class="notice"><strong>لا ترسل بيانات مرضى:</strong> لا تضع اسم مريض أو رقم ملف أو تشخيص أو تفاصيل سريرية أو مرفقات في رسالة طلب الحذف.</div><h2>خطوات طلب الحذف</h2><ol><li>استخدم بريدك الإلكتروني المعتمد في Neurify.</li><li>أرسل رسالة إلى <a href="mailto:${KSMC_CONTACT_EMAIL}?subject=${subject}">${KSMC_CONTACT_EMAIL}</a> بعنوان «طلب حذف حساب Neurify».</li><li>اكتب اسمك المهني واسم المستخدم أو البريد المعتمد ووسيلة تواصل آمنة. لا ترسل كلمة المرور.</li><li>سيتم التحقق من الطلب والرد وفق سياسة KSMC للخصوصية والاحتفاظ.</li></ol><h2>ما الذي قد يُحذف أو يُحتفَظ به؟</h2><p>بعد التحقق، ستقيم KSMC حذف أو إخفاء هوية بيانات الحساب التي لا يلزم الاحتفاظ بها. قد تبقى سجلات الأمن أو التدقيق أو البيانات المرتبطة بالتزامات سريرية أو قانونية أو تنظيمية للمدة التي تقتضيها سياسات KSMC.</p><h2>بديل للحذف</h2><p>إذا كان المطلوب تصحيح بيانات الحساب أو إيقاف الوصول، اذكر ذلك في الرسالة بدل طلب الحذف الكامل.</p>`
-    : `<p>This page lets authorized Neurify users request deletion of their account. It does not delete an account automatically. KSMC verifies the requestor’s identity and applies approved retention obligations before processing a request.</p><div class="notice"><strong>Do not send patient information:</strong> Do not include a patient name, record number, diagnosis, clinical details, screenshots, or attachments in an account-deletion email.</div><h2>How to request deletion</h2><ol><li>Use the email address approved for your Neurify account.</li><li>Email <a href="mailto:${KSMC_CONTACT_EMAIL}?subject=${subject}">${KSMC_CONTACT_EMAIL}</a> with the subject “Neurify account deletion request”.</li><li>Provide your professional name, username or approved email, and a secure contact method. Do not send your password.</li><li>KSMC will verify the request and respond under its approved privacy and retention process.</li></ol><h2>What may be deleted or retained?</h2><p>After verification, KSMC will assess deletion or de-identification of account data that is not required to be retained. Security, audit, clinical, legal, or regulatory records may be retained for the period required by KSMC policy.</p><h2>Alternative request</h2><p>If you need an account correction or access suspension rather than deletion, state that request in your email instead of requesting full deletion.</p>`;
-  return documentShell(isArabic ? "طلب حذف حساب" : "Account deletion request", language, `<header><div class="brand">NEURIFY</div><h1>${isArabic ? "طلب حذف حساب" : "Account deletion request"}</h1><p class="meta">${isArabic ? "آخر تحديث: 1 سبتمبر 2026" : "Last updated: 1 September 2026"}</p><div class="nav"><a href="${APP_URL}/privacy${isArabic ? "?lang=ar" : ""}">${isArabic ? "سياسة الخصوصية" : "Privacy policy"}</a><a href="mailto:${KSMC_CONTACT_EMAIL}?subject=${subject}">${isArabic ? "إرسال الطلب بالبريد" : "Email the request"}</a></div></header>${intro}`);
-}
-
 export function registerPublicLegalPages(app: Express) {
   app.get("/privacy", (req, res) => {
     const requestedLanguage = typeof req.query.lang === "string" ? req.query.lang.toLowerCase() : "";
     res.type("html").send(requestedLanguage === "ar" ? arabicPrivacyPage : englishPrivacyPage);
-  });
-  app.get("/account-deletion", (req, res) => {
-    const requestedLanguage = typeof req.query.lang === "string" ? req.query.lang.toLowerCase() : "";
-    res.type("html").send(deletionPage(requestedLanguage === "ar" ? "ar" : "en"));
   });
 }

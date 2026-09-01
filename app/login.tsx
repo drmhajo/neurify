@@ -23,7 +23,6 @@ const loginColors = {
 };
 
 const PRIVACY_POLICY_URL = "https://neurify.manus.space/privacy";
-const ACCOUNT_DELETION_URL = "https://neurify.manus.space/account-deletion";
 
 export default function LoginScreen() {
   const { signIn, requestPasswordRecovery, confirmPasswordRecovery, requestRegistration } = useDepartment();
@@ -170,8 +169,6 @@ export default function LoginScreen() {
       <Text style={[styles.footnote, { writingDirection: textDirection }]}>{t("training")}</Text>
       <View style={[styles.legalLinks, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <Pressable onPress={() => { void Linking.openURL(`${PRIVACY_POLICY_URL}${language === "ar" ? "?lang=ar" : ""}`); }} accessibilityRole="link" accessibilityLabel={language === "en" ? "Privacy policy" : "سياسة الخصوصية"} style={({ pressed }) => [styles.legalLinkButton, pressed && { opacity: 0.65 }]}><Text style={styles.legalLinkText}>{language === "en" ? "Privacy policy" : "سياسة الخصوصية"}</Text></Pressable>
-        <Text style={styles.legalDivider}>•</Text>
-        <Pressable onPress={() => { void Linking.openURL(`${ACCOUNT_DELETION_URL}${language === "ar" ? "?lang=ar" : ""}`); }} accessibilityRole="link" accessibilityLabel={language === "en" ? "Account deletion" : "حذف الحساب"} style={({ pressed }) => [styles.legalLinkButton, pressed && { opacity: 0.65 }]}><Text style={styles.legalLinkText}>{language === "en" ? "Account deletion" : "حذف الحساب"}</Text></Pressable>
       </View>
     </ScrollView>
 
@@ -232,7 +229,6 @@ const styles = StyleSheet.create({
   legalLinks: { alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8, marginBottom: 4 },
   legalLinkButton: { minHeight: 34, justifyContent: "center", paddingHorizontal: 3 },
   legalLinkText: { color: loginColors.teal, fontSize: 11, fontWeight: "800", textDecorationLine: "underline" },
-  legalDivider: { color: loginColors.muted, fontSize: 12 },
   dashboardTransition: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", backgroundColor: "#163F66E8", padding: 28 },
   dashboardTransitionCard: { width: "100%", maxWidth: 292, alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 24, borderWidth: 1, borderColor: "#D4B62E", paddingHorizontal: 24, paddingVertical: 28, shadowColor: "#061E31", shadowOpacity: 0.28, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 8 },
   dashboardTransitionTitle: { marginTop: 13, color: loginColors.ink, fontSize: 18, fontWeight: "900", textAlign: "center" },

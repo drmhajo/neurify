@@ -487,6 +487,7 @@
 - [x] Restart the Neurify development server and verify the preview recovers
 - [x] Test the administrator overdue-report screen and the displayed last-reminder timestamp with de-identified data
 - [x] Prepare a tailored Google Play Console publishing guide and form-copy recommendations for Neurify
-- [ ] Verify KSMC’s official public contact channel for the Neurify privacy policy
-- [ ] Create public Neurify privacy-policy and account-deletion pages with KSMC review language
-- [ ] Link the privacy and account-deletion pages in the app and verify public HTTPS access for Google Play
+- [x] Verify KSMC’s official public contact channel for the Neurify privacy policy
+- [x] Create a public Neurify privacy-policy page with KSMC review language
+- [ ] Link the public privacy-policy page in the app and verify HTTPS access for Google Play
+- [x] Keep only the public privacy-policy page and remove separate account-deletion page links
