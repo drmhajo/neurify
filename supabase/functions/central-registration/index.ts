@@ -576,8 +576,11 @@ function isFirebaseDeviceToken(token: string) {
   return /^[A-Za-z0-9:_.-]{16,1024}$/.test(token);
 }
 
-async function sendToRegisteredDevices(title: string, body: string, data: { type: string; url: string }) {
-  const registered = await pushDeviceRequest("?active=is.true&select=expo_token") as Array<Pick<PushDeviceRow, "expo_token">>;
+async function sendToRegisteredDevices(title: string, body: string, data: { type: string; url: string }, accountIds?: string[]) {
+  const requestedAccountIds = [...new Set((accountIds ?? []).map((id) => id.replace(/^remote-/, "")).filter((id) => /^[0-9a-f-]{36}$/i.test(id)))];
+  if (accountIds && !requestedAccountIds.length) return 0;
+  const scopedFilter = requestedAccountIds.length ? `&account_id=in.(${requestedAccountIds.map(encodeURIComponent).join(",")})` : "";
+  const registered = await pushDeviceRequest(`?active=is.true${scopedFilter}&select=expo_token`) as Array<Pick<PushDeviceRow, "expo_token">>;
   const tokens = [...new Set(registered.map((device) => device.expo_token).filter(isFirebaseDeviceToken))];
   let submitted = 0;
   for (const token of tokens) {
@@ -612,6 +615,53 @@ async function handleConsultationPush(body: Record<string, unknown>) {
     "استشارة جديدة في قسم جراحة المخ والأعصاب",
     "تم تسجيل استشارة جديدة. افتح التطبيق لمتابعة تفاصيل القسم.",
     { type: "consultation", url: "/teams" },
+  );
+  return json({ submitted });
+}
+
+async function readSnapshotReport(reportId: string) {
+  const rows = await snapshotRequest("?workspace_key=eq.ksmc-neurosurgery-pilot&select=data&limit=1") as DepartmentSnapshotRow[];
+  const data = rows[0]?.data;
+  const workspace = data && typeof data === "object" && !Array.isArray(data) ? data as Record<string, unknown> : {};
+  const reports = Array.isArray(workspace.reports) ? workspace.reports as Array<Record<string, unknown>> : [];
+  return reports.find((report) => report.id === reportId);
+}
+
+function reportRecipientIds(report: Record<string, unknown> | undefined) {
+  return Array.isArray(report?.recipientIds) ? report.recipientIds.filter((id): id is string => typeof id === "string" && /^remote-[0-9a-f-]{36}$/i.test(id)) : [];
+}
+
+async function handleReportRequestPush(body: Record<string, unknown>) {
+  const account = await approvedDataAccount(body);
+  const reportId = cleanText(body.reportId, 80);
+  if (!account || !reportId) return json({ submitted: 0, error: "push_dispatch_unauthorized" }, 403);
+  const report = await readSnapshotReport(reportId);
+  if (!report || report.createdByUserId !== `remote-${account.id}` || report.notifyCompletedAt) return json({ submitted: 0, skipped: "report_unavailable" });
+  const submitted = await sendToRegisteredDevices(
+    "طلب تقرير جديد يحتاج متابعة",
+    "تم إنشاء طلب تقرير لفريقك العلاجي. افتح التطبيق لمتابعة الإجراء المطلوب.",
+    { type: "report_request", url: "/reports" },
+    reportRecipientIds(report),
+  );
+  return json({ submitted });
+}
+
+function hasInternalReportReminderPermission(request: Request) {
+  const supplied = request.headers.get("x-report-reminder-internal")?.trim() ?? "";
+  const configured = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim() ?? "";
+  return configured.length >= 32 && constantTimeEqual(configured, supplied);
+}
+
+async function handleReportReminderPush(body: Record<string, unknown>, request: Request) {
+  const reportId = cleanText(body.reportId, 80);
+  if (!hasInternalReportReminderPermission(request) || !reportId) return json({ submitted: 0, error: "push_dispatch_unauthorized" }, 403);
+  const report = await readSnapshotReport(reportId);
+  if (!report || report.notifyCompletedAt) return json({ submitted: 0, skipped: "report_unavailable" });
+  const submitted = await sendToRegisteredDevices(
+    "تذكير: طلب تقرير يحتاج متابعة",
+    "لا يزال طلب تقرير مفتوحاً. افتح التطبيق لمتابعة الإجراء المطلوب.",
+    { type: "report_request_reminder", url: "/reports" },
+    reportRecipientIds(report),
   );
   return json({ submitted });
 }
@@ -687,6 +737,8 @@ Deno.serve(async (request) => {
       case "push_register": return await handlePushRegister(body);
       case "push_send_general": return await handleGeneralPush(body);
       case "push_send_consultation": return await handleConsultationPush(body);
+      case "push_send_report_request": return await handleReportRequestPush(body);
+      case "push_send_report_reminder": return await handleReportReminderPush(body, request);
       case "data_pull": return await handleDataPull(body);
       case "data_push": return await handleDataPush(body);
       default: return json({ error: "unknown_action" }, 400);

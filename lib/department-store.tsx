@@ -29,7 +29,7 @@ import {
   type OnCallSlot,
   rolePermissionDefaults,
 } from "@/lib/department-model";
-import { dispatchGeneralPush, dispatchTeamPush } from "@/lib/push-notifications";
+import { dispatchGeneralPush, dispatchReportRequestPush, dispatchTeamPush } from "@/lib/push-notifications";
 import type { DepartmentBackup } from "@/lib/department-backup";
 import { syncFailureStatus, type DepartmentSyncState, parseCloudDepartmentData, prepareDepartmentDataForCloud, restoreLocalAttachmentReferences } from "@/lib/department-sync";
 import { canRemoveDepartmentUser, normalizeDemoUsername } from "@/lib/department-user-admin";
@@ -43,6 +43,7 @@ import { parseStoredDepartmentSession, type DepartmentSession } from "@/lib/depa
 import { patientUpdateMarker } from "@/lib/patient-file-updates";
 import { canonicalWard } from "@/lib/ward-catalog";
 import { canAddOpdOperationWaitingList, canSuperviseOperations, findOpdWaitingListPatientLink } from "@/lib/opd-operation-waitlist";
+import { createReportRequestNotification, findTreatingTeam, mayCompleteReportNotification, resolveReportRecipientIds } from "@/lib/report-request-notifications";
 
 type Session = DepartmentSession;
 
@@ -58,7 +59,8 @@ type DepartmentStore = {
   importApprovedRegistration: (input: { id: string; name: string; email: string; phone: string; jobTitle: string }) => void;
   signOut: () => Promise<void>;
   advanceReport: (id: string) => void;
-  addReport: (input: { patientCode: string; title: string; priority: ReportPriority }) => void;
+  completeReportNotification: (id: string) => boolean;
+  addReport: (input: { patientCode: string; title: string; priority: ReportPriority }) => Promise<{ ok: boolean; reason?: "patient_not_found" | "no_recipients" | "sync_pending" }>;
   sendGeneralAnnouncement: (input: { title: string; message: string; approvalSecret?: string }) => Promise<{ ok: boolean; recipientCount: number; pushSubmitted: number; reason?: "permission" | "validation" }>;
   generateDailyShiftReport: (selectedReportDate?: string) => DailyShiftReport | null;
   setOnCallUserId: (slot: OnCallSlot, userId: string) => void;
@@ -413,19 +415,49 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     }),
   })), [updateData]);
 
-  const addReport = useCallback((input: { patientCode: string; title: string; priority: ReportPriority }) => updateData((current) => ({
-    ...current,
-    reports: [{
-      id: `r-${Date.now()}`,
+  const completeReportNotification = useCallback((id: string) => {
+    const currentUserId = session?.userId;
+    const currentReport = dataRef.current.reports.find((item) => item.id === id);
+    const canManageReports = Boolean(session?.role === "admin" || dataRef.current.users.find((user) => user.id === currentUserId)?.permissions.includes("manage_reports"));
+    if (!currentReport || !mayCompleteReportNotification(currentReport, currentUserId, canManageReports)) return false;
+    updateData((current) => ({
+      ...current,
+      reports: current.reports.map((item) => item.id === id
+        ? { ...item, notifyCompletedAt: new Date().toISOString(), notifyCompletedBy: session?.name ?? "عضو الفريق" }
+        : item),
+    }));
+    return true;
+  }, [session?.name, session?.role, session?.userId, updateData]);
+
+  const addReport = useCallback(async (input: { patientCode: string; title: string; priority: ReportPriority }) => {
+    const current = dataRef.current;
+    const team = findTreatingTeam(current, input.patientCode);
+    if (!team) return { ok: false as const, reason: "patient_not_found" as const };
+    const recipientIds = resolveReportRecipientIds(current, team);
+    if (!recipientIds.length) return { ok: false as const, reason: "no_recipients" as const };
+    const now = new Date();
+    const reportId = `r-${now.getTime()}`;
+    const report = {
+      id: reportId,
       patientCode: input.patientCode.trim(),
       title: input.title.trim(),
       priority: input.priority,
-      status: "جديد",
+      status: "جديد" as const,
       requester: session?.name ?? "مستخدم القسم",
       createdAt: "الآن",
+      createdAtIso: now.toISOString(),
       dueAt: input.priority === "عاجل" ? "اليوم، 13:00" : "خلال 24 ساعة",
-    }, ...current.reports],
-  })), [session?.name, updateData]);
+      teamId: team.id,
+      recipientIds,
+      createdByUserId: session?.userId,
+    };
+    const notification = createReportRequestNotification({ id: `n-report-request-${reportId}`, team, recipientIds, createdAt: "الآن" });
+    updateData((latest) => ({ ...latest, reports: [report, ...latest.reports], notifications: [notification, ...(latest.notifications ?? [])] }));
+    const synced = await syncNow();
+    if (!synced) return { ok: true as const, reason: "sync_pending" as const };
+    void dispatchReportRequestPush({ accountId: session?.userId, dataProof: session?.dataProof, reportId });
+    return { ok: true as const };
+  }, [session?.dataProof, session?.name, session?.userId, syncNow, updateData]);
 
   const sendGeneralAnnouncement = useCallback(async (input: { title: string; message: string; approvalSecret?: string }) => {
     const currentUser = session ? dataRef.current.users.find((user) => user.id === session.userId) : undefined;
@@ -772,7 +804,7 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
     return true;
   }, [session?.role, updateData]);
 
-  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, requestPasswordRecovery, confirmPasswordRecovery, requestRegistration, importApprovedRegistration, signOut, advanceReport, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, updateDischargedPatient, deleteDischargedPatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addOpdOperationWaitingEntry, updateOpdOperationWaitingEntry, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, markPatientFileUpdateRead, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addOpdOperationWaitingEntry, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, confirmPasswordRecovery, data, deleteDischargedPatient, dischargePatient, generateDailyShiftReport, hydrated, importApprovedRegistration, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, markPatientFileUpdateRead, removeUser, requestPasswordRecovery, requestRegistration, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateDischargedPatient, updateMedicalFile, updateOpdOperationWaitingEntry, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
+  const value = useMemo(() => ({ hydrated, session, data, completeInitialSetup, signIn, requestPasswordRecovery, confirmPasswordRecovery, requestRegistration, importApprovedRegistration, signOut, advanceReport, completeReportNotification, addReport, sendGeneralAnnouncement, generateDailyShiftReport, setOnCallUserId, addConsultation, addCase, dischargePatient, updateDischargedPatient, deleteDischargedPatient, addUser, changeUserRole, updateUserAccess, removeUser, resetUserPassword, addShift, addSurgery, updateSurgery, addOpdOperationWaitingEntry, updateOpdOperationWaitingEntry, addSchedulePdf, addCareTeam, updateCareTeam, updateMedicalFile, markPatientFileUpdateRead, updateWeekendPlan, addDiagnosticImaging, addPatientMessage, addGeneralDiscussionMessage, markGeneralDiscussionRead, updateOwnProfile, changeOwnPassword, markNotificationRead, markAllNotificationsRead, restoreDepartmentBackup, syncState, syncNow }), [addCase, addCareTeam, addConsultation, addDiagnosticImaging, addGeneralDiscussionMessage, addOpdOperationWaitingEntry, addPatientMessage, addReport, addSchedulePdf, addShift, addSurgery, addUser, advanceReport, changeOwnPassword, changeUserRole, completeInitialSetup, completeReportNotification, confirmPasswordRecovery, data, deleteDischargedPatient, dischargePatient, generateDailyShiftReport, hydrated, importApprovedRegistration, markAllNotificationsRead, markGeneralDiscussionRead, markNotificationRead, markPatientFileUpdateRead, removeUser, requestPasswordRecovery, requestRegistration, resetUserPassword, restoreDepartmentBackup, sendGeneralAnnouncement, session, setOnCallUserId, signIn, signOut, syncNow, syncState, updateCareTeam, updateDischargedPatient, updateMedicalFile, updateOpdOperationWaitingEntry, updateOwnProfile, updateSurgery, updateUserAccess, updateWeekendPlan]);
 
   return <DepartmentContext.Provider value={value}>{children}</DepartmentContext.Provider>;
 }

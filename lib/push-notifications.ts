@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { createTRPCClient } from "@/lib/trpc";
-import { registerCentralPushDevice, sendCentralConsultationPush, sendCentralGeneralPush } from "@/lib/central-registration-api";
+import { registerCentralPushDevice, sendCentralConsultationPush, sendCentralGeneralPush, sendCentralReportRequestPush } from "@/lib/central-registration-api";
 
 const PUSH_REGISTRATION_KEY_PREFIX = "ksmc.neuro.push-registration.";
 
@@ -113,6 +113,16 @@ export async function dispatchTeamPush(input: {
     await sendCentralConsultationPush({ accountId: input.accountId, pushProof: input.pushProof, teamId: input.teamId });
   } catch {
     // يبقى التنبيه الداخلي متاحاً إذا تعذر إرسال التنبيه الخارجي.
+  }
+}
+
+/** Sends only a report ID and data-session proof; report content and patient identifiers remain out of the push payload. */
+export async function dispatchReportRequestPush(input: { accountId?: string; dataProof?: string; reportId: string }): Promise<void> {
+  if (!input.accountId?.startsWith("remote-") || !input.dataProof || !input.reportId) return;
+  try {
+    await sendCentralReportRequestPush({ accountId: input.accountId, dataProof: input.dataProof, reportId: input.reportId });
+  } catch {
+    // The scoped in-app notification remains available if external delivery is unavailable.
   }
 }
 

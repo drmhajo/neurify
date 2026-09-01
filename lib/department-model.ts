@@ -28,7 +28,17 @@ export type MedicalReport = {
   status: ReportStatus;
   requester: string;
   createdAt: string;
+  /** ISO timestamp is used only by the central reminder job; the displayed label remains localized. */
+  createdAtIso?: string;
   dueAt: string;
+  /** Treating-team scope is resolved when the request is created, never inferred from notification content. */
+  teamId?: string;
+  recipientIds?: string[];
+  createdByUserId?: string;
+  notifyCompletedAt?: string;
+  notifyCompletedBy?: string;
+  /** Riyadh date key; guarantees one reminder at most per local calendar day. */
+  lastReminderDate?: string;
 };
 
 export type Shift = {
@@ -214,7 +224,7 @@ export type Consultation = {
 
 export type TeamNotification = {
   id: string;
-  type: "consultation" | "admitted_case" | "shift_report" | "general_announcement";
+  type: "consultation" | "admitted_case" | "shift_report" | "general_announcement" | "report_request" | "report_request_reminder";
   teamId: string;
   teamName: string;
   title: string;

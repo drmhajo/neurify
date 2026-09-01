@@ -19,7 +19,7 @@ function align(isRTL: boolean) {
 type ReportActionIcon = "insights" | "assignment" | "add";
 
 export default function ReportsScreen() {
-  const { data, advanceReport, addReport } = useDepartment();
+  const { data, session, advanceReport, completeReportNotification, addReport } = useDepartment();
   const insets = useSafeAreaInsets();
   const { language, isRTL, localize } = useAppLanguage();
   const [modalVisible, setModalVisible] = useState(false);
@@ -27,16 +27,26 @@ export default function ReportsScreen() {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<ReportPriority>("عادي");
 
-  const create = () => {
+  const create = async () => {
     if (!patientFileNumber.trim() || !title.trim()) {
       Alert.alert(localize("بيانات ناقصة"), language === "en" ? "Enter the medical record number and report title." : "أدخل رقم الملف وعنوان التقرير.");
       return;
     }
-    addReport({ patientCode: patientFileNumber, title, priority });
+    const result = await addReport({ patientCode: patientFileNumber, title, priority });
+    if (!result.ok) {
+      const message = result.reason === "patient_not_found"
+        ? (language === "en" ? "Use a medical record number that is linked to an active treating team." : "استخدم رقم ملف مرتبط بفريق علاجي نشط.")
+        : (language === "en" ? "No active consultant or treating-team recipient is available for this request." : "لا يتوفر استشاري أو عضو فريق علاجي نشط لاستلام هذا الطلب.");
+      Alert.alert(language === "en" ? "Request not created" : "لم يتم إنشاء الطلب", message);
+      return;
+    }
     setPatientFileNumber("");
     setTitle("");
     setPriority("عادي");
     setModalVisible(false);
+    if (result.reason === "sync_pending") {
+      Alert.alert(language === "en" ? "Request saved" : "تم حفظ الطلب", language === "en" ? "The request is saved on this device and will notify the treating team after central synchronization is restored." : "حُفظ الطلب على هذا الجهاز وسيصل إشعار للفريق المعالج بعد استعادة المزامنة المركزية.");
+    }
   };
 
   const renderItem = ({ item }: { item: MedicalReport }) => (
@@ -50,11 +60,26 @@ export default function ReportsScreen() {
       </View>
       <Text style={[styles.reportTitle, align(isRTL)]}>{item.title}</Text>
       <Text style={[styles.requester, align(isRTL)]}>{language === "en" ? `Requested by: ${item.requester}` : `الطلب من: ${item.requester}`}</Text>
-      <View style={[styles.reportFoot, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+      <View style={[styles.reportFoot, { flexDirection: isRTL ? "row-reverse" : "row" }]}> 
         <Text style={[styles.due, align(isRTL)]}>{language === "en" ? `Due: ${item.dueAt}` : `الاستحقاق: ${item.dueAt}`}</Text>
         <Pressable onPress={() => advanceReport(item.id)} style={({ pressed }) => [styles.statusButton, pressed && styles.pressed]} accessibilityRole="button">
           <Text style={styles.statusButtonText}>{item.status === "جديد" ? (language === "en" ? "Start preparation" : "بدء الإعداد") : item.status === "قيد الإعداد" ? (language === "en" ? "Complete report" : "إتمام التقرير") : localize("مكتمل")}</Text>
         </Pressable>
+      </View>
+      <View style={[styles.notifyRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}> 
+        <Text style={[styles.notifyHint, align(isRTL)]}>{item.notifyCompletedAt ? (language === "en" ? "Notify completed" : "اكتمل إشعار المتابعة") : (language === "en" ? "Reminder starts after 3 days until Notify completed." : "يبدأ التذكير بعد ٣ أيام حتى وضع Notify completed.")}</Text>
+        {!item.notifyCompletedAt && session && ((item.recipientIds ?? []).includes(session.userId) || session.role === "admin") ? (
+          <Pressable
+            onPress={() => {
+              if (!completeReportNotification(item.id)) Alert.alert(language === "en" ? "Update unavailable" : "تعذر تحديث الحالة", language === "en" ? "Only the notified treating team or an authorized report manager can complete this notification." : "يمكن للفريق المعالج المُبلّغ أو مدير التقارير المخوّل فقط إكمال هذا الإشعار.");
+            }}
+            style={({ pressed }) => [styles.notifyCompletedButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={language === "en" ? "Notify completed" : "إشعار مكتمل"}
+          >
+            <Text style={styles.notifyCompletedButtonText}>{language === "en" ? "Notify completed" : "إشعار مكتمل"}</Text>
+          </Pressable>
+        ) : null}
       </View>
     </AppCard>
   );
@@ -203,6 +228,10 @@ const styles = StyleSheet.create({
   due: { color: palette.gold, fontSize: 11, fontWeight: "700", flex: 1 },
   statusButton: { backgroundColor: palette.paleBlue, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 10 },
   statusButtonText: { color: palette.navy, fontSize: 11, fontWeight: "800" },
+  notifyRow: { marginTop: 9, alignItems: "center", gap: 8 },
+  notifyHint: { color: palette.muted, fontSize: 10, lineHeight: 14, flex: 1 },
+  notifyCompletedButton: { backgroundColor: "#E8F8F5", borderWidth: 1, borderColor: "#9CDDD2", borderRadius: 9, paddingHorizontal: 9, paddingVertical: 6 },
+  notifyCompletedButtonText: { color: palette.teal, fontSize: 10, fontWeight: "900" },
   modalShade: { flex: 1, justifyContent: "flex-end", backgroundColor: "#102A4370" },
   sheet: { backgroundColor: "#FFFFFF", padding: 20, paddingBottom: 36, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
   handle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: palette.line, marginBottom: 2 },

@@ -478,3 +478,8 @@
 
 - [ ] Make core screens dynamically respect device safe areas, notches, camera cutouts, system bars, and navigation settings
 - [x] Make core screens dynamically respect device safe areas, notches, camera cutouts, system bars, and navigation settings
+- [ ] Add a network-safe update check that asks the user before applying an available Neurify update
+- [x] Notify only the assigned consultant and treating team when a medical-report request is created
+- [x] Add a clinician-controlled Notify completed state that stops all pending report-request reminders
+- [ ] Send a daily data-minimized reminder only after three Riyadh calendar days for incomplete report requests
+- [x] Test recipients, three-day timing, completion stop, and notification privacy

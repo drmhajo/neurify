@@ -116,6 +116,11 @@ export function sendCentralConsultationPush(input: { accountId: string; pushProo
   return callCentralRegistration<{ submitted: number }>("push_send_consultation", input);
 }
 
+/** Sends only a report ID and data-session proof; recipients are resolved centrally from the treating team. */
+export function sendCentralReportRequestPush(input: { accountId: string; dataProof: string; reportId: string }) {
+  return callCentralRegistration<{ submitted: number; skipped?: string }>("push_send_report_request", input);
+}
+
 export function pullCentralDepartmentData(input: { accountId: string; dataProof: string }) {
   return callCentralRegistration<{ ok: true; snapshot: CentralDepartmentSnapshot | null }>("data_pull", input);
 }

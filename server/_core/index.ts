@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { registerDailyShiftReportRoute } from "../daily-shift-report";
 import { registerMedicalReportDraftRoute } from "../medical-report-draft";
+import { registerReportRequestReminderRoute } from "../report-request-reminders";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -61,6 +62,7 @@ async function startServer() {
   registerOAuthRoutes(app);
   registerDailyShiftReportRoute(app);
   registerMedicalReportDraftRoute(app);
+  registerReportRequestReminderRoute(app);
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
