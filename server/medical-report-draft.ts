@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
+import { refineMedicalReportDraftLanguage } from "./gemini-medical-report-refinement";
 import {
   MEDICAL_REPORT_SECTION_KEYS,
   type MedicalReportDraft,
@@ -105,12 +106,14 @@ export function registerMedicalReportDraftRoute(app: Express) {
         ],
       });
       const raw = contentText(response.choices[0]?.message.content ?? "");
-      const draft = normalizeDraft(JSON.parse(raw), language);
+      const sourceDraft = normalizeDraft(JSON.parse(raw), language);
+      const linguisticEdit = await refineMedicalReportDraftLanguage({ draft: sourceDraft, language });
       const payload: MedicalReportDraftResponse = {
-        draft,
-        reviewNotice: language === "en"
-          ? "AI-assisted draft based only on documented file data. A treating clinician must review, edit, and approve it before use."
-          : "هذه مسودة مساعدة بالذكاء الاصطناعي تعتمد فقط على البيانات الموثقة في الملف. يجب أن يراجعها الطبيب المعالج ويعدلها ويعتمدها قبل الاستخدام.",
+        draft: linguisticEdit.draft,
+        linguisticEditing: linguisticEdit.applied ? "gemini" : "unavailable",
+        reviewNotice: linguisticEdit.applied
+          ? (language === "en" ? "Gemini completed linguistic editing of the minimized draft only. Verify every section against the patient file, then edit and approve it before use." : "أكمل Gemini التحرير اللغوي للمسودة المصغرة فقط. راجع كل قسم مقابل ملف المريض، ثم عدّله واعتمده قبل الاستخدام.")
+          : (language === "en" ? "AI-assisted draft based only on documented file data. Gemini linguistic editing was unavailable; verify every section against the patient file, then edit and approve it before use." : "هذه مسودة مساعدة بالذكاء الاصطناعي تعتمد فقط على البيانات الموثقة في الملف. تعذر التحرير اللغوي عبر Gemini؛ راجع كل قسم مقابل ملف المريض، ثم عدّله واعتمده قبل الاستخدام."),
       };
       return res.json(payload);
     } catch {

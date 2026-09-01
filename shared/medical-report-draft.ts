@@ -35,6 +35,7 @@ export type MedicalReportDraftRequest = {
 export type MedicalReportDraftResponse = {
   draft: MedicalReportDraft;
   reviewNotice: string;
+  linguisticEditing: "gemini" | "unavailable";
 };
 
 export function medicalReportSectionLabels(language: "ar" | "en"): Record<MedicalReportSectionKey, string> {
