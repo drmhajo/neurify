@@ -577,10 +577,10 @@ function isFirebaseDeviceToken(token: string) {
 }
 
 async function sendToRegisteredDevices(title: string, body: string, data: { type: string; url: string }, accountIds?: string[]) {
-  const requestedAccountIds = [...new Set((accountIds ?? []).map((id) => id.replace(/^remote-/, "")).filter((id) => /^[0-9a-f-]{36}$/i.test(id)))];
-  if (accountIds && !requestedAccountIds.length) return 0;
-  const scopedFilter = requestedAccountIds.length ? `&account_id=in.(${requestedAccountIds.map(encodeURIComponent).join(",")})` : "";
-  const registered = await pushDeviceRequest(`?active=is.true${scopedFilter}&select=expo_token`) as Array<Pick<PushDeviceRow, "expo_token">>;
+  const scopedAccountIds = [...new Set((accountIds ?? []).map((value) => value.replace(/^remote-/, "")).filter((value) => /^[0-9a-f-]{36}$/i.test(value)))];
+  if (accountIds && !scopedAccountIds.length) return 0;
+  const accountFilter = scopedAccountIds.length ? `&account_id=in.(${scopedAccountIds.map(encodeURIComponent).join(",")})` : "";
+  const registered = await pushDeviceRequest(`?active=is.true${accountFilter}&select=expo_token`) as Array<Pick<PushDeviceRow, "expo_token">>;
   const tokens = [...new Set(registered.map((device) => device.expo_token).filter(isFirebaseDeviceToken))];
   let submitted = 0;
   for (const token of tokens) {
@@ -627,7 +627,7 @@ async function readSnapshotReport(reportId: string) {
   return reports.find((report) => report.id === reportId);
 }
 
-function reportRecipientIds(report: Record<string, unknown> | undefined) {
+function scopedReportRecipients(report: Record<string, unknown> | undefined) {
   return Array.isArray(report?.recipientIds) ? report.recipientIds.filter((id): id is string => typeof id === "string" && /^remote-[0-9a-f-]{36}$/i.test(id)) : [];
 }
 
@@ -641,7 +641,7 @@ async function handleReportRequestPush(body: Record<string, unknown>) {
     "طلب تقرير جديد يحتاج متابعة",
     "تم إنشاء طلب تقرير لفريقك العلاجي. افتح التطبيق لمتابعة الإجراء المطلوب.",
     { type: "report_request", url: "/reports" },
-    reportRecipientIds(report),
+    scopedReportRecipients(report),
   );
   return json({ submitted });
 }
@@ -659,9 +659,9 @@ async function handleReportReminderPush(body: Record<string, unknown>, request: 
   if (!report || report.notifyCompletedAt) return json({ submitted: 0, skipped: "report_unavailable" });
   const submitted = await sendToRegisteredDevices(
     "تذكير: طلب تقرير يحتاج متابعة",
-    "لا يزال طلب تقرير مفتوحاً. افتح التطبيق لمتابعة الإجراء المطلوب.",
+    "لا يزال طلب تقرير مفتوحاً. افتح صفحة التقارير لمتابعة الإجراء المطلوب.",
     { type: "report_request_reminder", url: "/reports" },
-    reportRecipientIds(report),
+    scopedReportRecipients(report),
   );
   return json({ submitted });
 }

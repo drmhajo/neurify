@@ -43,7 +43,7 @@ import { parseStoredDepartmentSession, type DepartmentSession } from "@/lib/depa
 import { patientUpdateMarker } from "@/lib/patient-file-updates";
 import { canonicalWard } from "@/lib/ward-catalog";
 import { canAddOpdOperationWaitingList, canSuperviseOperations, findOpdWaitingListPatientLink } from "@/lib/opd-operation-waitlist";
-import { createReportRequestNotification, findTreatingTeam, mayCompleteReportNotification, resolveReportRecipientIds } from "@/lib/report-request-notifications";
+import { canCompleteReportNotification, createReportRequestNotification, resolveReportRecipientIds } from "@/lib/report-request-notifications";
 
 type Session = DepartmentSession;
 
@@ -60,7 +60,7 @@ type DepartmentStore = {
   signOut: () => Promise<void>;
   advanceReport: (id: string) => void;
   completeReportNotification: (id: string) => boolean;
-  addReport: (input: { patientCode: string; title: string; priority: ReportPriority }) => Promise<{ ok: boolean; reason?: "patient_not_found" | "no_recipients" | "sync_pending" }>;
+  addReport: (input: { patientName: string; patientCode: string; visitDate: string; teamId: string; notes: string }) => Promise<{ ok: boolean; reason?: "team_unavailable" | "no_recipients" | "sync_pending" }>;
   sendGeneralAnnouncement: (input: { title: string; message: string; approvalSecret?: string }) => Promise<{ ok: boolean; recipientCount: number; pushSubmitted: number; reason?: "permission" | "validation" }>;
   generateDailyShiftReport: (selectedReportDate?: string) => DailyShiftReport | null;
   setOnCallUserId: (slot: OnCallSlot, userId: string) => void;
@@ -416,43 +416,41 @@ export function DepartmentProvider({ children }: { children: ReactNode }) {
   })), [updateData]);
 
   const completeReportNotification = useCallback((id: string) => {
-    const currentUserId = session?.userId;
-    const currentReport = dataRef.current.reports.find((item) => item.id === id);
-    const canManageReports = Boolean(session?.role === "admin" || dataRef.current.users.find((user) => user.id === currentUserId)?.permissions.includes("manage_reports"));
-    if (!currentReport || !mayCompleteReportNotification(currentReport, currentUserId, canManageReports)) return false;
-    updateData((current) => ({
-      ...current,
-      reports: current.reports.map((item) => item.id === id
-        ? { ...item, notifyCompletedAt: new Date().toISOString(), notifyCompletedBy: session?.name ?? "عضو الفريق" }
-        : item),
-    }));
+    const currentReport = dataRef.current.reports.find((report) => report.id === id);
+    const user = dataRef.current.users.find((candidate) => candidate.id === session?.userId);
+    const isReportManager = Boolean(session?.role === "admin" || user?.permissions.includes("manage_reports"));
+    if (!canCompleteReportNotification(currentReport ?? { id: "", patientCode: "", title: "", priority: "عادي", status: "مكتمل", requester: "", createdAt: "", dueAt: "" }, session?.userId, isReportManager)) return false;
+    updateData((current) => ({ ...current, reports: current.reports.map((report) => report.id === id ? { ...report, notifyCompletedAt: new Date().toISOString(), notifyCompletedBy: session?.name ?? "عضو الفريق" } : report) }));
     return true;
   }, [session?.name, session?.role, session?.userId, updateData]);
 
-  const addReport = useCallback(async (input: { patientCode: string; title: string; priority: ReportPriority }) => {
-    const current = dataRef.current;
-    const team = findTreatingTeam(current, input.patientCode);
-    if (!team) return { ok: false as const, reason: "patient_not_found" as const };
-    const recipientIds = resolveReportRecipientIds(current, team);
+  const addReport = useCallback(async (input: { patientName: string; patientCode: string; visitDate: string; teamId: string; notes: string }) => {
+    const team = dataRef.current.teams.find((candidate) => candidate.id === input.teamId);
+    if (!team) return { ok: false as const, reason: "team_unavailable" as const };
+    const recipientIds = resolveReportRecipientIds(dataRef.current, team);
     if (!recipientIds.length) return { ok: false as const, reason: "no_recipients" as const };
     const now = new Date();
     const reportId = `r-${now.getTime()}`;
     const report = {
       id: reportId,
+      patientName: input.patientName.trim(),
       patientCode: input.patientCode.trim(),
-      title: input.title.trim(),
-      priority: input.priority,
+      visitDate: input.visitDate.trim(),
+      title: "طلب تقرير طبي",
+      notes: input.notes.trim(),
+      priority: "عادي" as const,
       status: "جديد" as const,
       requester: session?.name ?? "مستخدم القسم",
       createdAt: "الآن",
       createdAtIso: now.toISOString(),
-      dueAt: input.priority === "عاجل" ? "اليوم، 13:00" : "خلال 24 ساعة",
+      dueAt: "خلال 24 ساعة",
       teamId: team.id,
+      consultantName: team.lead,
       recipientIds,
       createdByUserId: session?.userId,
     };
     const notification = createReportRequestNotification({ id: `n-report-request-${reportId}`, team, recipientIds, createdAt: "الآن" });
-    updateData((latest) => ({ ...latest, reports: [report, ...latest.reports], notifications: [notification, ...(latest.notifications ?? [])] }));
+    updateData((current) => ({ ...current, reports: [report, ...current.reports], notifications: [notification, ...(current.notifications ?? [])] }));
     const synced = await syncNow();
     if (!synced) return { ok: true as const, reason: "sync_pending" as const };
     void dispatchReportRequestPush({ accountId: session?.userId, dataProof: session?.dataProof, reportId });

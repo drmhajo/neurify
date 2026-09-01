@@ -22,23 +22,28 @@ export type DepartmentUser = {
 
 export type MedicalReport = {
   id: string;
+  patientName?: string;
   patientCode: string;
+  visitDate?: string;
   title: string;
+  notes?: string;
   priority: ReportPriority;
   status: ReportStatus;
   requester: string;
   createdAt: string;
-  /** ISO timestamp is used only by the central reminder job; the displayed label remains localized. */
   createdAtIso?: string;
   dueAt: string;
-  /** Treating-team scope is resolved when the request is created, never inferred from notification content. */
+  /** Set explicitly when the request is created; this is the sole scope for notification recipients. */
   teamId?: string;
+  consultantName?: string;
   recipientIds?: string[];
   createdByUserId?: string;
   notifyCompletedAt?: string;
   notifyCompletedBy?: string;
-  /** Riyadh date key; guarantees one reminder at most per local calendar day. */
+  /** Riyadh day key prevents duplicate reminder dispatches. */
   lastReminderDate?: string;
+  lastReminderAt?: string;
+  lastReminderStatus?: "sent" | "no_registered_devices" | "delivery_unavailable";
 };
 
 export type Shift = {

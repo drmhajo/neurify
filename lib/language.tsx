@@ -33,9 +33,9 @@ const englishTerms: Record<string, string> = {
 type LanguageContextValue = { language: AppLanguage; setLanguage: (language: AppLanguage) => void; isRTL: boolean; t: (key: TranslationKey) => string; localize: (value: string) => string };
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 const LANGUAGE_KEY = "ksmc-neuro.language.v1";
-const DEFAULT_LANGUAGE: AppLanguage = "en";
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
+  const DEFAULT_LANGUAGE: AppLanguage = "en";
   const [language, setLanguageState] = useState<AppLanguage>(DEFAULT_LANGUAGE);
   useEffect(() => { AsyncStorage.getItem(LANGUAGE_KEY).then((value) => { if (value === "ar" || value === "en") setLanguageState(value); }).catch(() => undefined); }, []);
   useEffect(() => { if (Platform.OS === "web" && typeof document !== "undefined") { document.documentElement.lang = language; document.documentElement.dir = language === "ar" ? "rtl" : "ltr"; } }, [language]);

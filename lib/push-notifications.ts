@@ -116,13 +116,13 @@ export async function dispatchTeamPush(input: {
   }
 }
 
-/** Sends only a report ID and data-session proof; report content and patient identifiers remain out of the push payload. */
+/** Report content, patient name, record number, visit date, and notes remain out of device Push payloads. */
 export async function dispatchReportRequestPush(input: { accountId?: string; dataProof?: string; reportId: string }): Promise<void> {
   if (!input.accountId?.startsWith("remote-") || !input.dataProof || !input.reportId) return;
   try {
     await sendCentralReportRequestPush({ accountId: input.accountId, dataProof: input.dataProof, reportId: input.reportId });
   } catch {
-    // The scoped in-app notification remains available if external delivery is unavailable.
+    // A scoped in-app notification remains available if external Push is unavailable.
   }
 }
 

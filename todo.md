@@ -472,14 +472,14 @@
 - [x] Review approved medical-report export and device sharing capabilities
 - [x] Add a clinician-approved system share action for the final medical-report PDF
 - [x] Test the share lock, privacy messaging, and Android export flow
-- [x] Define, approve, and implement a privacy-preserving Gemini linguistic-editing step for clinician-reviewed medical-report drafts
-
-- [x] Make Gemini generate the approved medical-report draft template directly from minimized documented patient-file data
-
-- [ ] Make core screens dynamically respect device safe areas, notches, camera cutouts, system bars, and navigation settings
-- [x] Make core screens dynamically respect device safe areas, notches, camera cutouts, system bars, and navigation settings
-- [ ] Add a network-safe update check that asks the user before applying an available Neurify update
-- [x] Notify only the assigned consultant and treating team when a medical-report request is created
-- [x] Add a clinician-controlled Notify completed state that stops all pending report-request reminders
-- [x] Send a daily data-minimized reminder only after three Riyadh calendar days for incomplete report requests
-- [x] Test recipients, three-day timing, completion stop, and notification privacy
+- [x] Set English as the default language on first launch while preserving saved user language preferences
+- [x] Set English as the default language on first launch while preserving saved user language preferences
+- [ ] Configure a user-approved in-app update check for compatible published code updates
+- [ ] Add a user-approved native-package update notice pointing only to the approved distribution source
+- [ ] Test offline, unavailable, declined, and accepted update paths without blocking clinical workflows
+- [x] Expand medical-report requests with patient name, record number, visit date, selected treating team/consultant, and notes
+- [x] Add an administrator screen for overdue report requests and the most recent reminder status
+- [x] Test report-request permissions, team routing, overdue status, and Arabic/English interfaces
+- [x] Expand medical-report requests with patient name, record number, visit date, selected treating team/consultant, and notes
+- [x] Add an administrator screen for overdue report requests and the most recent reminder status
+- [x] Test report-request permissions, team routing, overdue status, and Arabic/English interfaces

@@ -1,45 +1,48 @@
 import type { Express, Request, Response } from "express";
-import { prepareDailyReportReminders } from "../lib/report-request-notifications";
-import { sdk } from "./_core/sdk";
+import { prepareDailyReportReminders, recordReportReminderDelivery } from "../lib/report-request-notifications";
 import { getPilotSnapshot, savePilotSnapshot } from "./supabase-sync";
+import { sdk } from "./_core/sdk";
 
-function centralConfiguration() {
+function centralFunctionConfig() {
   const projectUrl = process.env.SUPABASE_URL?.trim().replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
-  const serviceRoleKey = process.env.CENTRAL_SUPABASE_SERVICE_ROLE_KEY?.trim() || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!projectUrl || !serviceRoleKey) throw new Error("Central report reminder service is not configured.");
-  return { url: `${projectUrl}/functions/v1/central-registration`, serviceRoleKey };
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!projectUrl || !serviceKey) throw new Error("Central report reminder service is not configured.");
+  return { url: `${projectUrl}/functions/v1/central-registration`, serviceKey };
 }
 
-async function dispatchCentralReportReminder(reportId: string) {
-  const { url, serviceRoleKey } = centralConfiguration();
+async function dispatchReminder(reportId: string) {
+  const { url, serviceKey } = centralFunctionConfig();
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-      "Content-Type": "application/json",
-      "x-report-reminder-internal": serviceRoleKey,
-    },
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json", "x-report-reminder-internal": serviceKey },
     body: JSON.stringify({ action: "push_send_report_reminder", reportId }),
   });
-  if (!response.ok) throw new Error(`Central report reminder delivery failed (${response.status}).`);
+  if (!response.ok) throw new Error(`Central reminder delivery failed (${response.status}).`);
   return response.json() as Promise<{ submitted: number; skipped?: string }>;
 }
 
-/** Runs from the platform scheduler. It is idempotent per report and Riyadh calendar day. */
+/** Cron-only, idempotent daily run. The database snapshot is updated before Push dispatch to avoid duplicate retries. */
 export async function generateReportRequestReminders(now = new Date()) {
   const snapshot = await getPilotSnapshot();
-  if (!snapshot) return { ok: true as const, skipped: "no-snapshot" as const, reminded: 0 };
+  if (!snapshot) return { ok: true as const, reminded: 0, skipped: "no-snapshot" as const };
   const prepared = prepareDailyReportReminders(snapshot.data, now);
-  if (!prepared.reminderReportIds.length) return { ok: true as const, skipped: "none-due" as const, reminded: 0 };
-
-  await savePilotSnapshot({ data: prepared.data, actorName: "نظام تذكير طلبات التقارير" });
+  if (!prepared.reportIds.length) return { ok: true as const, reminded: 0, skipped: "none-due" as const };
+  let current = (await savePilotSnapshot({ data: prepared.data, actorName: "Neurify report reminder service" })).data;
   let submitted = 0;
-  for (const reportId of prepared.reminderReportIds) {
-    const result = await dispatchCentralReportReminder(reportId);
-    submitted += result.submitted;
+  for (const reportId of prepared.reportIds) {
+    try {
+      const result = await dispatchReminder(reportId);
+      submitted += result.submitted;
+      current = recordReportReminderDelivery(current, reportId, result.submitted, now);
+    } catch {
+      current = {
+        ...current,
+        reports: current.reports.map((report) => report.id === reportId ? { ...report, lastReminderAt: now.toISOString(), lastReminderStatus: "delivery_unavailable" } : report),
+      };
+    }
   }
-  return { ok: true as const, reminded: prepared.reminderReportIds.length, submitted };
+  await savePilotSnapshot({ data: current, actorName: "Neurify report reminder service" });
+  return { ok: true as const, reminded: prepared.reportIds.length, submitted };
 }
 
 export function registerReportRequestReminderRoute(app: Express) {

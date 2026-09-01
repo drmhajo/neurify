@@ -7,6 +7,7 @@ import { consultationDestination, type ClinicalDisposition } from "@/lib/departm
 import { validateConsultationDecision } from "@/lib/consultation-decision";
 import { useDepartment } from "@/lib/department-store";
 import { useAppLanguage } from "@/lib/language";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NEUROSURGERY_PROCEDURES, procedureLabel, type NeurosurgeryProcedureCode } from "@/lib/neurosurgery-procedure-catalog";
 
 const blankForm = {
@@ -16,6 +17,7 @@ const blankForm = {
 
 export default function NewConsultationScreen() {
   const { data, session, addConsultation } = useDepartment();
+  const insets = useSafeAreaInsets();
   const { language, isRTL } = useAppLanguage();
   const [form, setForm] = useState(blankForm);
   const [teamId, setTeamId] = useState("");
@@ -40,7 +42,7 @@ export default function NewConsultationScreen() {
     router.replace({ pathname: "/team/[id]", params: { id: teamId, section: destination.section } });
   };
 
-  return <ScrollView style={styles.page} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+  return <ScrollView style={styles.page} contentContainerStyle={[styles.content, { paddingTop: Math.max(18, insets.top + 8), paddingBottom: Math.max(34, insets.bottom + 24) }]} keyboardShouldPersistTaps="handled">
     <View style={[styles.header, { flexDirection: isRTL ? "row" : "row-reverse" }]}>
       <IconAction icon={isRTL ? "arrow-forward" : "arrow-back"} label={language === "en" ? "Back" : "رجوع"} onPress={() => router.back()} />
       <View style={styles.headerCopy}><Text style={[styles.title, align(isRTL)]}>{language === "en" ? "New consultation" : "استشارة جديدة"}</Text><Text style={[styles.subtitle, align(isRTL)]}>{language === "en" ? "Select the treating team and clinical pathway." : "اختر الفريق المعالج وحدد مسار الحالة السريري."}</Text></View>
