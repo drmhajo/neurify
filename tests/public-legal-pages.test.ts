@@ -14,7 +14,7 @@ describe("public privacy page", () => {
   });
 
   it("uses the official publicly listed KSMC contact and directs users away from patient details", () => {
-    expect(legalPages).toContain('const KSMC_CONTACT_EMAIL = "info@ksmc.med.sa"');
+    expect(legalPages).toContain('const KSMC_CONTACT_EMAIL = "m.ibraheim@rfhc.gov.sa"');
     expect(legalPages).toContain("Do not include patient names");
     expect(legalPages).toContain("لا تضع أسماء مرضى");
     expect(legalPages).toContain("Google Gemini");

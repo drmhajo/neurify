@@ -1,7 +1,7 @@
 import type { Express } from "express";
 
 const APP_URL = "https://neurify.manus.space";
-const KSMC_CONTACT_EMAIL = "info@ksmc.med.sa";
+const KSMC_CONTACT_EMAIL = "m.ibraheim@rfhc.gov.sa";
 
 function documentShell(title: string, language: "en" | "ar", body: string) {
   const isArabic = language === "ar";
