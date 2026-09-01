@@ -13,6 +13,7 @@ const PASSWORD_RESET_CODE_TTL_MS = 15 * 60 * 1000;
 const PASSWORD_RESET_MAX_ATTEMPTS = 5;
 const CENTRAL_ADMIN_USERNAME = "admin";
 const CENTRAL_ADMIN_EMAIL = "admin@ksmc.local";
+const GOOGLE_PLAY_REVIEWER_EMAIL = "googleplay.tester@neurify.review";
 
 type RegistrationRow = {
   id: string;
@@ -300,6 +301,7 @@ function mapRequest(row: RegistrationRow) {
 
 function mapApprovedAccount(row: RegistrationRow) {
   const administrator = row.email === CENTRAL_ADMIN_EMAIL;
+  const playReviewer = row.email === GOOGLE_PLAY_REVIEWER_EMAIL;
   return {
     id: `remote-${row.id}`,
     username: administrator ? CENTRAL_ADMIN_USERNAME : row.email,
@@ -307,7 +309,31 @@ function mapApprovedAccount(row: RegistrationRow) {
     email: row.email,
     phone: row.phone,
     jobTitle: row.job_title,
-    role: administrator ? "admin" : "team_member",
+    role: administrator ? "admin" : playReviewer ? "play_reviewer" : "team_member",
+  };
+}
+
+function isGooglePlayReviewer(row: RegistrationRow | null | undefined) {
+  return row?.status === "approved" && row.email === GOOGLE_PLAY_REVIEWER_EMAIL;
+}
+
+function googlePlayReviewerSnapshot(row: RegistrationRow) {
+  return {
+    users: [{ ...mapApprovedAccount(row), teamIds: [], active: true, permissions: [] }],
+    reports: [],
+    shifts: [],
+    surgeries: [],
+    opdOperationWaitingList: [],
+    weeklyAssignments: [],
+    scheduleDocuments: [],
+    teams: [],
+    notifications: [],
+    generalDiscussionMessages: [],
+    generalDiscussionReadByUser: {},
+    shiftReports: [],
+    rosterVersion: "google-play-review-sandbox",
+    releaseVersion: "Google Play reviewer access — no clinical records",
+    initialSetupCompleted: true,
   };
 }
 
@@ -564,6 +590,7 @@ async function handlePushRegister(body: Record<string, unknown>) {
   }
   const account = await findById(accountId);
   if (!account || account.status !== "approved") return json({ persisted: false, error: "account_not_approved" }, 403);
+  if (isGooglePlayReviewer(account)) return json({ persisted: false, error: "reviewer_push_not_available" }, 403);
   const rows = await pushDeviceRequest("?on_conflict=expo_token", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates,return=representation" },
@@ -669,6 +696,17 @@ async function handleReportReminderPush(body: Record<string, unknown>, request: 
 async function handleDataPull(body: Record<string, unknown>) {
   const account = await approvedDataAccount(body);
   if (!account) return json({ error: "data_access_unauthorized" }, 403);
+  if (isGooglePlayReviewer(account)) {
+    return json({
+      ok: true,
+      snapshot: {
+        data: googlePlayReviewerSnapshot(account),
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        updatedBy: "google_play_review_sandbox",
+      },
+    });
+  }
   const rows = await snapshotRequest("?workspace_key=eq.ksmc-neurosurgery-pilot&select=data,version,updated_at,updated_by&limit=1") as DepartmentSnapshotRow[];
   return json({ ok: true, snapshot: rows[0] ? snapshotResponse(rows[0]) : null });
 }
@@ -678,6 +716,7 @@ async function handleDataPush(body: Record<string, unknown>) {
   const expectedVersion = Number(body.expectedVersion);
   const data = body.data;
   if (!account) return json({ error: "data_access_unauthorized" }, 403);
+  if (isGooglePlayReviewer(account)) return json({ error: "reviewer_write_not_available" }, 403);
   if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0 || !data || typeof data !== "object" || Array.isArray(data)) return json({ error: "invalid_snapshot_request" }, 400);
   const serialized = JSON.stringify(data);
   if (encoder.encode(serialized).byteLength > 7_500_000) return json({ error: "snapshot_too_large" }, 413);

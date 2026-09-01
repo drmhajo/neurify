@@ -491,4 +491,5 @@
 - [x] Create a public Neurify privacy-policy page with KSMC review language
 - [x] Link the public privacy-policy page in the app and verify HTTPS access for Google Play
 - [x] Keep only the public privacy-policy page and remove separate account-deletion page links
-- [ ] Update the public Neurify privacy-contact email to m.ibraheim@rfhc.gov.sa and verify the live page
+- [x] Update the public Neurify privacy-contact email to m.ibraheim@rfhc.gov.sa and verify the live page
+- [x] Create a least-privilege central Google Play review account with de-identified test-only access

@@ -1,6 +1,6 @@
 import type { NeurosurgeryProcedureCode } from "./neurosurgery-procedure-catalog";
 
-export type UserRole = "admin" | "consultant" | "coordinator" | "team_member";
+export type UserRole = "admin" | "consultant" | "coordinator" | "team_member" | "play_reviewer";
 export type PermissionKey = "manage_users" | "manage_permissions" | "manage_teams" | "manage_schedules" | "manage_operations" | "manage_reports" | "view_all_patients" | "edit_medical_files" | "add_imaging" | "patient_chat" | "view_audit" | "send_general_announcement" | "approve_registration_requests";
 export type ReportPriority = "عاجل" | "عادي" | "متابعة";
 export type ReportStatus = "جديد" | "قيد الإعداد" | "مكتمل";
@@ -324,6 +324,7 @@ export const roleLabels: Record<UserRole, string> = {
   consultant: "استشاري",
   coordinator: "منسق طبي",
   team_member: "عضو فريق",
+  play_reviewer: "مراجع Google Play",
 };
 
 export const permissionLabels: Record<PermissionKey, string> = {
@@ -347,6 +348,7 @@ export const rolePermissionDefaults: Record<UserRole, PermissionKey[]> = {
   consultant: ["manage_reports", "view_all_patients", "edit_medical_files", "add_imaging", "patient_chat"],
   coordinator: ["manage_schedules", "manage_reports", "view_all_patients", "patient_chat"],
   team_member: ["edit_medical_files", "add_imaging", "patient_chat"],
+  play_reviewer: [],
 };
 
 /** Roster transcribed from the provided Neurosurgery groups Distribution, 19–24 July 2026. */
