@@ -7,11 +7,12 @@ import { saveReportUriToDevice } from "@/lib/report-direct-download";
 import { MEDICAL_REPORT_SECTION_KEYS, medicalReportSectionLabels, type MedicalReportDraft } from "@/shared/medical-report-draft";
 
 export type MedicalReportPrintTemplate = "standard" | "formal-english";
+export type MedicalReportExportResult = { status: "downloaded" | "shared" | "unavailable"; fileName: string; uri?: string };
 
 function escapeHtml(value: string) { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 function asParagraphs(value: string) { return escapeHtml(value).replace(/\n/g, "<br />"); }
 
-export async function exportApprovedMedicalReport(input: { patient: { fullName: string; fileNumber: string; age: number | null; diagnosis: string; ward?: string; bed?: string }; draft: MedicalReportDraft; language: "ar" | "en"; approvedBy: string; template?: MedicalReportPrintTemplate }) {
+export async function exportApprovedMedicalReport(input: { patient: { fullName: string; fileNumber: string; age: number | null; diagnosis: string; ward?: string; bed?: string }; draft: MedicalReportDraft; language: "ar" | "en"; approvedBy: string; template?: MedicalReportPrintTemplate }): Promise<MedicalReportExportResult> {
   const formalEnglish = input.template === "formal-english";
   const outputLanguage = formalEnglish ? "en" : input.language;
   const assets = await getReportPrintAssets();
@@ -34,9 +35,14 @@ export async function exportApprovedMedicalReport(input: { patient: { fullName: 
   const html = `<!doctype html><html dir="${arabic ? "rtl" : "ltr"}"><head><meta charset="utf-8" /><style>${createReportPrintCss({ language: outputLanguage, fontCss: assets.fontCss })}${formalEnglishStyle}.clinical-section{break-inside:avoid;margin-top:14px}.clinical-body{border:1px solid #E2E4EF;border-top:0;border-radius:0 0 10px 10px;padding:11px 12px;color:#29364B;min-height:44px;background:#fff;white-space:normal}.draft-notice{margin:12px 0;padding:9px 11px;border:1px solid #D8DCFA;border-radius:10px;background:#EEF0FF;color:#4956A6;font-size:9px;font-weight:700}.clinical-footer{margin-top:18px;padding-top:9px;border-top:1px solid #E2E4EF;color:#6D778C;font-size:8.5px}</style></head><body><main class="print-page"><header class="official-header"><img src="${assets.logoSrc}" class="official-logo" /><div class="official-identity"><p class="official-hospital">${arabic ? "مدينة الملك سعود الطبية" : "King Saud Medical City"}</p><h1 class="official-department">${arabic ? "قسم جراحة المخ والأعصاب" : "Neurosurgery Department"}</h1></div><div class="official-report"><strong>${formalEnglish ? "OFFICIAL REPORT" : (arabic ? "تقرير طبي" : "Medical Report")}</strong><span>Neurify · ${date}</span></div></header><div class="report-intro"><div>${formalEnglish ? "<p class=\"formal-document-label\">Clinical documentation</p>" : ""}<h2 class="report-title">${reportTitle}</h2><p class="report-subtitle">${subtitle}</p></div><span class="report-kicker">${formalEnglish ? "Reviewed for clinical use" : (arabic ? "للاستخدام السريري بعد المراجعة" : "Clinician reviewed")}</span></div>${formalEnglish ? "<p class=\"formal-patient-title\">Patient identification</p>" : ""}<table class="head"><tbody>${patientRows}</tbody></table><div class="${formalEnglish ? "formal-attestation" : "draft-notice"}">${introduction}</div>${sections}${signoff}<footer class="clinical-footer">${arabic ? "اعتمد بواسطة: " : "Approved by: "}${escapeHtml(input.approvedBy)} · Neurify${formalEnglish ? " · AI-assisted documentation draft reviewed by clinician" : ""}</footer></main></body></html>`;
   const safeRecord = input.patient.fileNumber.replace(/[^a-z0-9_-]/gi, "") || "patient";
   const fileName = `neurify-${formalEnglish ? "official-medical-report" : "medical-report"}-${safeRecord}-${new Date().toISOString().slice(0, 10)}.pdf`;
-  if (Platform.OS === "web") { const blob = new Blob([html], { type: "text/html" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = fileName.replace(/\.pdf$/, ".html"); anchor.click(); URL.revokeObjectURL(url); return "downloaded" as const; }
+  if (Platform.OS === "web") { const blob = new Blob([html], { type: "text/html" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = fileName.replace(/\.pdf$/, ".html"); anchor.click(); URL.revokeObjectURL(url); return { status: "downloaded", fileName }; }
   const result = await Print.printToFileAsync({ html });
-  if (Platform.OS === "android") return saveReportUriToDevice({ uri: result.uri, fileName, mimeType: "application/pdf" });
-  if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(result.uri, { mimeType: "application/pdf", dialogTitle: fileName, UTI: ".pdf" });
-  return "shared" as const;
+  if (Platform.OS === "android") return { status: await saveReportUriToDevice({ uri: result.uri, fileName, mimeType: "application/pdf" }), fileName, uri: result.uri };
+  return { status: "downloaded", fileName, uri: result.uri };
+}
+
+export async function shareApprovedMedicalReportPdf(input: { uri: string; fileName: string }): Promise<"shared" | "unavailable"> {
+  if (!input.uri || !(await Sharing.isAvailableAsync())) return "unavailable";
+  await Sharing.shareAsync(input.uri, { mimeType: "application/pdf", dialogTitle: input.fileName, UTI: ".pdf" });
+  return "shared";
 }

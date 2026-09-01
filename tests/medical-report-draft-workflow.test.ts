@@ -62,4 +62,22 @@ describe("AI medical-report draft workflow", () => {
     expect(action).toContain("draftFailureCopy");
     expect(action).toContain("لم يتم تعديل ملف المريض");
   });
+
+  it("shares only an approved, successfully exported PDF through the device share sheet", () => {
+    const action = source("components/medical-report-draft-action.tsx");
+    const exporter = source("lib/medical-report-draft-export.ts");
+    expect(exporter).toContain("export type MedicalReportExportResult");
+    expect(exporter).toContain("shareApprovedMedicalReportPdf");
+    expect(exporter).toContain("await Sharing.shareAsync(input.uri");
+    expect(exporter).not.toContain("mailto:");
+    expect(exporter).not.toContain("recipient");
+    expect(action).toContain("const [exportedPdf, setExportedPdf]");
+    expect(action).toContain("result.status === \"downloaded\" && result.uri");
+    expect(action).toContain("if (!approved || !exportedPdf) return");
+    expect(action).toContain("approved && exportedPdf ?");
+    expect(action).toContain("Share final medical report");
+    expect(action).toContain("مشاركة التقرير الطبي النهائي");
+    expect(action).toContain("no report is sent automatically");
+    expect(action).toContain("ولا يُرسل أي تقرير تلقائيًا");
+  });
 });

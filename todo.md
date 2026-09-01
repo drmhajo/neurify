@@ -469,3 +469,6 @@
 - [x] Capture and diagnose the AI medical-report generation failure without using patient data
 - [x] Repair the failing auth, network, or model-generation path and expose a safe diagnostic message
 - [x] Verify successful de-identified generation, review lock, and Android export before release
+- [x] Review approved medical-report export and device sharing capabilities
+- [x] Add a clinician-approved system share action for the final medical-report PDF
+- [x] Test the share lock, privacy messaging, and Android export flow
