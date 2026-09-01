@@ -493,3 +493,4 @@
 - [x] Keep only the public privacy-policy page and remove separate account-deletion page links
 - [x] Update the public Neurify privacy-contact email to m.ibraheim@rfhc.gov.sa and verify the live page
 - [x] Create a least-privilege central Google Play review account with de-identified test-only access
+- [x] Prepare verified Google Play Content ratings questionnaire answers for Neurify
