@@ -63,6 +63,25 @@ describe("AI medical-report draft workflow", () => {
     expect(action).toContain("لم يتم تعديل ملف المريض");
   });
 
+  it("limits Gemini to server-side linguistic editing of the minimized draft", () => {
+    const route = source("server/medical-report-draft.ts");
+    const refinement = source("server/gemini-medical-report-refinement.ts");
+    const action = source("components/medical-report-draft-action.tsx");
+    expect(route).toContain("refineMedicalReportDraftLanguage");
+    expect(route).toContain("hasValidDepartmentSession(accountId, dataProof)");
+    expect(refinement).toContain("GEMINI_API_KEY");
+    expect(refinement).toContain("gemini-2.5-flash");
+    expect(refinement).toContain("Improve grammar, spelling, clarity, and professional ordering only");
+    expect(refinement).toContain("Do not add, remove, infer, reinterpret, summarize, or change any clinical fact");
+    expect(refinement).toContain("Preserve every numeric value exactly");
+    expect(refinement).not.toContain("fullName");
+    expect(refinement).not.toContain("fileNumber");
+    expect(refinement).not.toContain("ward");
+    expect(refinement).not.toContain("bed");
+    expect(action).toContain("Gemini may improve grammar and structure");
+    expect(action).toContain("ولا يغني عن مراجعة الطبيب");
+  });
+
   it("shares only an approved, successfully exported PDF through the device share sheet", () => {
     const action = source("components/medical-report-draft-action.tsx");
     const exporter = source("lib/medical-report-draft-export.ts");
