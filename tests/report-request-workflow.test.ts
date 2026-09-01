@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { createInternalDepartmentData, rolePermissionDefaults, type DepartmentData, type DepartmentUser, type MedicalReport } from "../lib/department-model";
-import { createReportRequestNotification, isReportReminderDue, prepareDailyReportReminders, resolveReportRecipientIds } from "../lib/report-request-notifications";
+import { createReportRequestNotification, isReportReminderDue, prepareDailyReportReminders, recordReportReminderDelivery, resolveReportRecipientIds } from "../lib/report-request-notifications";
 
 function buildData(): DepartmentData {
   const data = createInternalDepartmentData();
@@ -39,6 +39,22 @@ describe("report request notification workflow", () => {
     expect(first.data.reports[0].lastReminderDate).toBe("2026-01-04");
     expect(prepareDailyReportReminders(first.data, new Date("2026-01-04T12:00:00.000Z")).reportIds).toEqual([]);
     expect(prepareDailyReportReminders({ ...data, reports: [report({ notifyCompletedAt: "2026-01-03T09:00:00.000Z" })] }, new Date("2026-01-04T06:00:00.000Z")).reportIds).toEqual([]);
+  });
+
+  it("records the delivery timestamp and exposes the corresponding monitor fields", () => {
+    const data = buildData();
+    data.reports = [report()];
+    const deliveredAt = new Date("2026-01-04T06:00:00.000Z");
+    const updated = recordReportReminderDelivery(data, "r-safe", 2, deliveredAt);
+    const monitored = updated.reports[0];
+    const monitorScreen = readFileSync("app/report-request-monitor.tsx", "utf8");
+
+    expect(monitored.lastReminderAt).toBe("2026-01-04T06:00:00.000Z");
+    expect(monitored.lastReminderStatus).toBe("sent");
+    expect(isReportReminderDue(monitored, new Date("2026-01-04T07:00:00.000Z"))).toBe(true);
+    expect(monitorScreen).toContain("formatRiyadhDateTime(item.lastReminderAt, language)");
+    expect(monitorScreen).toContain("Last reminder: ${lastReminder}");
+    expect(monitorScreen).toContain("Last reminder sent");
   });
 
   it("provides required bilingual form and administrator-monitor controls", () => {

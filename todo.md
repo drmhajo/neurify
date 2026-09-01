@@ -483,3 +483,6 @@
 - [x] Expand medical-report requests with patient name, record number, visit date, selected treating team/consultant, and notes
 - [x] Add an administrator screen for overdue report requests and the most recent reminder status
 - [x] Test report-request permissions, team routing, overdue status, and Arabic/English interfaces
+- [x] Restart the Neurify development server and verify the preview recovers
+- [x] Restart the Neurify development server and verify the preview recovers
+- [x] Test the administrator overdue-report screen and the displayed last-reminder timestamp with de-identified data
