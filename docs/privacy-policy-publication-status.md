@@ -2,6 +2,10 @@
 
 **Checked:** 1 September 2026
 
-The first external check of `https://neurify.manus.space/privacy` returned `Cannot GET /privacy` after checkpoint `0a9c7d78`. The source code registers `/privacy` and `/account-deletion` in the Express server, and local type, lint, targeted route, and server-build checks passed. The public domain has not yet served the new server bundle, so the URLs must not be pasted into Google Play Console until an external HTTPS check returns HTTP 200.
+The public policy is available without authentication at:
 
-Next action: restart the managed development service from the saved checkpoint, allow the published service to refresh, then test both public endpoints again without authentication.
+`https://neurify.manus.space/privacy`
+
+The external HTTPS check confirmed that the published page now displays only the Neurify Privacy Policy and a privacy-contact email link. It does not display a separate account-deletion page link. The policy identifies the public KSMC contact as `info@ksmc.med.sa` and instructs requestors not to send patient information by email.
+
+Before final Google Play submission, KSMC’s privacy or legal owner should confirm that this public contact channel is monitored for privacy requests and that the disclosures match the organization’s approved policies.

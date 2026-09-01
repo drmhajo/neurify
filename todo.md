@@ -489,5 +489,5 @@
 - [x] Prepare a tailored Google Play Console publishing guide and form-copy recommendations for Neurify
 - [x] Verify KSMC’s official public contact channel for the Neurify privacy policy
 - [x] Create a public Neurify privacy-policy page with KSMC review language
-- [ ] Link the public privacy-policy page in the app and verify HTTPS access for Google Play
+- [x] Link the public privacy-policy page in the app and verify HTTPS access for Google Play
 - [x] Keep only the public privacy-policy page and remove separate account-deletion page links
