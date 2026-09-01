@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { DepartmentData, MedicalReport } from "../lib/department-model";
 import {
+  canCompleteReportNotification,
   createReportRequestNotification,
   findTreatingTeam,
   isReportReminderDue,
-  mayCompleteReportNotification,
   prepareDailyReportReminders,
   resolveReportRecipientIds,
 } from "../lib/report-request-notifications";
@@ -71,16 +71,16 @@ describe("report request notifications", () => {
     const second = prepareDailyReportReminders(first.data, now);
     const complete = prepareDailyReportReminders(data({ reports: [report({ notifyCompletedAt: now.toISOString() })] }), now);
 
-    expect(first.reminderReportIds).toEqual(["report-1"]);
-    expect(second.reminderReportIds).toEqual([]);
-    expect(complete.reminderReportIds).toEqual([]);
+    expect(first.reportIds).toEqual(["report-1"]);
+    expect(second.reportIds).toEqual([]);
+    expect(complete.reportIds).toEqual([]);
   });
 
   it("permits Notify completed only to a recipient or authorized report manager", () => {
     const pending = report();
-    expect(mayCompleteReportNotification(pending, "remote-member")).toBe(true);
-    expect(mayCompleteReportNotification(pending, "remote-other")).toBe(false);
-    expect(mayCompleteReportNotification(pending, "remote-other", true)).toBe(true);
-    expect(mayCompleteReportNotification({ ...pending, notifyCompletedAt: createdAt }, "remote-member")).toBe(false);
+    expect(canCompleteReportNotification(pending, "remote-member")).toBe(true);
+    expect(canCompleteReportNotification(pending, "remote-other")).toBe(false);
+    expect(canCompleteReportNotification(pending, "remote-other", true)).toBe(true);
+    expect(canCompleteReportNotification({ ...pending, notifyCompletedAt: createdAt }, "remote-member")).toBe(false);
   });
 });

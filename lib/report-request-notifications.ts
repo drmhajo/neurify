@@ -7,6 +7,16 @@ function normalizedName(value: string) {
   return value.toLocaleLowerCase().replace(/doctor|dr\.?|دكتور|الدكتور|د\./giu, "").replace(/[^\p{L}\p{N}]/gu, "");
 }
 
+/** Resolves the current treating team from an exact patient code or file-number match. */
+export function findTreatingTeam(data: DepartmentData, patientCode: string) {
+  const normalizedCode = patientCode.trim();
+  if (!normalizedCode) return undefined;
+  return data.teams.find((team) => team.cases.some((patientCase) => (
+    patientCase.code.trim() === normalizedCode
+    || patientCase.fileNumber.trim() === normalizedCode
+  )));
+}
+
 /** Only the selected team determines notification scope; no patient matching is used to widen recipients. */
 export function resolveReportRecipientIds(data: DepartmentData, team: CareTeam) {
   const lead = normalizedName(team.lead);

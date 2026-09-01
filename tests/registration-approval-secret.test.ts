@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-describe("رمز اعتماد طلبات التسجيل", () => {
+const enabled = process.env.RUN_SUPABASE_REGISTRATION_LIVE_TEST === "true";
+
+describe.skipIf(!enabled)("رمز اعتماد طلبات التسجيل", () => {
   it("يتوفر بطول كافٍ ويقبل طلب تحقق مركزي آمن", async () => {
     const secret = process.env.REGISTRATION_APPROVAL_SECRET;
     const projectUrl = process.env.SUPABASE_URL?.trim().replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
