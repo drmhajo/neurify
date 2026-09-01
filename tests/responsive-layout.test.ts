@@ -46,7 +46,7 @@ describe("التخطيط المتجاوب على الهواتف", () => {
     const profile = fs.readFileSync(path.join(root, "app", "profile.tsx"), "utf8");
     const login = fs.readFileSync(path.join(root, "app", "login.tsx"), "utf8");
     expect(schedule).toContain("const layout = useResponsiveLayout()");
-    expect(schedule).toContain("paddingTop: layout.scheduleHeaderTopPadding");
+    expect(schedule).toContain("paddingTop: Math.max(layout.scheduleHeaderTopPadding, insets.top + 8)");
     expect(schedule).toContain("opdWaitingListCopy: { flex: 1, minWidth: 0");
     expect(schedule).toContain("numberOfLines={2}");
     expect(profile).toContain('import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"');
@@ -54,5 +54,22 @@ describe("التخطيط المتجاوب على الهواتف", () => {
     expect(profile).toContain("const layout = useResponsiveLayout()");
     expect(login).toContain("input: { flex: 1, minWidth: 0");
     expect(login).toContain("centralInfoText: { color:");
+  });
+
+  it("يوفر حواف أمان ديناميكية للترويسات والقوائم والإجراءات السفلية في الشاشات الأساسية", () => {
+    const rootLayout = fs.readFileSync(path.join(root, "app", "_layout.tsx"), "utf8");
+    const schedule = fs.readFileSync(path.join(root, "app", "(tabs)", "schedule.tsx"), "utf8");
+    const teams = fs.readFileSync(path.join(root, "app", "(tabs)", "teams.tsx"), "utf8");
+    const reports = fs.readFileSync(path.join(root, "app", "(tabs)", "reports.tsx"), "utf8");
+    const notifications = fs.readFileSync(path.join(root, "app", "notifications.tsx"), "utf8");
+    const teamDetail = fs.readFileSync(path.join(root, "app", "team", "[id].tsx"), "utf8");
+    const discussions = fs.readFileSync(path.join(root, "app", "(tabs)", "discussions.tsx"), "utf8");
+    expect(rootLayout).toContain("SafeAreaProvider");
+    expect(schedule).toContain("const insets = useSafeAreaInsets()");
+    expect(teams).toContain("const insets = useSafeAreaInsets()");
+    expect(reports).toContain("const insets = useSafeAreaInsets()");
+    expect(notifications).toContain("bottom: insets.bottom + 16");
+    expect(teamDetail).toContain("bottom: insets.bottom + 16");
+    expect(discussions).toContain('edges={["top", "left", "right", "bottom"]}');
   });
 });

@@ -6,6 +6,7 @@ import { AppCard, palette, PrimaryButton, SectionTitle, StatusPill } from "@/com
 import { useDepartment } from "@/lib/department-store";
 import type { MedicalReport, ReportPriority } from "@/lib/department-model";
 import { useAppLanguage } from "@/lib/language";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function priorityTone(priority: ReportPriority): "red" | "blue" | "gold" {
   return priority === "عاجل" ? "red" : priority === "عادي" ? "blue" : "gold";
@@ -19,6 +20,7 @@ type ReportActionIcon = "insights" | "assignment" | "add";
 
 export default function ReportsScreen() {
   const { data, advanceReport, addReport } = useDepartment();
+  const insets = useSafeAreaInsets();
   const { language, isRTL, localize } = useAppLanguage();
   const [modalVisible, setModalVisible] = useState(false);
   const [patientFileNumber, setPatientFileNumber] = useState("");
@@ -59,7 +61,7 @@ export default function ReportsScreen() {
 
   return (
     <View style={styles.page}>
-      <View style={[styles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+      <View style={[styles.header, { flexDirection: isRTL ? "row-reverse" : "row", paddingTop: Math.max(12, insets.top + 8) }]}>
         <View style={styles.headerCopy}>
           <Text style={[styles.title, align(isRTL)]}>{language === "en" ? "Report requests" : "طلبات التقارير"}</Text>
           <Text style={[styles.subtitle, align(isRTL)]}>{language === "en" ? `${data.reports.filter((item) => item.status !== "مكتمل").length} requests need follow-up` : `${data.reports.filter((item) => item.status !== "مكتمل").length} طلبات تحتاج متابعة`}</Text>
@@ -119,7 +121,7 @@ export default function ReportsScreen() {
         <MaterialIcons name={isRTL ? "chevron-left" : "chevron-right"} size={24} color={palette.navy} />
       </Pressable>
 
-      <FlatList data={data.reports} keyExtractor={(item) => item.id} renderItem={renderItem} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false} />
+      <FlatList data={data.reports} keyExtractor={(item) => item.id} renderItem={renderItem} contentContainerStyle={[styles.list, { paddingBottom: Math.max(24, insets.bottom + 16) }]} showsVerticalScrollIndicator={false} />
 
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalShade}>

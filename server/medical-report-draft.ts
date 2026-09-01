@@ -1,7 +1,12 @@
 import type { Express } from "express";
 import { z } from "zod";
 import { generateMedicalReportDraftWithGemini } from "./gemini-medical-report-refinement";
-import type { MedicalReportDraftResponse } from "../shared/medical-report-draft";
+import {
+  MEDICAL_REPORT_SECTION_KEYS,
+  type MedicalReportDraft,
+  type MedicalReportDraftResponse,
+  undocumentedClinicalText,
+} from "../shared/medical-report-draft";
 
 const MAX_REQUESTS_PER_MINUTE = 3;
 const requestWindows = new Map<string, number[]>();

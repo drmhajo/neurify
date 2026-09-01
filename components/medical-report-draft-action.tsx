@@ -133,7 +133,7 @@ export function MedicalReportDraftAction({ patient, session, language, isRTL }: 
         <View style={styles.flex}>
           <Text style={[styles.title, align(isRTL)]}>{language === "en" ? "AI-assisted medical report draft" : "مسودة تقرير طبي بمساعدة الذكاء الاصطناعي"}</Text>
           <Text style={[styles.text, align(isRTL)]}>{language === "en" ? "Uses documented file data only. Clinician review and approval are required before export." : "تستخدم البيانات الموثقة في الملف فقط. تتطلب مراجعة واعتماد الطبيب قبل التصدير."}</Text>
-          <Text style={[styles.geminiHint, align(isRTL)]}>{language === "en" ? "Gemini prepares the report template from minimized documented data only; it never replaces clinician review." : "يُعد Gemini نموذج التقرير من البيانات الموثقة والمصغرة فقط؛ ولا يغني عن مراجعة الطبيب."}</Text>
+          <Text style={[styles.geminiHint, align(isRTL)]}>{language === "en" ? "Gemini may improve grammar and structure of the minimized draft only; it never replaces clinician review." : "قد يحسن Gemini لغة وترتيب المسودة المصغرة فقط؛ ولا يغني عن مراجعة الطبيب."}</Text>
         </View>
       </View>
       <Text style={[styles.templateLabel, align(isRTL)]}>{language === "en" ? "Report language and print template" : "لغة التقرير ونموذج الطباعة"}</Text>

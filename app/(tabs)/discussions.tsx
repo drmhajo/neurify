@@ -37,7 +37,7 @@ export default function GeneralDiscussionsScreen() {
     </View>;
   };
 
-  return <ScreenContainer edges={["top", "left", "right"]} className="px-4">
+  return <ScreenContainer edges={["top", "left", "right", "bottom"]} className="px-4">
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.page} keyboardVerticalOffset={0}>
       <View style={[styles.header, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
         <View style={styles.headerIcon}><MaterialIcons name="forum" size={24} color="#FFFFFF" /></View>

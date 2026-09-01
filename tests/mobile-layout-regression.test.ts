@@ -11,7 +11,7 @@ describe("mobile layout regression", () => {
     expect(screen).toContain("list: { flex: 1, minHeight: 0 }");
     expect(screen).toContain('behavior={Platform.OS === "ios" ? "padding" : undefined}');
     expect(screen).toContain("messageArea: { flex: 1, minHeight: 0 }");
-    expect(screen).toContain('edges={["top", "left", "right"]}');
+    expect(screen).toContain('edges={["top", "left", "right", "bottom"]}');
     expect(screen).toContain('keyboardShouldPersistTaps="handled"');
   });
 

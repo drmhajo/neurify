@@ -472,5 +472,9 @@
 - [x] Review approved medical-report export and device sharing capabilities
 - [x] Add a clinician-approved system share action for the final medical-report PDF
 - [x] Test the share lock, privacy messaging, and Android export flow
-- [x] Set English as the default language on first launch while preserving saved user language preferences
-- [ ] Set English as the default language on first launch while preserving saved user language preferences
+- [x] Define, approve, and implement a privacy-preserving Gemini linguistic-editing step for clinician-reviewed medical-report drafts
+
+- [x] Make Gemini generate the approved medical-report draft template directly from minimized documented patient-file data
+
+- [ ] Make core screens dynamically respect device safe areas, notches, camera cutouts, system bars, and navigation settings
+- [x] Make core screens dynamically respect device safe areas, notches, camera cutouts, system bars, and navigation settings

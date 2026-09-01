@@ -4,6 +4,7 @@ import { useAssets } from "expo-asset";
 import { useFonts } from "expo-font";
 import { Text, TextInput, type TextInputProps, type TextProps } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { DepartmentProvider, useDepartment } from "@/lib/department-store";
 import { PushNotificationBootstrap } from "@/components/push-notification-bootstrap";
@@ -41,7 +42,7 @@ export default function RootLayout() {
   const coreUiAssetsReady = Boolean(coreUiAssets) || Boolean(coreUiAssetsError);
   const startupAssetsReady = visualFontsReady && coreUiAssetsReady;
 
-  return <GestureHandlerRootView style={{ flex: 1 }}><ThemeProvider><LanguageProvider>{startupAssetsReady ? <LanguageTransition><DepartmentProvider><AppNavigator /></DepartmentProvider></LanguageTransition> : <LogoLoading />}</LanguageProvider></ThemeProvider></GestureHandlerRootView>;
+  return <GestureHandlerRootView style={{ flex: 1 }}><SafeAreaProvider><ThemeProvider><LanguageProvider>{startupAssetsReady ? <LanguageTransition><DepartmentProvider><AppNavigator /></DepartmentProvider></LanguageTransition> : <LogoLoading />}</LanguageProvider></ThemeProvider></SafeAreaProvider></GestureHandlerRootView>;
 }
 
 function AppNavigator() {
